@@ -177,6 +177,15 @@ export type Repertoire = {
   rightsAttested: boolean;
 };
 
+export type StreamService = "bandcamp" | "soundcloud" | "youtube" | "spotify";
+
+export type StreamLink = {
+  id: string;
+  bandId: string;
+  service: StreamService;
+  url: string;
+};
+
 export type StayType = "hotel" | "motel" | "rental" | "campground" | "van";
 
 export type Stay = {
@@ -218,6 +227,7 @@ export type Snapshot = {
   opportunities: Opportunity[];
   applications: Application[];
   repertoires: Repertoire[];
+  streamLinks: StreamLink[];
 };
 
 export type DateFill = "open" | "in-talks" | "filled";

@@ -18,6 +18,7 @@ import { useApp } from "@/lib/store";
 import type { Terms } from "@/lib/types";
 import { DealFields } from "@/components/deal-fields";
 import { OriginalsBadge } from "@/components/originals";
+import { BandSamples } from "@/components/samples";
 import { PageFrame } from "@/components/shell";
 import { StatusPill, statusLabel } from "@/components/status-pill";
 import { Button } from "@/components/ui/button";
@@ -164,6 +165,9 @@ export function BookingRoom({ id }: { id: string }) {
             ) : null}
           </section>
           <section className="rounded-2xl border bg-cream p-4 sm:p-5">
+            <div className="mb-5">
+              <BandSamples bandId={band.id} variant="listen" />
+            </div>
             {yourMove ? (
               <div className="grid gap-5">
                 <div>

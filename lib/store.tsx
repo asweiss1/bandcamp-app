@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useMemo, useSyncExternalStore } from "react";
 import { getBand, getMusician, getVenue } from "@/lib/catalog";
+import { clearAudioTracks } from "@/lib/audio-db";
 import { termsError, uid } from "@/lib/deal";
 import { localRepository } from "@/lib/repository";
 import { dateFill } from "@/lib/queries";
@@ -18,6 +19,7 @@ import type {
   Terms,
   Application,
   Repertoire,
+  StreamService,
 } from "@/lib/types";
 
 const SYNC_EVENT = "bandcamp-sync";
@@ -30,12 +32,18 @@ function readMemory() {
     memory = localRepository.load(initialSnapshot);
     loaded = true;
   }
-  if (!Array.isArray(memory.opportunities) || !Array.isArray(memory.applications) || !Array.isArray(memory.repertoires)) {
+  if (
+    !Array.isArray(memory.opportunities) ||
+    !Array.isArray(memory.applications) ||
+    !Array.isArray(memory.repertoires) ||
+    !Array.isArray(memory.streamLinks)
+  ) {
     memory = {
       ...memory,
       opportunities: Array.isArray(memory.opportunities) ? memory.opportunities : initialSnapshot.opportunities,
       applications: Array.isArray(memory.applications) ? memory.applications : initialSnapshot.applications,
       repertoires: Array.isArray(memory.repertoires) ? memory.repertoires : initialSnapshot.repertoires,
+      streamLinks: Array.isArray(memory.streamLinks) ? memory.streamLinks : initialSnapshot.streamLinks,
     };
   }
   return memory;
@@ -87,6 +95,8 @@ type AppContextValue = {
   applyToOpportunity: (opportunityId: string, input: { setup: string; note: string }) => Result<string>;
   withdrawApplication: (applicationId: string) => Result<string>;
   setRepertoire: (bandId: string, patch: Partial<Omit<Repertoire, "bandId">>) => Result<string>;
+  addStreamLink: (bandId: string, service: StreamService, url: string) => Result<string>;
+  removeStreamLink: (id: string) => Result<string>;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -142,6 +152,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setMusicianId: (musicianId) => update({ ...readMemory(), musicianId }),
       reset: () => {
         localRepository.clear();
+        void clearAudioTracks();
         update(initialSnapshot);
       },
       requestDate: (openDateId, terms) => {
@@ -449,6 +460,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           : [...current.repertoires, next];
         update({ ...current, repertoires });
         return { ok: true, data: bandId };
+      },
+      addStreamLink: (bandId, service, url) => {
+        const current = readMemory();
+        if (current.role !== "band" || current.bandId !== bandId) {
+          return { ok: false, error: "Switch to this band to add a link." };
+        }
+        const href = url.trim();
+        if (!/^https?:\/\/\S+$/i.test(href) || href.length > 200) {
+          return { ok: false, error: "Paste a full http or https link." };
+        }
+        const own = current.streamLinks.filter((link) => link.bandId === bandId);
+        if (own.length >= 8) return { ok: false, error: "This band already has 8 links." };
+        const link = { id: uid("sl"), bandId, service, url: href };
+        update({ ...current, streamLinks: [...current.streamLinks, link] });
+        return { ok: true, data: link.id };
+      },
+      removeStreamLink: (id) => {
+        const current = readMemory();
+        const link = current.streamLinks.find((item) => item.id === id);
+        if (!link) return { ok: false, error: "That link is already gone." };
+        if (current.role !== "band" || current.bandId !== link.bandId) {
+          return { ok: false, error: "Switch to this band to remove a link." };
+        }
+        update({ ...current, streamLinks: current.streamLinks.filter((item) => item.id !== id) });
+        return { ok: true, data: id };
       },
     };
   }, [snapshot]);

@@ -11,6 +11,7 @@ import { useApp } from "@/lib/store";
 import type { Terms } from "@/lib/types";
 import { DealFields } from "@/components/deal-fields";
 import { OriginalsBadge } from "@/components/originals";
+import { BandSamples } from "@/components/samples";
 import { StatusPill, statusLabel } from "@/components/status-pill";
 import { Button } from "@/components/ui/button";
 import {
@@ -125,6 +126,7 @@ export function PhoneGig({ id }: { id: string }) {
         />
       ) : (
         <>
+          <BandSamples bandId={band.id} variant="listen" />
           <section className="rounded-2xl border bg-card p-4">
             <p className="text-[10px] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
               Current terms

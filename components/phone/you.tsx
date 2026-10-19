@@ -6,6 +6,7 @@ import { useApp } from "@/lib/store";
 import type { Role } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { RepertoirePanel } from "@/components/originals";
+import { BandSamples } from "@/components/samples";
 import { roleLabel } from "@/components/role-switcher";
 import { Button } from "@/components/ui/button";
 import {
@@ -67,6 +68,7 @@ export function PhoneYou() {
           options={bands.map((band) => ({ id: band.id, label: `${band.name} · ${band.city}` }))}
         />
       ) : null}
+      {snapshot.role === "band" ? <BandSamples bandId={snapshot.bandId} /> : null}
       {snapshot.role === "band" ? <RepertoirePanel bandId={snapshot.bandId} /> : null}
       {snapshot.role === "venue" ? (
         <ProfileSelect

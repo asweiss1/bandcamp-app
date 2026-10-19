@@ -12,6 +12,7 @@ import type { Band, Terms, Venue } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { DealFields } from "@/components/deal-fields";
 import { OriginalsBadge, OriginalsFilter, RepertoirePanel } from "@/components/originals";
+import { BandSamples } from "@/components/samples";
 import { repertoireFor } from "@/lib/repertoire";
 import { PageFrame, PageIntro } from "@/components/shell";
 import { StatusPill } from "@/components/status-pill";
@@ -116,6 +117,9 @@ export function BandProfile({ id }: { id: string }) {
       <h1 className="mt-3 font-display text-5xl tracking-tight">{band.name}</h1>
       <p className="mt-2 text-lg text-muted-foreground">Home city {band.city}</p>
       <p className="mt-4 max-w-2xl text-base leading-relaxed">{band.bio}</p>
+      <div className="mt-6 max-w-2xl">
+        <BandSamples bandId={band.id} />
+      </div>
       <div className="mt-6">
         <RepertoirePanel bandId={band.id} />
       </div>
@@ -474,22 +478,25 @@ function Filters({
 
 function BandCard({ band }: { band: Band }) {
   return (
-    <Link href={`/bands/${band.id}`} className="rounded-2xl border bg-card p-4 transition hover:border-rust/40">
-      <div className="flex items-start justify-between gap-3">
-        <h2 className="font-display text-2xl">{band.name}</h2>
-        <span className="flex flex-col items-end gap-1">
-          <span className="rounded-full bg-sand px-2 py-1 text-[11px] font-semibold uppercase">
-            {band.touring ? "Touring" : "Local"}
+    <article className="rounded-2xl border bg-card p-4 transition hover:border-rust/40">
+      <Link href={`/bands/${band.id}`} className="block">
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="font-display text-2xl">{band.name}</h2>
+          <span className="flex flex-col items-end gap-1">
+            <span className="rounded-full bg-sand px-2 py-1 text-[11px] font-semibold uppercase">
+              {band.touring ? "Touring" : "Local"}
+            </span>
+            <OriginalsBadge bandId={band.id} />
           </span>
-          <OriginalsBadge bandId={band.id} />
-        </span>
-      </div>
-      <p className="mt-1 text-sm text-muted-foreground">{band.city}</p>
-      <p className="mt-3 text-sm">{band.genres.join(" · ")}</p>
-      <p className="mt-2 text-sm font-medium">
-        ${band.feeMin.toLocaleString()}–${band.feeMax.toLocaleString()}
-      </p>
-    </Link>
+        </div>
+        <p className="mt-1 text-sm text-muted-foreground">{band.city}</p>
+        <p className="mt-3 text-sm">{band.genres.join(" · ")}</p>
+        <p className="mt-2 text-sm font-medium">
+          ${band.feeMin.toLocaleString()}–${band.feeMax.toLocaleString()}
+        </p>
+      </Link>
+      <BandSamples bandId={band.id} variant="compact" />
+    </article>
   );
 }
 

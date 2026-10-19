@@ -11,6 +11,7 @@ import { useApp } from "@/lib/store";
 import type { OpenDate, OpportunityKind, Terms } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { OriginalsBadge, OriginalsFilter } from "@/components/originals";
+import { BandSamples } from "@/components/samples";
 import { repertoireFor } from "@/lib/repertoire";
 import { DealFields } from "@/components/deal-fields";
 import { StatusPill } from "@/components/status-pill";
@@ -349,19 +350,18 @@ export function PhoneDate({ id }: { id: string }) {
           {visibleTalks.map((booking) => {
             const other = getBand(booking.bandId);
             return (
-              <Link
-                key={booking.id}
-                href={`/phone/gig/${booking.id}`}
-                className="flex items-center justify-between gap-3 rounded-2xl border bg-card px-4 py-3"
-              >
-                <span>
-                  <span className="block font-medium">
-                    {other?.name} {other ? <OriginalsBadge bandId={other.id} /> : null}
+              <article key={booking.id} className="rounded-2xl border bg-card px-4 py-3">
+                <Link href={`/phone/gig/${booking.id}`} className="flex items-center justify-between gap-3">
+                  <span>
+                    <span className="block font-medium">
+                      {other?.name} {other ? <OriginalsBadge bandId={other.id} /> : null}
+                    </span>
+                    <span className="text-sm text-muted-foreground">{dealHeadline(booking.terms)}</span>
                   </span>
-                  <span className="text-sm text-muted-foreground">{dealHeadline(booking.terms)}</span>
-                </span>
-                <StatusPill status={booking.status} />
-              </Link>
+                  <StatusPill status={booking.status} />
+                </Link>
+                {other ? <BandSamples bandId={other.id} variant="compact" /> : null}
+              </article>
             );
           })}
         </section>
@@ -426,24 +426,24 @@ export function PhoneDate({ id }: { id: string }) {
                 {availableBands.map((item) => {
                   const selected = chosenBand === item.id;
                   return (
-                    <button
+                    <div
                       key={item.id}
-                      type="button"
-                      aria-pressed={selected}
-                      onClick={() => pickBand(item.id)}
                       className={cn(
-                        "rounded-xl border px-3 py-2 text-left",
+                        "rounded-xl border px-3 py-2",
                         selected ? "border-rust bg-accent" : "bg-card",
                       )}
                     >
-                      <span className="flex flex-wrap items-center gap-2 font-medium">
-                        {item.name}
-                        <OriginalsBadge bandId={item.id} />
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {item.city} · {money(item.feeMin)}–{money(item.feeMax)} · {item.genres[0]}
-                      </span>
-                    </button>
+                      <button type="button" aria-pressed={selected} onClick={() => pickBand(item.id)} className="w-full text-left">
+                        <span className="flex flex-wrap items-center gap-2 font-medium">
+                          {item.name}
+                          <OriginalsBadge bandId={item.id} />
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {item.city} · {money(item.feeMin)}–{money(item.feeMax)} · {item.genres[0]}
+                        </span>
+                      </button>
+                      <BandSamples bandId={item.id} variant="compact" />
+                    </div>
                   );
                 })}
               </div>

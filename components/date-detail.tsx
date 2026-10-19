@@ -11,6 +11,7 @@ import { useApp } from "@/lib/store";
 import type { Terms } from "@/lib/types";
 import { DealFields } from "@/components/deal-fields";
 import { OriginalsBadge } from "@/components/originals";
+import { BandSamples } from "@/components/samples";
 import { PageFrame } from "@/components/shell";
 import { StatusPill } from "@/components/status-pill";
 import { Button } from "@/components/ui/button";
@@ -117,22 +118,21 @@ export function DateDetail({ id }: { id: string }) {
                     (snapshot.role === "band" && booking.bandId === snapshot.bandId);
                   if (!visible) return null;
                   return (
-                    <Link
-                      key={booking.id}
-                      href={`/bookings/${booking.id}`}
-                      className="flex items-center justify-between gap-3 rounded-xl border bg-card px-3 py-3"
-                    >
-                      <span>
-                        <span className="flex flex-wrap items-center gap-2 font-medium">
-                          {other?.name}
-                          {other ? <OriginalsBadge bandId={other.id} /> : null}
+                    <article key={booking.id} className="rounded-xl border bg-card px-3 py-3">
+                      <Link href={`/bookings/${booking.id}`} className="flex items-center justify-between gap-3">
+                        <span>
+                          <span className="flex flex-wrap items-center gap-2 font-medium">
+                            {other?.name}
+                            {other ? <OriginalsBadge bandId={other.id} /> : null}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {dealHeadline(booking.terms)}
+                          </span>
                         </span>
-                        <span className="text-sm text-muted-foreground">
-                          {dealHeadline(booking.terms)}
-                        </span>
-                      </span>
-                      <StatusPill status={booking.status} />
-                    </Link>
+                        <StatusPill status={booking.status} />
+                      </Link>
+                      {other ? <BandSamples bandId={other.id} variant="compact" /> : null}
+                    </article>
                   );
                 })}
                 {related.every(

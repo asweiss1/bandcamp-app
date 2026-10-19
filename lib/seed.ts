@@ -848,6 +848,13 @@ export const seedRepertoires: Snapshot["repertoires"] = [
   },
 ];
 
+export const seedStreamLinks: Snapshot["streamLinks"] = [
+  { id: "sl-mesa-bc", bandId: "mesa-dust", service: "bandcamp", url: "https://example.com/mesa-dust" },
+  { id: "sl-mesa-yt", bandId: "mesa-dust", service: "youtube", url: "https://example.com/mesa-dust/watch" },
+  { id: "sl-salt-sc", bandId: "salt-choir", service: "soundcloud", url: "https://example.com/salt-choir" },
+  { id: "sl-neon-sp", bandId: "neon-parish", service: "spotify", url: "https://example.com/neon-parish" },
+];
+
 export const initialSnapshot: Snapshot = {
   role: "band",
   bandId: "mesa-dust",
@@ -860,4 +867,5 @@ export const initialSnapshot: Snapshot = {
   opportunities: seedOpportunities,
   applications: seedApplications,
   repertoires: seedRepertoires,
+  streamLinks: seedStreamLinks,
 };

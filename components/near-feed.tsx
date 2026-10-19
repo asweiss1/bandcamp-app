@@ -8,6 +8,7 @@ import { usePlace } from "@/lib/place";
 import { repertoireFor } from "@/lib/repertoire";
 import { useApp } from "@/lib/store";
 import { OriginalsBadge, OriginalsFilter } from "@/components/originals";
+import { BandSamples } from "@/components/samples";
 import { PlacePicker } from "@/components/place-picker";
 
 const sections = [
@@ -84,27 +85,26 @@ export function NearFeed({ surface }: { surface: "desk" | "phone" }) {
               <p className="rounded-2xl border bg-card px-4 py-3 text-sm text-muted-foreground">{section.empty}</p>
             ) : (
               items.map((item) => (
-                <Link
-                  key={item.id}
-                  href={surface === "phone" ? item.phoneHref : item.href}
-                  className="rounded-2xl border bg-card px-4 py-3"
-                >
-                  <span className="flex items-start justify-between gap-3">
-                    <span className="font-medium leading-snug">
-                      {item.title}
-                      {section.key === "bands" ? (
-                        <span className="mt-1 block">
-                          <OriginalsBadge bandId={item.id} />
-                        </span>
-                      ) : null}
+                <article key={item.id} className="rounded-2xl border bg-card px-4 py-3">
+                  <Link href={surface === "phone" ? item.phoneHref : item.href} className="block">
+                    <span className="flex items-start justify-between gap-3">
+                      <span className="font-medium leading-snug">
+                        {item.title}
+                        {section.key === "bands" ? (
+                          <span className="mt-1 block">
+                            <OriginalsBadge bandId={item.id} />
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className="shrink-0 rounded-full bg-sand px-2 py-1 text-[11px] font-semibold uppercase">
+                        Sample
+                      </span>
                     </span>
-                    <span className="shrink-0 rounded-full bg-sand px-2 py-1 text-[11px] font-semibold uppercase">
-                      Sample
-                    </span>
-                  </span>
-                  <span className="mt-1 block text-sm text-muted-foreground">{item.meta}</span>
-                  <span className="mt-1 block text-sm">{item.detail}</span>
-                </Link>
+                    <span className="mt-1 block text-sm text-muted-foreground">{item.meta}</span>
+                    <span className="mt-1 block text-sm">{item.detail}</span>
+                  </Link>
+                  {section.key === "bands" ? <BandSamples bandId={item.id} variant="compact" /> : null}
+                </article>
               ))
             )}
           </section>
