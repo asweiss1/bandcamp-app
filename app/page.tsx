@@ -12,28 +12,24 @@ const route = [
 
 const features = [
   {
-    title: "Profiles with the numbers on them",
-    copy: "A band's fee range, draw, and whether they tour. A room's capacity, backline, and the deal the booker usually opens with.",
+    title: "Book gigs",
+    copy: "Bands and venues meet on open nights, street permits, and fair calls. A band requests the date. A venue sends the offer. One confirmed hold per band, player, and room.",
   },
   {
-    title: "A date, then a negotiation",
-    copy: "Guarantee, door split, or guarantee plus a percentage. Ticket price, backline, and load-in travel with every offer and counter.",
+    title: "Negotiate deals",
+    copy: "Guarantee, door split, or a guarantee plus a percentage. Ticket price, backline, and load-in stay on every counter until someone accepts.",
   },
   {
-    title: "Permits and fairs, not only rooms",
-    copy: "Street-performance windows and festival calls sit next to club dates. Apply from the phone, and the hold shows up on the route.",
+    title: "Plan tours",
+    copy: "A start city and a number of days lines up rooms you can drive between. The route prices miles, nights, and fuel from the van.",
   },
   {
-    title: "Near you, then a week on the road",
-    copy: "Search any US town or use this device. Open dates, bands, permits, and board posts sit inside a radius you set. A start city and a number of days builds a sample route, a budget, and gig requests.",
+    title: "Lodging",
+    copy: "Hotels, motels, rentals, campgrounds, and van notes for the gig city, with a sample briefing of local overnight rules. A room marked booked stays booked.",
   },
   {
-    title: "A route, not a pile of gigs",
-    copy: "Touring bands see holds in drive order, plus other rooms still open in that window.",
-  },
-  {
-    title: "Somewhere to sleep",
-    copy: "Hotels, motels, rentals, campgrounds, and van notes, with a sample briefing of local overnight rules.",
+    title: "Find musicians",
+    copy: "Fill-in nights and open chairs, with the instrument, the city, the pay, and the date. Confirming a player closes the other notes for that night.",
   },
 ];
 
@@ -44,39 +40,30 @@ export default function HomePage() {
         <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
           <div>
             <p className="text-xs font-semibold tracking-[0.18em] text-amber uppercase">
-              Working title · bands, rooms, and the night after
+              Bands, venues, and the players who sit in
             </p>
             <h1 className="mt-4 font-display text-5xl leading-[0.95] tracking-tight text-balance sm:text-7xl">
-              Book the room. Plan the route. Sleep somewhere legal.
+              Book gigs. Plan the tour.
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-cream/75">
-              BandCamp is a booking desk for touring bands and small venues. Post a date,
-              negotiate the guarantee, line the cities up, and see where the van can stay.
+              Bands and venues find each other, negotiate terms, and confirm dates with no double
+              bookings. Plan the tour from there: the route, lodging, and fuel. The musician board
+              fills an empty chair.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild className="h-11 bg-amber px-5 text-ink hover:bg-amber/90">
-                <Link href="/near">See what is near you</Link>
+                <Link href="/dates">Find gigs</Link>
               </Button>
               <Button asChild className="h-11 bg-amber px-5 text-ink hover:bg-amber/90">
-                <Link href="/dates">Browse open dates</Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                className="h-11 border-cream/30 bg-transparent px-5 text-cream hover:bg-cream/10"
-              >
-                <Link href="/board">Musician board</Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                className="h-11 border-cream/30 bg-transparent px-5 text-cream hover:bg-cream/10"
-              >
-                <Link href="/phone">Phone companion</Link>
+                <Link href="/bands">Find bands</Link>
               </Button>
             </div>
             <p className="mt-3 max-w-xl text-sm text-cream/60">
-              The phone app is the same desk, trimmed for the van: book a night, answer an offer, follow the route, and see where you can sleep.
+              Find gigs is the band side. Find bands is the venue side. The same book is on the{" "}
+              <Link href="/phone" className="font-semibold text-amber underline-offset-2 hover:underline">
+                phone
+              </Link>
+              .
             </p>
           </div>
           <div className="rounded-3xl border border-cream/15 bg-cream/5 p-4">
@@ -120,9 +107,10 @@ export default function HomePage() {
       </section>
 
       <section className="mx-auto grid w-full max-w-6xl gap-4 px-4 pb-14 sm:grid-cols-2 sm:px-6">
-        {features.map((feature) => (
+        {features.map((feature, index) => (
           <article key={feature.title} className="rounded-2xl border bg-card p-5">
-            <h3 className="font-display text-2xl">{feature.title}</h3>
+            <p className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">{index + 1}</p>
+            <h3 className="mt-2 font-display text-2xl">{feature.title}</h3>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{feature.copy}</p>
           </article>
         ))}
