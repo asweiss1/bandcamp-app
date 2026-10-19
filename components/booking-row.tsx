@@ -1,0 +1,39 @@
+import Link from "next/link";
+import { getBand, getVenue } from "@/lib/catalog";
+import { dealHeadline, formatDay } from "@/lib/deal";
+import type { Booking, OpenDate } from "@/lib/types";
+import { StatusPill } from "@/components/status-pill";
+
+export function BookingRow({
+  booking,
+  openDate,
+  emphasize,
+}: {
+  booking: Booking;
+  openDate?: OpenDate;
+  emphasize?: string;
+}) {
+  const band = getBand(booking.bandId);
+  const venue = getVenue(booking.venueId);
+  return (
+    <Link
+      href={`/bookings/${booking.id}`}
+      className="grid gap-3 rounded-2xl border bg-card p-4 transition hover:border-rust/40 hover:bg-cream sm:grid-cols-[120px_1fr_auto] sm:items-center"
+    >
+      <div>
+        <p className="font-display text-xl">{openDate ? formatDay(openDate.date) : "Date"}</p>
+        <p className="text-sm text-muted-foreground">{openDate?.showTime}</p>
+      </div>
+      <div>
+        <p className="font-semibold">
+          {band?.name} at {venue?.name}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {venue?.city} · {dealHeadline(booking.terms)}
+        </p>
+        {emphasize ? <p className="mt-1 text-sm font-medium text-rust">{emphasize}</p> : null}
+      </div>
+      <StatusPill status={booking.status} />
+    </Link>
+  );
+}
