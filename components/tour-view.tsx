@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { getBand, getCity, getVenue } from "@/lib/catalog";
-import { dealHeadline, formatDay } from "@/lib/deal";
+import { getBand, getVenue } from "@/lib/catalog";
+import { formatDay } from "@/lib/deal";
 import { dateFill } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import { PageFrame, PageIntro } from "@/components/shell";
 import { StatusPill } from "@/components/status-pill";
+import { TourOverview } from "@/components/tour-overview";
 import { Button } from "@/components/ui/button";
 
 export function TourView() {
@@ -42,8 +43,8 @@ export function TourView() {
         title={`${band.name}'s route`}
         lede={
           snapshot.role === "band"
-            ? `${band.availability} Confirmed nights and open negotiations, in the order the van would drive them.`
-            : `Showing ${band.name} because that band is selected. Switch to a band role to act on these dates.`
+            ? `${band.availability} The map, the nights, and the rooms in between, including days with no gig.`
+            : `Showing ${band.name} because that band is selected. Switch to a band role to mark lodging.`
         }
         actions={
           <>
@@ -56,50 +57,7 @@ export function TourView() {
           </>
         }
       />
-      {stops.length === 0 ? (
-        <div className="rounded-2xl border border-dashed px-4 py-10">
-          <p className="font-display text-2xl">No dates on the route yet.</p>
-          <Button asChild className="mt-4 h-10">
-            <Link href="/dates">Browse open dates</Link>
-          </Button>
-        </div>
-      ) : (
-        <ol className="relative grid gap-4 border-l border-rust/40 pl-6">
-          {stops.map(({ booking, openDate }, index) => {
-            const venue = getVenue(booking.venueId);
-            const city = venue ? getCity(venue.citySlug) : undefined;
-            if (!openDate || !venue || !city) return null;
-            return (
-              <li key={booking.id} className="relative">
-                <span className="absolute top-5 -left-[31px] size-3 rounded-full bg-rust ring-4 ring-paper" />
-                <article className="rounded-2xl border bg-card p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-xs font-semibold tracking-[0.16em] text-muted-foreground uppercase">
-                      Stop {index + 1} · {city.city}
-                    </p>
-                    <StatusPill status={booking.status} />
-                  </div>
-                  <h2 className="mt-2 font-display text-3xl">{formatDay(openDate.date)}</h2>
-                  <p className="mt-1 font-medium">
-                    {venue.name} · {openDate.showTime}
-                  </p>
-                  <p className="text-sm text-muted-foreground">{dealHeadline(booking.terms)}</p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Button asChild className="h-10">
-                      <Link href={`/bookings/${booking.id}`}>Booking</Link>
-                    </Button>
-                    <Button asChild variant="outline" className="h-10">
-                      <Link href={`/lodging/${city.slug}?date=${openDate.date}`}>
-                        Sleep in {city.city}
-                      </Link>
-                    </Button>
-                  </div>
-                </article>
-              </li>
-            );
-          })}
-        </ol>
-      )}
+      <TourOverview surface="desk" />
       {alternates.length > 0 ? (
         <section className="mt-10">
           <h2 className="font-display text-3xl">Other rooms in this window</h2>

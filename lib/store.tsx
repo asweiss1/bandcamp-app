@@ -19,6 +19,7 @@ import type {
   Terms,
   Application,
   Repertoire,
+  NightStay,
   StreamService,
 } from "@/lib/types";
 
@@ -36,7 +37,8 @@ function readMemory() {
     !Array.isArray(memory.opportunities) ||
     !Array.isArray(memory.applications) ||
     !Array.isArray(memory.repertoires) ||
-    !Array.isArray(memory.streamLinks)
+    !Array.isArray(memory.streamLinks) ||
+    !Array.isArray(memory.nightStays)
   ) {
     memory = {
       ...memory,
@@ -44,6 +46,7 @@ function readMemory() {
       applications: Array.isArray(memory.applications) ? memory.applications : initialSnapshot.applications,
       repertoires: Array.isArray(memory.repertoires) ? memory.repertoires : initialSnapshot.repertoires,
       streamLinks: Array.isArray(memory.streamLinks) ? memory.streamLinks : initialSnapshot.streamLinks,
+      nightStays: Array.isArray(memory.nightStays) ? memory.nightStays : initialSnapshot.nightStays,
     };
   }
   return memory;
@@ -97,6 +100,7 @@ type AppContextValue = {
   setRepertoire: (bandId: string, patch: Partial<Omit<Repertoire, "bandId">>) => Result<string>;
   addStreamLink: (bandId: string, service: StreamService, url: string) => Result<string>;
   removeStreamLink: (id: string) => Result<string>;
+  setNightStay: (stay: Omit<NightStay, "id"> & { id?: string }) => Result<string>;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -485,6 +489,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
         update({ ...current, streamLinks: current.streamLinks.filter((item) => item.id !== id) });
         return { ok: true, data: id };
+      },
+      setNightStay: (stay) => {
+        const current = readMemory();
+        if (current.role !== "band" || current.bandId !== stay.bandId) {
+          return { ok: false, error: "Switch to this band to update lodging." };
+        }
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(stay.date)) return { ok: false, error: "That night is missing a date." };
+        if (stay.name.trim().length < 2) return { ok: false, error: "Name the place." };
+        if (stay.cost < 0 || Number.isNaN(stay.cost)) return { ok: false, error: "Enter a cost of zero or more." };
+        if (stay.status === "booked" && stay.confirmation.trim().length < 4) {
+          return { ok: false, error: "Add a confirmation note. Sample text is fine." };
+        }
+        const next: NightStay = {
+          id: stay.id ?? uid("ns"),
+          bandId: stay.bandId,
+          date: stay.date,
+          status: stay.status,
+          stayId: stay.stayId,
+          name: stay.name.trim().slice(0, 80),
+          stayType: stay.stayType,
+          address: stay.address.trim().slice(0, 120),
+          confirmation: stay.confirmation.trim().slice(0, 240),
+          cost: Math.round(stay.cost),
+        };
+        const rest = current.nightStays.filter((item) => !(item.bandId === next.bandId && item.date === next.date));
+        update({ ...current, nightStays: [...rest, next] });
+        return { ok: true, data: next.id };
       },
     };
   }, [snapshot]);

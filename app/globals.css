@@ -144,6 +144,25 @@
   }
 }
 
+.leaflet-div-icon.tour-pin,
+.leaflet-div-icon.tour-leg {
+  background: transparent;
+  border: none;
+}
+.leaflet-container {
+  z-index: 0;
+  font-family: inherit;
+  background: #efe3d0;
+}
+.leaflet-container img,
+.leaflet-container canvas {
+  max-width: none !important;
+}
+.leaflet-control-attribution {
+  font-size: 10px;
+  background: rgba(255, 250, 243, 0.9) !important;
+}
+
 .ticket-edge {
   background-image: radial-gradient(circle at 0 12px, transparent 8px, #fffaf3 8.5px);
   background-size: 100% 24px;

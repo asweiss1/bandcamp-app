@@ -186,6 +186,19 @@ export type StreamLink = {
   url: string;
 };
 
+export type NightStay = {
+  id: string;
+  bandId: string;
+  date: string;
+  status: "booked" | "held";
+  stayId: string | null;
+  name: string;
+  stayType: StayType;
+  address: string;
+  confirmation: string;
+  cost: number;
+};
+
 export type StayType = "hotel" | "motel" | "rental" | "campground" | "van";
 
 export type Stay = {
@@ -228,6 +241,7 @@ export type Snapshot = {
   applications: Application[];
   repertoires: Repertoire[];
   streamLinks: StreamLink[];
+  nightStays: NightStay[];
 };
 
 export type DateFill = "open" | "in-talks" | "filled";

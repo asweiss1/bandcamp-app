@@ -46,6 +46,7 @@ export const localRepository: Repository = {
         applications: Array.isArray(parsed.applications) ? parsed.applications : fallback.applications,
         repertoires: Array.isArray(parsed.repertoires) ? parsed.repertoires : fallback.repertoires,
         streamLinks: Array.isArray(parsed.streamLinks) ? parsed.streamLinks : fallback.streamLinks,
+        nightStays: Array.isArray(parsed.nightStays) ? parsed.nightStays : fallback.nightStays,
       };
     } catch {
       return fallback;

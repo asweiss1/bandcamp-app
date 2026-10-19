@@ -6,6 +6,7 @@ import { dealHeadline, formatDay } from "@/lib/deal";
 import { dateFill } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import { StatusPill } from "@/components/status-pill";
+import { TourOverview } from "@/components/tour-overview";
 import { counterpart, liveStops, viewerStops } from "@/components/phone/stops";
 
 export function PhoneRoute() {
@@ -21,12 +22,31 @@ export function PhoneRoute() {
           .sort((a, b) => a.date.localeCompare(b.date))
       : [];
 
+  if (snapshot.role === "band") {
+    return (
+      <div className="grid gap-4 pb-2">
+        <div>
+          <p className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">Route</p>
+          <h1 className="mt-1 font-display text-4xl leading-none tracking-tight">The run</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Pins, drive legs, and a night-by-night list. Same bookings as the desk.
+          </p>
+        </div>
+        <TourOverview surface="phone" />
+        <Link href="/phone/plan" className="grid h-11 place-items-center rounded-lg bg-ink text-sm font-semibold text-cream">
+          Plan a tour
+        </Link>
+        <RouteApplications />
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-4 pb-2">
       <div>
         <p className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">Route</p>
         <h1 className="mt-1 font-display text-4xl leading-none tracking-tight">
-          {snapshot.role === "band" ? "Cities in order" : "Nights at the room"}
+          Nights at the room
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {stops.length === 0
@@ -73,12 +93,6 @@ export function PhoneRoute() {
           })}
         </ol>
       )}
-      {snapshot.role === "band" ? (
-        <Link href="/phone/plan" className="grid h-11 place-items-center rounded-lg bg-ink text-sm font-semibold text-cream">
-          Plan a tour
-        </Link>
-      ) : null}
-      {snapshot.role === "band" ? <RouteApplications /> : null}
       {openDates.length > 0 ? (
         <section className="grid gap-2">
           <h2 className="text-xs font-semibold tracking-[0.16em] text-muted-foreground uppercase">

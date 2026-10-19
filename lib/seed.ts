@@ -855,6 +855,57 @@ export const seedStreamLinks: Snapshot["streamLinks"] = [
   { id: "sl-neon-sp", bandId: "neon-parish", service: "spotify", url: "https://example.com/neon-parish" },
 ];
 
+export const seedNightStays: Snapshot["nightStays"] = [
+  {
+    id: "ns-mesa-1106",
+    bandId: "mesa-dust",
+    date: "2026-11-06",
+    status: "booked",
+    stayId: "phoenix-az-hotel-paloma-house",
+    name: "Paloma House",
+    stayType: "hotel",
+    address: "11 W Roosevelt St, Phoenix, AZ",
+    confirmation: "Sample confirmation PHX-4419. Not a real reservation.",
+    cost: 186,
+  },
+  {
+    id: "ns-mesa-1107",
+    bandId: "mesa-dust",
+    date: "2026-11-07",
+    status: "held",
+    stayId: "flagstaff-az-motel-ponderosa-motor-lodge",
+    name: "Ponderosa Motor Lodge",
+    stayType: "motel",
+    address: "Route 66, Flagstaff, AZ",
+    confirmation: "",
+    cost: 104,
+  },
+  {
+    id: "ns-mesa-1111",
+    bandId: "mesa-dust",
+    date: "2026-11-11",
+    status: "booked",
+    stayId: "albuquerque-nm-motel-route-66-courts",
+    name: "Route 66 Courts",
+    stayType: "motel",
+    address: "400 Central Ave SW, Albuquerque, NM",
+    confirmation: "Sample confirmation ABQ-2208. Not a real reservation.",
+    cost: 96,
+  },
+  {
+    id: "ns-mesa-1112",
+    bandId: "mesa-dust",
+    date: "2026-11-12",
+    status: "held",
+    stayId: "albuquerque-nm-campground-bosque-bench-camp",
+    name: "Bosque bench camp",
+    stayType: "campground",
+    address: "North valley, Albuquerque, NM",
+    confirmation: "",
+    cost: 28,
+  },
+];
+
 export const initialSnapshot: Snapshot = {
   role: "band",
   bandId: "mesa-dust",
@@ -868,4 +919,5 @@ export const initialSnapshot: Snapshot = {
   applications: seedApplications,
   repertoires: seedRepertoires,
   streamLinks: seedStreamLinks,
+  nightStays: seedNightStays,
 };
