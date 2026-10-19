@@ -45,8 +45,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const moves = snapshot.bookings.filter((booking) => isYourMove(booking, snapshot)).length;
   const phone = pathname === "/phone" || pathname.startsWith("/phone/");
 
-  if (!ready) return <div className="min-h-dvh bg-paper" />;
-  if (snapshot.account.phase === "welcome") {
+  if (ready && snapshot.account.phase === "welcome") {
     return <Onboarding surface={phone ? "phone" : "desk"} />;
   }
   if (phone) return <>{children}</>;

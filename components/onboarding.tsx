@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { GENRES, INSTRUMENTS, STYLE_TAGS } from "@/lib/catalog";
 import { dealHeadline, defaultTerms, uid } from "@/lib/deal";
-import { searchPlaces, type Place, type SavedPlace } from "@/lib/geo";
+import type { SavedPlace } from "@/lib/geo";
+import { HometownField } from "@/components/hometown-field";
 import { readPhoto } from "@/lib/photo";
 import { repertoireFor } from "@/lib/repertoire";
 import { useApp } from "@/lib/store";
@@ -513,7 +514,7 @@ export function ProfileWizard({
             <Input className="h-11" value={draft.name} onChange={(event) => patch({ name: event.target.value })} />
           </Field>
           <PhotoField photo={draft.photo} onPhoto={(photo) => patch({ photo })} />
-          <CitySearch place={draft.place} onPlace={(place) => patch({ place })} label="Home town" />
+          <HometownField label="Home town" place={draft.place} onPlace={(place) => patch({ place })} />
         </div>
       ) : null}
       {step === "identity" && draft.role === "venue" ? (
@@ -525,7 +526,7 @@ export function ProfileWizard({
           <Field label="Street address">
             <Input className="h-11" value={draft.address} onChange={(event) => patch({ address: event.target.value })} />
           </Field>
-          <CitySearch place={draft.place} onPlace={(place) => patch({ place })} label="City" />
+          <HometownField label="City" place={draft.place} onPlace={(place) => patch({ place })} />
         </div>
       ) : null}
       {step === "identity" && draft.role === "musician" ? (
@@ -660,7 +661,7 @@ export function ProfileWizard({
       ) : null}
       {step === "place" ? (
         <div className="grid gap-3">
-          <CitySearch place={draft.place} onPlace={(place) => patch({ place })} label="Home city" />
+          <HometownField label="Home city" place={draft.place} onPlace={(place) => patch({ place })} />
           <ChipGroup
             label="Styles"
             options={STYLE_TAGS}
@@ -823,69 +824,6 @@ function PhotoField({ photo, onPhoto }: { photo: string | null; onPhoto: (photo:
           />
         </label>
       </div>
-    </div>
-  );
-}
-
-function CitySearch({
-  place,
-  onPlace,
-  label,
-}: {
-  place: SavedPlace | null;
-  onPlace: (place: SavedPlace) => void;
-  label: string;
-}) {
-  const [query, setQuery] = useState("");
-  const [remote, setRemote] = useState<Place[]>([]);
-  const local = query.trim().length >= 2 ? searchPlaces(query) : [];
-  const results = [...local];
-  for (const item of remote) {
-    if (results.some((known) => known.label.toLowerCase() === item.label.toLowerCase())) continue;
-    results.push(item);
-  }
-
-  function search(value: string) {
-    setQuery(value);
-    if (value.trim().length < 2) {
-      setRemote([]);
-      return;
-    }
-    window.setTimeout(async () => {
-      try {
-        const response = await fetch(`/api/places?q=${encodeURIComponent(value.trim())}`);
-        const data = (await response.json()) as { places?: Place[] };
-        setRemote(data.places ?? []);
-      } catch {
-        setRemote([]);
-      }
-    }, 500);
-  }
-
-  return (
-    <div>
-      <Field label={place ? `${label} · ${place.label}` : label}>
-        <Input className="h-11" value={query} placeholder="Type a US city" onChange={(event) => search(event.target.value)} />
-      </Field>
-      {results.length > 0 ? (
-        <ul className="mt-1 grid gap-1">
-          {results.slice(0, 6).map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                className="w-full rounded-lg px-2 py-2 text-left text-sm hover:bg-sand"
-                onClick={() => {
-                  onPlace({ ...item, source: "search" });
-                  setQuery("");
-                  setRemote([]);
-                }}
-              >
-                {item.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
     </div>
   );
 }

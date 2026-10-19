@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { planBatchClash } from "@/lib/conflicts";
 import { defaultTerms, formatDay, money } from "@/lib/deal";
 import { fuelAssumptions, gallonPrice, fuelSourceLabel, priceDrive, rigFor, type FuelQuote, type Rig } from "@/lib/fuel";
 import { useFuelQuote } from "@/lib/fuel-client";
-import { placeForSlug, SAMPLE_PLACE, searchPlaces, type Place, type SavedPlace } from "@/lib/geo";
+import { placeForSlug, SAMPLE_PLACE, type SavedPlace } from "@/lib/geo";
+import { HometownField } from "@/components/hometown-field";
 import { searchLinksFor } from "@/lib/lodging";
 import {
   applyChoice,
@@ -26,10 +27,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 const GENRES = ["Americana", "any", "Desert rock", "Indie folk", "Indie rock", "Alt-country"];
-
-function toSaved(place: Place): SavedPlace {
-  return { ...place, source: "search" };
-}
 
 export function TourPlanner({ surface }: { surface: "desk" | "phone" }) {
   const { snapshot, requestDate } = useApp();
@@ -147,7 +144,7 @@ export function TourPlanner({ surface }: { surface: "desk" | "phone" }) {
           rebuild();
         }}
       >
-        <CityField label="Start city" place={start} onPlace={setStart} />
+        <HometownField label="Start city" place={start} onPlace={setStart} />
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Days away">
             <Input
@@ -206,7 +203,7 @@ export function TourPlanner({ surface }: { surface: "desk" | "phone" }) {
           <input type="checkbox" checked={loop} onChange={(event) => setLoop(event.target.checked)} />
           Loop back to {start.city}
         </label>
-        {loop ? null : <CityField label="End city" place={end} onPlace={setEnd} />}
+        {loop ? null : <HometownField label="End city" place={end} onPlace={setEnd} />}
         <Field label="Lodging preference">
           <div className="flex flex-wrap gap-2">
             {(
@@ -472,71 +469,5 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       {label}
       {children}
     </label>
-  );
-}
-
-function CityField({
-  label,
-  place,
-  onPlace,
-}: {
-  label: string;
-  place: SavedPlace;
-  onPlace: (place: SavedPlace) => void;
-}) {
-  const [query, setQuery] = useState("");
-  const [remote, setRemote] = useState<Place[]>([]);
-  const local = query.trim().length >= 2 ? searchPlaces(query) : [];
-  const matches = [...local];
-  for (const item of remote) {
-    if (matches.some((known) => known.label.toLowerCase() === item.label.toLowerCase())) continue;
-    matches.push(item);
-  }
-  matches.splice(8);
-
-  useEffect(() => {
-    if (query.trim().length < 2) return;
-    const handle = window.setTimeout(async () => {
-      try {
-        const response = await fetch(`/api/places?q=${encodeURIComponent(query.trim())}`);
-        const data = (await response.json()) as { places?: Place[] };
-        setRemote(data.places ?? []);
-      } catch {
-        setRemote([]);
-      }
-    }, 600);
-    return () => window.clearTimeout(handle);
-  }, [query]);
-
-  return (
-    <div>
-      <Field label={`${label} · ${place.label}`}>
-        <Input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Type a US city"
-          className="h-11"
-          autoComplete="off"
-        />
-      </Field>
-      {matches.length > 0 ? (
-        <ul className="mt-1 grid gap-1">
-          {matches.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                className="w-full rounded-lg px-2 py-2 text-left text-sm hover:bg-sand"
-                onClick={() => {
-                  onPlace(toSaved(item));
-                  setQuery("");
-                }}
-              >
-                {item.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </div>
   );
 }

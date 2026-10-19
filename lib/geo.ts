@@ -27,7 +27,6 @@ export const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
 };
 
 const EXTRA_PLACES: Place[] = [
-  ["Austin", "TX", 30.2672, -97.7431],
   ["Dallas", "TX", 32.7767, -96.797],
   ["Houston", "TX", 29.7604, -95.3698],
   ["El Paso", "TX", 31.7619, -106.485],
@@ -208,15 +207,25 @@ export function placeFromNominatim(item: {
   return { id, label: `${city}, ${state}`, city, state, lat, lng };
 }
 
+function placeScore(place: Place, needle: string) {
+  const city = place.city.toLowerCase();
+  const label = place.label.toLowerCase();
+  if (city === needle || label === needle) return 0;
+  if (city.startsWith(needle)) return 1;
+  if (label.startsWith(needle)) return 2;
+  if (city.includes(needle) || label.includes(needle)) return 3;
+  return 5;
+}
+
 export function searchPlaces(query: string) {
   const needle = query.trim().toLowerCase();
-  if (needle.length < 2) return US_PLACES.slice(0, 8);
-  return US_PLACES.filter(
-    (place) =>
-      place.city.toLowerCase().includes(needle) ||
-      place.label.toLowerCase().includes(needle) ||
-      `${place.city}, ${place.state}`.toLowerCase().includes(needle),
-  ).slice(0, 8);
+  if (needle.length < 2) return [];
+  return US_PLACES
+    .map((place) => ({ place, score: placeScore(place, needle) }))
+    .filter((item) => item.score < 5)
+    .sort((a, b) => a.score - b.score || a.place.label.localeCompare(b.place.label))
+    .slice(0, 5)
+    .map((item) => item.place);
 }
 
 export const STATE_ABBR: Record<string, string> = {

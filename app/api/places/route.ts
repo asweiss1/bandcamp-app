@@ -29,9 +29,17 @@ export async function GET(request: Request) {
     });
     if (!response.ok) return NextResponse.json({ places: [] });
     const data: unknown = await response.json();
-    const places = (Array.isArray(data) ? data : [])
-      .map((item) => placeFromNominatim(item as Parameters<typeof placeFromNominatim>[0]))
-      .filter((place) => place != null);
+    const places: ReturnType<typeof placeFromNominatim>[] = [];
+    const seen = new Set<string>();
+    for (const item of Array.isArray(data) ? data : []) {
+      const place = placeFromNominatim(item as Parameters<typeof placeFromNominatim>[0]);
+      if (!place) continue;
+      const key = place.label.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      places.push(place);
+      if (places.length === 5) break;
+    }
     return NextResponse.json({ places });
   } catch {
     return NextResponse.json({ places: [] });
