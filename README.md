@@ -9,7 +9,19 @@ npm install
 npm run dev
 ```
 
-Open [http://127.0.0.1:4317](http://127.0.0.1:4317).
+Open [http://127.0.0.1:4317](http://127.0.0.1:4317). The phone companion is [http://127.0.0.1:4317/phone](http://127.0.0.1:4317/phone).
+
+## Phone companion
+
+`/phone` is a road view of the same app, not a second codebase. It shares `useApp()` and the `bandcamp.prototype.v1` localStorage key, so an accept on the phone updates the desk and the other way around.
+
+- **Next** shows the next gig and anything waiting on you. Musicians see board calls that match their instrument.
+- **Route** lines a band's holds up by date and city. A venue sees nights at the room, plus dates still open.
+- **Stay** is lodging and the sample local-rules briefing for the gig city (or any of the six sample cities).
+- **Board** is fill-ins and permanent chairs, with the same interest note as the desk.
+- **You** switches the role and profile, resets demo data, and links back to the full desk.
+
+On a phone, Add to Home Screen opens `/phone` standalone. The web app manifest sets that start URL. It is not an App Store or Play binary.
 
 Production build, still with no database:
 
@@ -27,6 +39,7 @@ Deploy the Next.js app (for example on Vercel or any Node host). New bookings us
 - **Desks and a route.** Each role has a desk for requests, offers, and confirmed gigs. A band's tour view lines those nights up by date and city and points at lodging.
 - **Lodging.** Phoenix, Flagstaff, Cottonwood, Tucson, Albuquerque, and Las Vegas have sample hotels, motels, short-term rentals, campgrounds, and van or overnight-parking notes, plus a local-rules panel. Outbound buttons search Airbnb, hotel, campground, and map sites. The rules are labeled example data, not legal advice.
 - **Musician board.** Fill-in gigs and permanent chairs, filterable by instrument, genre, city, and pay. Interest is a note saved locally.
+- **Phone companion.** `/phone` is the road slice: next gig, route, lodging rules, quick accept or counter, and the board. The header phone icon and the landing page both open it.
 
 Switch roles with **View as** in the header. **Reset demo data** there puts the seeded conversations back.
 

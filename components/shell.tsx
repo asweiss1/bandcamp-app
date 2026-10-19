@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, LayoutDashboard, Menu, MoonStar, Tent, Users } from "lucide-react";
+import { CalendarDays, LayoutDashboard, Menu, MoonStar, Smartphone, Tent, Users } from "lucide-react";
 import { isYourMove } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -34,6 +34,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { snapshot } = useApp();
   const moves = snapshot.bookings.filter((booking) => isYourMove(booking, snapshot)).length;
+
+  if (pathname === "/phone" || pathname.startsWith("/phone/")) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="flex min-h-full flex-col">
@@ -75,7 +79,14 @@ export function Shell({ children }: { children: React.ReactNode }) {
               </Link>
             ))}
           </nav>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <Link
+              href="/phone"
+              aria-label="Open the phone companion"
+              className="grid size-9 place-items-center rounded-full border bg-card text-ink hover:bg-sand"
+            >
+              <Smartphone className="size-4" />
+            </Link>
             <RoleSwitcher />
           </div>
         </div>
@@ -150,6 +161,7 @@ function MoreMenu({ pathname }: { pathname: string }) {
     { href: "/musicians", label: "Musicians" },
     { href: "/tour", label: "Tour route" },
     { href: "/", label: "Home" },
+    { href: "/phone", label: "Phone companion" },
   ];
   return (
     <Sheet>

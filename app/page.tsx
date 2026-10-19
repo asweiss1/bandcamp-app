@@ -56,7 +56,17 @@ export default function HomePage() {
               >
                 <Link href="/board">Musician board</Link>
               </Button>
+              <Button
+                asChild
+                variant="outline"
+                className="h-11 border-cream/30 bg-transparent px-5 text-cream hover:bg-cream/10"
+              >
+                <Link href="/phone">Phone companion</Link>
+              </Button>
             </div>
+            <p className="mt-3 max-w-xl text-sm text-cream/60">
+              The phone app is the same desk, trimmed for the van: next gig, route, lodging rules, and quick replies.
+            </p>
           </div>
           <div className="rounded-3xl border border-cream/15 bg-cream/5 p-4">
             <p className="text-xs font-semibold tracking-[0.16em] text-amber uppercase">
