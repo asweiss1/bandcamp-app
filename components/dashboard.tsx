@@ -152,6 +152,34 @@ export function Dashboard() {
         </div>
       ) : null}
 
+      {snapshot.role === "band" ? (
+        <div className="mt-10">
+          <Section title="Permits and fairs" empty="No permit or festival applications yet.">
+            {snapshot.applications
+              .filter((application) => application.bandId === snapshot.bandId && application.status !== "declined")
+              .map((application) => {
+                const opportunity = snapshot.opportunities.find((item) => item.id === application.opportunityId);
+                if (!opportunity) return null;
+                return (
+                  <Link
+                    key={application.id}
+                    href={`/opportunities/${opportunity.id}`}
+                    className="flex items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3"
+                  >
+                    <span>
+                      <span className="block font-medium">{opportunity.title}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {opportunity.city} · {opportunity.kind === "permit" ? "Street permit" : "Fair"}
+                      </span>
+                    </span>
+                    <StatusPill status={application.status} />
+                  </Link>
+                );
+              })}
+          </Section>
+        </div>
+      ) : null}
+
       <div className="mt-10 grid gap-8">
         <Section
           title="Board listings"

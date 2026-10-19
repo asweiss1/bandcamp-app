@@ -6,9 +6,9 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { bands, GENRES, cities, getBand, getVenue } from "@/lib/catalog";
 import { dealHeadline, defaultTerms, formatDayLong, money, monthParts } from "@/lib/deal";
-import { activeBooking, dateFill, sortByDate } from "@/lib/queries";
+import { activeApplication, activeBooking, dateFill, sortByDate } from "@/lib/queries";
 import { useApp } from "@/lib/store";
-import type { OpenDate, Terms } from "@/lib/types";
+import type { OpenDate, OpportunityKind, Terms } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { DealFields } from "@/components/deal-fields";
 import { StatusPill } from "@/components/status-pill";
@@ -25,40 +25,73 @@ import { Textarea } from "@/components/ui/textarea";
 
 export function PhoneBook() {
   const { snapshot } = useApp();
+  const [kind, setKind] = useState<"all" | "room" | OpportunityKind>("all");
   const [city, setCity] = useState("all");
   const [genre, setGenre] = useState("all");
   const [from, setFrom] = useState("");
   const [hideFilled, setHideFilled] = useState(true);
 
   const rows = useMemo(() => {
-    return sortByDate(snapshot.openDates).flatMap((openDate) => {
-      const venue = getVenue(openDate.venueId);
-      if (!venue) return [];
-      const fill = dateFill(openDate.id, snapshot.bookings);
-      if (hideFilled && fill === "filled") return [];
-      if (city !== "all" && venue.citySlug !== city) return [];
-      if (genre !== "all" && !openDate.genres.includes(genre)) return [];
-      if (from && openDate.date < from) return [];
-      const mine =
-        snapshot.role === "band"
-          ? activeBooking(openDate.id, snapshot.bandId, snapshot.bookings)
-          : undefined;
-      return [{ openDate, venue, fill, mine }];
-    });
-  }, [snapshot, city, genre, from, hideFilled]);
+    const rooms =
+      kind === "permit" || kind === "festival"
+        ? []
+        : sortByDate(snapshot.openDates).flatMap((openDate) => {
+            const venue = getVenue(openDate.venueId);
+            if (!venue) return [];
+            const fill = dateFill(openDate.id, snapshot.bookings);
+            if (hideFilled && fill === "filled") return [];
+            if (city !== "all" && venue.citySlug !== city) return [];
+            if (genre !== "all" && !openDate.genres.includes(genre)) return [];
+            if (from && openDate.date < from) return [];
+            const mine =
+              snapshot.role === "band"
+                ? activeBooking(openDate.id, snapshot.bandId, snapshot.bookings)
+                : undefined;
+            return [{ sort: `${openDate.date}-room-${openDate.id}`, kind: "room" as const, openDate, venue, fill, mine }];
+          });
+    const calls =
+      kind === "room"
+        ? []
+        : snapshot.opportunities.flatMap((opportunity) => {
+            if (kind !== "all" && opportunity.kind !== kind) return [];
+            if (city !== "all" && opportunity.citySlug !== city) return [];
+            if (genre !== "all" && !opportunity.genres.includes(genre)) return [];
+            if (from && opportunity.endDate < from) return [];
+            const application =
+              snapshot.role === "band"
+                ? activeApplication(opportunity.id, snapshot.bandId, snapshot.applications)
+                : undefined;
+            return [{ sort: `${opportunity.startDate}-call-${opportunity.id}`, kind: "call" as const, opportunity, application }];
+          });
+    return [...rooms, ...calls].sort((a, b) => a.sort.localeCompare(b.sort));
+  }, [snapshot, kind, city, genre, from, hideFilled]);
 
   return (
     <div className="grid gap-4 pb-2">
       <div>
         <p className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">Book</p>
-        <h1 className="mt-1 font-display text-4xl leading-none tracking-tight">Open dates</h1>
+        <h1 className="mt-1 font-display text-4xl leading-none tracking-tight">Opportunities</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {snapshot.role === "band"
-            ? "Filter a night, then send a request. The room can accept, counter, or decline."
+            ? "Club dates, street-performance permits, and fairs. Request a room or apply for a permit or a stage."
             : snapshot.role === "venue"
-              ? "Your open nights are here. Post another, or offer one to a band."
-              : "These are the rooms still taking bands. Switch to a band on You to request one."}
+              ? "Your open nights are here, next to sample permits and fairs a band might play the same day."
+              : "Rooms, permits, and fairs. Switch to a band on You to request or apply."}
         </p>
+      </div>
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+        {(
+          [
+            ["all", "All"],
+            ["room", "Rooms"],
+            ["permit", "Permits"],
+            ["festival", "Fairs"],
+          ] as const
+        ).map(([id, label]) => (
+          <Chip key={id} pressed={kind === id} onClick={() => setKind(id)}>
+            {label}
+          </Chip>
+        ))}
       </div>
 
       {snapshot.role === "venue" ? (
@@ -118,24 +151,51 @@ export function PhoneBook() {
         Hide filled nights
       </label>
       <p className="text-sm text-muted-foreground">
-        {rows.length} date{rows.length === 1 ? "" : "s"}
+        {rows.length} listing{rows.length === 1 ? "" : "s"}
       </p>
 
       {rows.length === 0 ? (
         <div className="rounded-2xl border border-dashed bg-card px-4 py-8 text-center">
-          <p className="font-display text-2xl">No rooms match.</p>
+          <p className="font-display text-2xl">Nothing matches.</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Widen the city or the date. Filled nights stay hidden until you uncheck that box.
+            Widen the city, the kind, or the date. Filled club nights stay hidden until you uncheck that box.
           </p>
         </div>
       ) : (
         <ul className="grid gap-2">
-          {rows.map(({ openDate, venue, fill, mine }) => {
-            const parts = monthParts(openDate.date);
+          {rows.map((row) => {
+            if (row.kind === "call") {
+              const parts = monthParts(row.opportunity.startDate);
+              return (
+                <li key={row.opportunity.id}>
+                  <Link
+                    href={`/phone/book/opp/${row.opportunity.id}`}
+                    className="grid grid-cols-[64px_1fr] gap-3 rounded-2xl border bg-card p-3"
+                  >
+                    <div className="rounded-xl bg-pine px-1 py-2 text-center text-cream">
+                      <p className="text-[10px] tracking-[0.14em] text-amber">{parts.month}</p>
+                      <p className="font-display text-2xl leading-none">{parts.day}</p>
+                      <p className="text-[10px] text-cream/70">{row.opportunity.kind === "permit" ? "Permit" : "Fair"}</p>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-medium leading-snug">{row.opportunity.title}</p>
+                        <StatusPill status={row.application?.status ?? "open"} />
+                      </div>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {row.opportunity.city} · {row.opportunity.timeWindow}
+                      </p>
+                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{row.opportunity.compensation}</p>
+                    </div>
+                  </Link>
+                </li>
+              );
+            }
+            const parts = monthParts(row.openDate.date);
             return (
-              <li key={openDate.id}>
+              <li key={row.openDate.id}>
                 <Link
-                  href={`/phone/book/${openDate.id}`}
+                  href={`/phone/book/${row.openDate.id}`}
                   className="grid grid-cols-[64px_1fr] gap-3 rounded-2xl border bg-card p-3"
                 >
                   <div className="rounded-xl bg-ink px-1 py-2 text-center text-cream">
@@ -145,13 +205,13 @@ export function PhoneBook() {
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="font-medium leading-snug">{venue.name}</p>
-                      <StatusPill status={mine?.status ?? fill} />
+                      <p className="font-medium leading-snug">{row.venue.name}</p>
+                      <StatusPill status={row.mine?.status ?? row.fill} />
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {venue.city} · {openDate.showTime} · {openDate.slot}
+                      {row.venue.city} · {row.openDate.showTime} · {row.openDate.slot}
                     </p>
-                    <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{venue.typicalDeal}</p>
+                    <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{row.venue.typicalDeal}</p>
                   </div>
                 </Link>
               </li>

@@ -40,7 +40,11 @@ export const localRepository: Repository = {
       if (!raw) return fallback;
       const parsed: unknown = JSON.parse(raw);
       if (!isSnapshot(parsed)) return fallback;
-      return parsed;
+      return {
+        ...parsed,
+        opportunities: Array.isArray(parsed.opportunities) ? parsed.opportunities : fallback.opportunities,
+        applications: Array.isArray(parsed.applications) ? parsed.applications : fallback.applications,
+      };
     } catch {
       return fallback;
     }

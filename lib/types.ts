@@ -136,6 +136,40 @@ export type Interest = {
   createdAt: string;
 };
 
+export type OpportunityKind = "permit" | "festival";
+
+export type Opportunity = {
+  id: string;
+  kind: OpportunityKind;
+  title: string;
+  host: string;
+  contact: string;
+  city: string;
+  citySlug: string;
+  startDate: string;
+  endDate: string;
+  timeWindow: string;
+  location: string;
+  genres: string[];
+  compensation: string;
+  spots: string;
+  deadline: string | null;
+  rules: string;
+  notes: string;
+};
+
+export type ApplicationStatus = "applied" | "accepted" | "declined" | "waitlisted";
+
+export type Application = {
+  id: string;
+  opportunityId: string;
+  bandId: string;
+  status: ApplicationStatus;
+  setup: string;
+  note: string;
+  createdAt: string;
+};
+
 export type StayType = "hotel" | "motel" | "rental" | "campground" | "van";
 
 export type Stay = {
@@ -174,6 +208,8 @@ export type Snapshot = {
   bookings: Booking[];
   listings: Listing[];
   interests: Interest[];
+  opportunities: Opportunity[];
+  applications: Application[];
 };
 
 export type DateFill = "open" | "in-talks" | "filled";

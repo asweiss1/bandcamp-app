@@ -16,6 +16,7 @@ import type {
   Role,
   Snapshot,
   Terms,
+  Application,
 } from "@/lib/types";
 
 const SYNC_EVENT = "bandcamp-sync";
@@ -27,6 +28,13 @@ function readMemory() {
   if (!loaded && typeof window !== "undefined") {
     memory = localRepository.load(initialSnapshot);
     loaded = true;
+  }
+  if (!Array.isArray(memory.opportunities) || !Array.isArray(memory.applications)) {
+    memory = {
+      ...memory,
+      opportunities: Array.isArray(memory.opportunities) ? memory.opportunities : initialSnapshot.opportunities,
+      applications: Array.isArray(memory.applications) ? memory.applications : initialSnapshot.applications,
+    };
   }
   return memory;
 }
@@ -74,6 +82,8 @@ type AppContextValue = {
     profileMusicianId?: string;
     message: string;
   }) => Result<string>;
+  applyToOpportunity: (opportunityId: string, input: { setup: string; note: string }) => Result<string>;
+  withdrawApplication: (applicationId: string) => Result<string>;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -357,6 +367,60 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         };
         update({ ...current, interests: [interest, ...current.interests] });
         return { ok: true, data: interest.id };
+      },
+      applyToOpportunity: (opportunityId, { setup, note }) => {
+        const current = readMemory();
+        if (current.role !== "band") {
+          return { ok: false, error: "Switch to a band to apply." };
+        }
+        const opportunity = current.opportunities.find((item) => item.id === opportunityId);
+        if (!opportunity) return { ok: false, error: "That listing is gone." };
+        const text = note.trim();
+        if (text.length < 8) {
+          return { ok: false, error: "Write a short note so they know the setup and the time you need." };
+        }
+        if (!setup.trim()) return { ok: false, error: "Say how you'll set up." };
+        const today = new Date();
+        const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+        if (opportunity.deadline && opportunity.deadline < todayIso) {
+          return { ok: false, error: "The application deadline has passed." };
+        }
+        const existing = current.applications.find(
+          (application) =>
+            application.opportunityId === opportunityId &&
+            application.bandId === current.bandId &&
+            application.status !== "declined",
+        );
+        if (existing) return { ok: false, error: "You already have an application in." };
+        const application: Application = {
+          id: uid("app"),
+          opportunityId,
+          bandId: current.bandId,
+          status: "applied",
+          setup: setup.trim(),
+          note: text,
+          createdAt: new Date().toISOString(),
+        };
+        update({ ...current, applications: [application, ...current.applications] });
+        return { ok: true, data: application.id };
+      },
+      withdrawApplication: (applicationId) => {
+        const current = readMemory();
+        const application = current.applications.find((item) => item.id === applicationId);
+        if (!application) return { ok: false, error: "That application is gone." };
+        if (current.role !== "band" || current.bandId !== application.bandId) {
+          return { ok: false, error: "Only the band on the application can withdraw it." };
+        }
+        if (application.status === "declined") {
+          return { ok: false, error: "This application is already closed." };
+        }
+        update({
+          ...current,
+          applications: current.applications.map((item) =>
+            item.id === application.id ? { ...item, status: "declined" } : item,
+          ),
+        });
+        return { ok: true, data: application.id };
       },
     };
   }, [snapshot]);

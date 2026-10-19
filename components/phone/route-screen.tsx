@@ -73,6 +73,7 @@ export function PhoneRoute() {
           })}
         </ol>
       )}
+      {snapshot.role === "band" ? <RouteApplications /> : null}
       {openDates.length > 0 ? (
         <section className="grid gap-2">
           <h2 className="text-xs font-semibold tracking-[0.16em] text-muted-foreground uppercase">
@@ -101,6 +102,40 @@ export function PhoneRoute() {
         Same bookings as the desk. A reply here shows up there.
       </p>
     </div>
+  );
+}
+
+function RouteApplications() {
+  const { snapshot } = useApp();
+  const rows = snapshot.applications
+    .filter((application) => application.bandId === snapshot.bandId && application.status !== "declined")
+    .flatMap((application) => {
+      const opportunity = snapshot.opportunities.find((item) => item.id === application.opportunityId);
+      return opportunity ? [{ application, opportunity }] : [];
+    })
+    .sort((a, b) => a.opportunity.startDate.localeCompare(b.opportunity.startDate));
+  if (rows.length === 0) return null;
+  return (
+    <section className="grid gap-2">
+      <h2 className="text-xs font-semibold tracking-[0.16em] text-muted-foreground uppercase">
+        Permits and fairs
+      </h2>
+      {rows.map(({ application, opportunity }) => (
+        <Link
+          key={application.id}
+          href={`/phone/book/opp/${opportunity.id}`}
+          className="rounded-2xl border bg-card px-4 py-3"
+        >
+          <span className="flex items-start justify-between gap-2">
+            <span className="font-medium leading-snug">{opportunity.title}</span>
+            <StatusPill status={application.status} />
+          </span>
+          <span className="mt-1 block text-sm text-muted-foreground">
+            {formatDay(opportunity.startDate)} · {opportunity.city} · {opportunity.kind === "permit" ? "Street permit" : "Fair"}
+          </span>
+        </Link>
+      ))}
+    </section>
   );
 }
 

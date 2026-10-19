@@ -20,6 +20,10 @@ const features = [
     copy: "Guarantee, door split, or guarantee plus a percentage. Ticket price, backline, and load-in travel with every offer and counter.",
   },
   {
+    title: "Permits and fairs, not only rooms",
+    copy: "Street-performance windows and festival calls sit next to club dates. Apply from the phone, and the hold shows up on the route.",
+  },
+  {
     title: "A route, not a pile of gigs",
     copy: "Touring bands see holds in drive order, plus other rooms still open in that window.",
   },

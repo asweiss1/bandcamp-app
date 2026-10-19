@@ -9,6 +9,8 @@ const tones: Record<string, string> = {
   declined: "bg-sand text-ink",
   open: "bg-cream text-ink ring-1 ring-border",
   "in-talks": "bg-accent text-ink",
+  applied: "bg-rust text-cream",
+  waitlisted: "bg-wine text-cream",
 };
 
 export function statusLabel(status: string) {
@@ -29,6 +31,10 @@ export function statusLabel(status: string) {
       return "In talks";
     case "filled":
       return "Filled";
+    case "applied":
+      return "Applied";
+    case "waitlisted":
+      return "Waitlist";
     default:
       return status;
   }

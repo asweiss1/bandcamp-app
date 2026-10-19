@@ -16,7 +16,7 @@ Open [http://127.0.0.1:4317](http://127.0.0.1:4317). The phone companion is [htt
 `/phone` is a road view of the same app, not a second codebase. It shares `useApp()` and the `bandcamp.prototype.v1` localStorage key, so an accept on the phone updates the desk and the other way around.
 
 - **Next** shows the next gig and anything waiting on you. Musicians see board calls that match their instrument.
-- **Book** is the marketplace on the phone. Filter open dates by city, genre, and start date. A band sends a gig request. A venue posts a night and offers it to a band. Accept, counter, and decline stay on the gig screen.
+- **Book** is the marketplace on the phone. Filter club dates, street-performance permits, and fairs by city, genre, and start date. A band sends a gig request or applies for a permit or a stage. A venue posts a night and offers it to a band. Accept, counter, and decline stay on the gig screen.
 - **Route** lines a band's holds up by date and city. A venue sees nights at the room, plus dates still open.
 - **Stay** is lodging and the sample local-rules briefing for the gig city (or any of the six sample cities).
 - **Board** is fill-ins and permanent chairs, with the same interest note as the desk.
@@ -36,7 +36,7 @@ Deploy the Next.js app (for example on Vercel or any Node host). New bookings us
 ## What you can click through
 
 - **Profiles.** Bands list genre, home city, members, sample links, a fee range, touring vs local, and availability. Venues list city, capacity, genres, typical pay, booker contact, backline, and open dates. Musicians have their own short profiles.
-- **Marketplace.** Venues post nights. Bands filter by city, date, and genre, then request a gig. Venues send offers from a band profile. Deals are a guarantee, a door split, or a guarantee plus a percentage, with ticket price, backline, and load-in. Either side can counter, accept, or decline. Accepting confirms the night and closes other talks on that date.
+- **Marketplace.** Venues post nights. Bands filter by city, date, and genre, then request a gig. The same list includes sample street-performance permits and fair or festival calls; a band applies with a setup and a note. Venues send offers from a band profile. Deals are a guarantee, a door split, or a guarantee plus a percentage, with ticket price, backline, and load-in. Either side can counter, accept, or decline. Accepting confirms the night and closes other talks on that date. Permit and fair copy is example data, not an official application.
 - **Desks and a route.** Each role has a desk for requests, offers, and confirmed gigs. A band's tour view lines those nights up by date and city and points at lodging.
 - **Lodging.** Phoenix, Flagstaff, Cottonwood, Tucson, Albuquerque, and Las Vegas have sample hotels, motels, short-term rentals, campgrounds, and van or overnight-parking notes, plus a local-rules panel. Outbound buttons search Airbnb, hotel, campground, and map sites. The rules are labeled example data, not legal advice.
 - **Musician board.** Fill-in gigs and permanent chairs, filterable by instrument, genre, city, and pay. Interest is a note saved locally.

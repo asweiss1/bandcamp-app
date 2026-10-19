@@ -127,7 +127,45 @@ export function TourView() {
           </div>
         </section>
       ) : null}
+      <Applications bandId={snapshot.bandId} />
     </PageFrame>
+  );
+}
+
+function Applications({ bandId }: { bandId: string }) {
+  const { snapshot } = useApp();
+  const rows = snapshot.applications
+    .filter((application) => application.bandId === bandId && application.status !== "declined")
+    .flatMap((application) => {
+      const opportunity = snapshot.opportunities.find((item) => item.id === application.opportunityId);
+      return opportunity ? [{ application, opportunity }] : [];
+    })
+    .sort((a, b) => a.opportunity.startDate.localeCompare(b.opportunity.startDate));
+  if (rows.length === 0) return null;
+  return (
+    <section className="mt-10">
+      <h2 className="font-display text-3xl">Permits and fairs</h2>
+      <p className="mt-1 mb-4 max-w-2xl text-sm text-muted-foreground">
+        Street-performance windows and festival calls already on this band&apos;s list. Sample listings, not official applications.
+      </p>
+      <div className="grid gap-2">
+        {rows.map(({ application, opportunity }) => (
+          <Link
+            key={application.id}
+            href={`/opportunities/${opportunity.id}`}
+            className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card px-4 py-3"
+          >
+            <span>
+              <span className="block font-medium">{opportunity.title}</span>
+              <span className="text-sm text-muted-foreground">
+                {formatDay(opportunity.startDate)} · {opportunity.city} · {opportunity.kind === "permit" ? "Street permit" : "Fair"}
+              </span>
+            </span>
+            <StatusPill status={application.status} />
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }
 

@@ -1,4 +1,5 @@
 import type {
+  Application,
   Booking,
   DateFill,
   Interest,
@@ -69,6 +70,15 @@ export function profileId(snapshot: Pick<Snapshot, "role" | "bandId" | "venueId"
   if (snapshot.role === "band") return snapshot.bandId;
   if (snapshot.role === "venue") return snapshot.venueId;
   return snapshot.musicianId;
+}
+
+export function activeApplication(opportunityId: string, bandId: string, applications: Application[]) {
+  return applications.find(
+    (application) =>
+      application.opportunityId === opportunityId &&
+      application.bandId === bandId &&
+      application.status !== "declined",
+  );
 }
 
 export function sortByDate(dates: OpenDate[]) {

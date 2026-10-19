@@ -1,3 +1,4 @@
+import { seedApplications, seedOpportunities } from "@/lib/opportunities";
 import type {
   Booking,
   Interest,
@@ -701,4 +702,6 @@ export const initialSnapshot: Snapshot = {
   bookings: seedBookings,
   listings: seedListings,
   interests: seedInterests,
+  opportunities: seedOpportunities,
+  applications: seedApplications,
 };

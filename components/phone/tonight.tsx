@@ -80,7 +80,48 @@ export function Tonight() {
           Open the route
         </Link>
       )}
+      <Applications />
     </div>
+  );
+}
+
+function Applications() {
+  const { snapshot } = useApp();
+  if (snapshot.role !== "band") return null;
+  const rows = snapshot.applications
+    .filter((application) => application.bandId === snapshot.bandId && application.status !== "declined")
+    .flatMap((application) => {
+      const opportunity = snapshot.opportunities.find((item) => item.id === application.opportunityId);
+      return opportunity ? [{ application, opportunity }] : [];
+    })
+    .sort((a, b) => a.opportunity.startDate.localeCompare(b.opportunity.startDate));
+  if (rows.length === 0) return null;
+  return (
+    <section className="grid gap-2">
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-xs font-semibold tracking-[0.16em] text-muted-foreground uppercase">
+          Permits and fairs
+        </h2>
+        <Link href="/phone/book" className="text-xs font-semibold text-rust">
+          Browse
+        </Link>
+      </div>
+      {rows.map(({ application, opportunity }) => (
+        <Link
+          key={application.id}
+          href={`/phone/book/opp/${opportunity.id}`}
+          className="flex items-center justify-between gap-3 rounded-2xl border bg-card px-4 py-3"
+        >
+          <span>
+            <span className="block text-sm font-medium">{opportunity.title}</span>
+            <span className="text-xs text-muted-foreground">
+              {formatDay(opportunity.startDate)} · {opportunity.city}
+            </span>
+          </span>
+          <StatusPill status={application.status} />
+        </Link>
+      ))}
+    </section>
   );
 }
 
