@@ -21,6 +21,9 @@ function tabActive(pathname: string, href: string) {
   if (href === "/phone") {
     return pathname === "/phone" || pathname.startsWith("/phone/gig");
   }
+  if (href === "/phone/book") {
+    return pathname === href || pathname.startsWith(`${href}/`) || pathname.startsWith("/phone/bands");
+  }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

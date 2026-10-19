@@ -62,6 +62,7 @@ export type Band = {
   id: string;
   name: string;
   genres: string[];
+  styles: string[];
   city: string;
   citySlug: string;
   touring: boolean;
@@ -72,6 +73,9 @@ export type Band = {
   availability: string;
   bio: string;
   draw: string;
+  routeFrom: string | null;
+  routeTo: string | null;
+  routeCities: string[];
 };
 
 export type Venue = {

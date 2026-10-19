@@ -1,29 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { bands, cities, GENRES, getCity, getMusician, getVenue, musicians, venues } from "@/lib/catalog";
 import { dateFill, sortByDate } from "@/lib/queries";
-import { defaultTerms } from "@/lib/deal";
 import { useApp } from "@/lib/store";
-import type { Band, Terms, Venue } from "@/lib/types";
+import type { Venue } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { DealFields } from "@/components/deal-fields";
-import { OriginalsBadge, OriginalsFilter, RepertoirePanel } from "@/components/originals";
+import { BandSearch } from "@/components/band-search";
+import { OfferDialog } from "@/components/offer-dialog";
+import { RepertoirePanel } from "@/components/originals";
 import { BandSamples } from "@/components/samples";
-import { repertoireFor } from "@/lib/repertoire";
 import { PageFrame, PageIntro } from "@/components/shell";
 import { StatusPill } from "@/components/status-pill";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -33,36 +25,14 @@ import {
 } from "@/components/ui/select";
 
 export function BandIndex() {
-  const [city, setCity] = useState("all");
-  const [genre, setGenre] = useState("all");
-  const [touring, setTouring] = useState<"all" | "touring" | "local">("all");
-  const [originalsOnly, setOriginalsOnly] = useState(false);
-  const { snapshot } = useApp();
-  const rows = bands.filter((band) => {
-    if (city !== "all" && band.citySlug !== city) return false;
-    if (genre !== "all" && !band.genres.includes(genre)) return false;
-    if (touring === "touring" && !band.touring) return false;
-    if (touring === "local" && band.touring) return false;
-    if (originalsOnly && !repertoireFor(band.id, snapshot.repertoires).originalsOnly) return false;
-    return true;
-  });
   return (
     <PageFrame>
       <PageIntro
-        eyebrow="Profiles"
-        title="Bands"
-        lede="Home city, draw, fee range, and whether the set is all original. Venues can hide bands that play covers."
+        eyebrow="For venues"
+        title="Find a band"
+        lede="Search by the band, a member, or a song title. Narrow by style, city, the nights they're routing, fee, originals, and whether you can hear a sample."
       />
-      <Filters city={city} setCity={setCity} genre={genre} setGenre={setGenre} touring={touring} setTouring={setTouring} />
-      <div className="mb-4">
-        <OriginalsFilter checked={originalsOnly} onChange={setOriginalsOnly} />
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {rows.map((band) => (
-          <BandCard key={band.id} band={band} />
-        ))}
-      </div>
-      {rows.length === 0 ? <Empty /> : null}
+      <BandSearch surface="desk" />
     </PageFrame>
   );
 }
@@ -115,6 +85,13 @@ export function BandProfile({ id }: { id: string }) {
         ))}
       </div>
       <h1 className="mt-3 font-display text-5xl tracking-tight">{band.name}</h1>
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {band.styles.map((style) => (
+          <span key={style} className="rounded-full border px-2.5 py-1 text-xs font-medium">
+            {style}
+          </span>
+        ))}
+      </div>
       <p className="mt-2 text-lg text-muted-foreground">Home city {band.city}</p>
       <p className="mt-4 max-w-2xl text-base leading-relaxed">{band.bio}</p>
       <div className="mt-6 max-w-2xl">
@@ -181,7 +158,13 @@ export function BandProfile({ id }: { id: string }) {
           </div>
         </section>
       ) : null}
-      <OfferDialog band={band} open={offerOpen} onOpenChange={setOfferOpen} />
+      <OfferDialog
+        band={band}
+        open={offerOpen}
+        onOpenChange={setOfferOpen}
+        bookingHref={(id) => `/bookings/${id}`}
+        postHref="/dates/new"
+      />
     </PageFrame>
   );
 }
@@ -327,96 +310,6 @@ export function MusicianProfile({ id }: { id: string }) {
   );
 }
 
-function OfferDialog({
-  band,
-  open,
-  onOpenChange,
-}: {
-  band: Band;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const router = useRouter();
-  const { snapshot, sendOffer } = useApp();
-  const venue = getVenue(snapshot.venueId);
-  const dates = useMemo(
-    () =>
-      sortByDate(
-        snapshot.openDates.filter(
-          (item) =>
-            item.venueId === snapshot.venueId && dateFill(item.id, snapshot.bookings) !== "filled",
-        ),
-      ),
-    [snapshot],
-  );
-  const [openDateId, setOpenDateId] = useState(dates[0]?.id ?? "");
-  const [terms, setTerms] = useState<Terms>(defaultTerms({ guarantee: band.feeMin, note: "" }));
-  const [error, setError] = useState<string | null>(null);
-
-  function submit(event: React.FormEvent) {
-    event.preventDefault();
-    const result = sendOffer(openDateId, band.id, terms);
-    if (!result.ok) {
-      setError(result.error);
-      return;
-    }
-    toast("Offer sent");
-    onOpenChange(false);
-    router.push(`/bookings/${result.data}`);
-  }
-
-  return (
-      <Dialog
-        open={open}
-        onOpenChange={(next) => {
-          if (next) {
-            setOpenDateId(dates[0]?.id ?? "");
-            setTerms(defaultTerms({ guarantee: band.feeMin, note: "" }));
-            setError(null);
-          }
-          onOpenChange(next);
-        }}
-      >
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle className="font-display text-2xl">Offer {band.name} a date</DialogTitle>
-          <DialogDescription>
-            From {venue?.name ?? "your venue"}. They can accept, counter, or decline.
-          </DialogDescription>
-        </DialogHeader>
-        {dates.length === 0 ? (
-          <Button asChild className="h-10">
-            <Link href="/dates/new">Post a date first</Link>
-          </Button>
-        ) : (
-          <form onSubmit={submit} className="grid gap-4">
-            <label className="grid gap-1.5 text-sm">
-              <span className="font-medium">Open date</span>
-              <Select value={openDateId} onValueChange={setOpenDateId}>
-                <SelectTrigger className="h-10 w-full">
-                  <SelectValue placeholder="Pick a date" />
-                </SelectTrigger>
-                <SelectContent>
-                  {dates.map((item) => (
-                    <SelectItem key={item.id} value={item.id}>
-                      {item.date} · {item.showTime}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </label>
-            <DealFields value={terms} onChange={setTerms} />
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
-            <Button type="submit" className="h-11">
-              Send offer
-            </Button>
-          </form>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 function Filters({
   city,
   setCity,
@@ -473,30 +366,6 @@ function Filters({
         </Select>
       ) : null}
     </div>
-  );
-}
-
-function BandCard({ band }: { band: Band }) {
-  return (
-    <article className="rounded-2xl border bg-card p-4 transition hover:border-rust/40">
-      <Link href={`/bands/${band.id}`} className="block">
-        <div className="flex items-start justify-between gap-3">
-          <h2 className="font-display text-2xl">{band.name}</h2>
-          <span className="flex flex-col items-end gap-1">
-            <span className="rounded-full bg-sand px-2 py-1 text-[11px] font-semibold uppercase">
-              {band.touring ? "Touring" : "Local"}
-            </span>
-            <OriginalsBadge bandId={band.id} />
-          </span>
-        </div>
-        <p className="mt-1 text-sm text-muted-foreground">{band.city}</p>
-        <p className="mt-3 text-sm">{band.genres.join(" · ")}</p>
-        <p className="mt-2 text-sm font-medium">
-          ${band.feeMin.toLocaleString()}–${band.feeMax.toLocaleString()}
-        </p>
-      </Link>
-      <BandSamples bandId={band.id} variant="compact" />
-    </article>
   );
 }
 

@@ -39,6 +39,16 @@ function openDb() {
   });
 }
 
+export async function listAllTracks() {
+  if (typeof indexedDB === "undefined") return [];
+  const db = await openDb();
+  return new Promise<StoredTrack[]>((resolve, reject) => {
+    const request = db.transaction(STORE).objectStore(STORE).getAll();
+    request.onsuccess = () => resolve((request.result as StoredTrack[]) ?? []);
+    request.onerror = () => reject(request.error);
+  });
+}
+
 export async function listTracks(bandId: string) {
   if (typeof indexedDB === "undefined") return [];
   const db = await openDb();
