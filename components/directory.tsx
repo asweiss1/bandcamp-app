@@ -10,6 +10,7 @@ import { useApp } from "@/lib/store";
 import type { Venue } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { BandSearch } from "@/components/band-search";
+import { BandLinks } from "@/components/band-links";
 import { OfferDialog } from "@/components/offer-dialog";
 import { RepertoirePanel } from "@/components/originals";
 import { VehiclePanel } from "@/components/vehicles";
@@ -69,7 +70,13 @@ export function BandProfile({ id }: { id: string }) {
   const band = getBand(id);
   const [offerOpen, setOfferOpen] = useState(false);
   if (!band) return <Missing href="/bands" label="Back to bands" title="No band by that name." />;
-  const gigs = snapshot.bookings.filter((booking) => booking.bandId === band.id && booking.status !== "declined");
+  const gigs = snapshot.bookings.filter((booking) => {
+    if (booking.status === "declined") return false;
+    if (booking.bandId === band.id) return true;
+    const bill = booking.billId ? snapshot.bills.find((item) => item.id === booking.billId) : undefined;
+    return bill?.members.some((member) => member.bandId === band.id) ?? false;
+  });
+  const bills = snapshot.bills.filter((bill) => bill.members.some((member) => member.bandId === band.id));
   return (
     <PageFrame>
       <Link href="/bands" className="text-sm font-medium text-rust">
@@ -119,6 +126,9 @@ export function BandProfile({ id }: { id: string }) {
         <Button asChild variant="outline" className="h-10">
           <Link href="/tour">Route</Link>
         </Button>
+        <Button asChild variant="outline" className="h-10">
+          <Link href="/bills">Shared bills</Link>
+        </Button>
       </div>
       <section className="mt-8">
         <h2 className="font-display text-3xl">Members</h2>
@@ -131,6 +141,23 @@ export function BandProfile({ id }: { id: string }) {
           ))}
         </ul>
       </section>
+      <BandLinks bandId={band.id} surface="desk" />
+      {bills.length > 0 ? (
+        <section className="mt-8">
+          <h2 className="font-display text-3xl">Bills</h2>
+          <div className="mt-3 grid gap-2">
+            {bills.map((bill) => (
+              <Link key={bill.id} href={`/bills/${bill.id}`} className="rounded-xl border bg-card px-4 py-3">
+                <p className="font-medium">{bill.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {bill.members.find((member) => member.bandId === band.id)?.role} ·{" "}
+                  {bill.members.find((member) => member.bandId === band.id)?.splitPercent}% of the night
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
       <section className="mt-8">
         <h2 className="font-display text-3xl">Sample links</h2>
         <ul className="mt-3 grid gap-2">

@@ -82,6 +82,12 @@ export function PhoneBook() {
               : "Rooms, permits, and fairs. Switch to a band on You to request or apply."}
         </p>
       </div>
+      <Link
+        href="/phone/book/bills"
+        className="grid h-11 place-items-center rounded-lg border text-sm font-semibold"
+      >
+        Shared bills
+      </Link>
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
         {(
           [

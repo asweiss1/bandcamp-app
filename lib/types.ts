@@ -41,6 +41,35 @@ export type Booking = {
   terms: Terms;
   events: BookingEvent[];
   createdAt: string;
+  billId?: string | null;
+};
+
+export type BandLink = {
+  id: string;
+  fromBandId: string;
+  toBandId: string;
+  status: "pending" | "accepted" | "declined";
+  createdAt: string;
+};
+
+export type BillRole = "Headliner" | "Opener";
+
+export type BillMember = {
+  bandId: string;
+  role: BillRole;
+  setTime: string;
+  splitPercent: number;
+};
+
+export type Bill = {
+  id: string;
+  name: string;
+  leadBandId: string;
+  members: BillMember[];
+  openDateId: string | null;
+  venueId: string | null;
+  bookingId: string | null;
+  createdAt: string;
 };
 
 export type OpenDate = {
@@ -138,7 +167,7 @@ export type Account = {
   profiles: OwnedProfile[];
 };
 
-export type ListingKind = "fill-in" | "member";
+export type ListingKind = "fill-in" | "member" | "jam";
 
 export type Listing = {
   id: string;
@@ -148,6 +177,8 @@ export type Listing = {
   genre: string;
   city: string;
   citySlug: string;
+  lat?: number;
+  lng?: number;
   paid: boolean;
   payNote: string;
   dates: string;
@@ -300,6 +331,8 @@ export type Snapshot = {
   nightStays: NightStay[];
   vehicles: Vehicle[];
   fuelOverrides: FuelOverride[];
+  bandLinks: BandLink[];
+  bills: Bill[];
   account: Account;
 };
 

@@ -179,7 +179,7 @@ export function BandSearch({ surface }: { surface: "desk" | "phone" }) {
             <article key={band.id} className="rounded-2xl border bg-card p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <Link href={`/bands/${band.id}`} className="font-display text-2xl hover:text-rust">
+                  <Link href={surface === "phone" ? `/phone/bands/${band.id}` : `/bands/${band.id}`} className="font-display text-2xl hover:text-rust">
                     {band.name}
                   </Link>
                   <p className="mt-1 text-sm text-muted-foreground">

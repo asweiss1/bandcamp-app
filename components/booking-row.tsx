@@ -34,6 +34,7 @@ export function BookingRow({
         </p>
         <p className="text-sm text-muted-foreground">
           {venue?.city} · {dealHeadline(booking.terms)}
+          {booking.billId ? " · Shared bill" : ""}
         </p>
         {emphasize ? <p className="mt-1 text-sm font-medium text-rust">{emphasize}</p> : null}
       </div>

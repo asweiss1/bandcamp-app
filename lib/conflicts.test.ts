@@ -55,6 +55,8 @@ function snapshot(partial: Partial<Snapshot>): Snapshot {
     nightStays: [],
     vehicles: [],
     fuelOverrides: [],
+    bandLinks: [],
+    bills: [],
     account: { phase: "ready", demo: true, activeId: null, profiles: [] },
     ...partial,
   };

@@ -4,12 +4,15 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { cities, GENRES, INSTRUMENTS } from "@/lib/catalog";
+import { cities, GENRES, getBand, getMusician, getVenue, INSTRUMENTS } from "@/lib/catalog";
+import { milesFromHome } from "@/lib/jam";
 import { formatWhen } from "@/lib/deal";
 import { interestsForListing, listingOwner } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import type { Interest, Listing, ListingKind } from "@/lib/types";
+import type { SavedPlace } from "@/lib/geo";
 import { cn } from "@/lib/utils";
+import { HometownField } from "@/components/hometown-field";
 import { PageFrame, PageIntro } from "@/components/shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,7 +46,7 @@ export function BoardBrowser() {
       <PageIntro
         eyebrow="Musician board"
         title="Fill a chair or find one"
-        lede="Sub gigs for a specific night, and posts from bands that need a permanent member. Sending interest stores a note in this browser."
+        lede="Sub gigs, open chairs, and want-to-jam posts. A note is how a nearby band or player answers."
         actions={
           <>
             <Button asChild variant="outline" className="h-10">
@@ -60,6 +63,7 @@ export function BoardBrowser() {
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="fill-in">Fill-in gigs</TabsTrigger>
           <TabsTrigger value="member">Permanent members</TabsTrigger>
+          <TabsTrigger value="jam">Jam</TabsTrigger>
         </TabsList>
       </Tabs>
       <div className="mt-4 mb-5 grid gap-3 sm:grid-cols-3">
@@ -163,7 +167,7 @@ export function ListingDetail({ id }: { id: string }) {
       </Link>
       <div className="mt-4 flex flex-wrap gap-2">
         <span className="rounded-full bg-ink px-2.5 py-1 text-[11px] font-semibold tracking-wide text-cream uppercase">
-          {listing.kind === "fill-in" ? "Fill-in" : "Permanent"}
+          {listing.kind === "jam" ? "Jam" : listing.kind === "fill-in" ? "Fill-in" : "Permanent"}
         </span>
         <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase", listing.paid ? "bg-pine text-cream" : "bg-sand")}>
           {listing.paid ? "Paid" : "Unpaid"}
@@ -276,20 +280,27 @@ export function ListingForm() {
   const [payNote, setPayNote] = useState("$150");
   const [dates, setDates] = useState("");
   const [description, setDescription] = useState("");
+  const [jamPlace, setJamPlace] = useState<SavedPlace | null>(null);
   const [error, setError] = useState<string | null>(null);
   const city = cities.find((item) => item.slug === citySlug) ?? cities[0];
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
+    if (kind === "jam" && !jamPlace) {
+      setError("Pick a city.");
+      return;
+    }
     const result = postListing({
       kind,
-      title,
-      instrument,
+      title: kind === "jam" ? title.trim() || `Want to jam in ${jamPlace?.city ?? "town"}` : title,
+      instrument: kind === "jam" ? "Any" : instrument,
       genre,
-      city: city.label,
-      citySlug,
-      paid,
-      payNote: paid ? payNote : "Unpaid",
+      city: kind === "jam" && jamPlace ? jamPlace.label : city.label,
+      citySlug: kind === "jam" && jamPlace ? jamPlace.id : citySlug,
+      lat: kind === "jam" ? jamPlace?.lat : undefined,
+      lng: kind === "jam" ? jamPlace?.lng : undefined,
+      paid: kind === "jam" ? false : paid,
+      payNote: kind === "jam" || !paid ? "Unpaid" : payNote,
       dates,
       description,
     });
@@ -306,10 +317,10 @@ export function ListingForm() {
       <PageIntro
         eyebrow="Musician board"
         title="Post a listing"
-        lede="A fill-in is one night. A member post is a chair in the band. It will show up under whoever you are viewing as."
+        lede="A fill-in is one night. A member post is a chair. A jam is a place, a time, and a style."
       />
       <form onSubmit={submit} className="grid max-w-2xl gap-4">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid gap-2 sm:grid-cols-3">
           <button type="button" aria-pressed={kind === "fill-in"} onClick={() => setKind("fill-in")} className={cn("rounded-xl border px-3 py-3 text-left", kind === "fill-in" && "border-rust bg-accent")}>
             <span className="block font-semibold">Fill-in gig</span>
             <span className="text-xs text-muted-foreground">One date, then done.</span>
@@ -318,38 +329,71 @@ export function ListingForm() {
             <span className="block font-semibold">Permanent member</span>
             <span className="text-xs text-muted-foreground">A chair, not a sub.</span>
           </button>
+          <button
+            type="button"
+            aria-pressed={kind === "jam"}
+            onClick={() => {
+              setKind("jam");
+              setPaid(false);
+              setInstrument("Any");
+              setTitle((current) => current || "Want to jam");
+            }}
+            className={cn("rounded-xl border px-3 py-3 text-left", kind === "jam" && "border-rust bg-accent")}
+          >
+            <span className="block font-semibold">Want to jam</span>
+            <span className="text-xs text-muted-foreground">Place, time, and style.</span>
+          </button>
         </div>
         <label className="grid gap-1.5 text-sm">
           <span className="font-medium">Title</span>
           <Input className="h-10" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Drummer for a Friday in Tucson" />
         </label>
         <div className="grid gap-3 sm:grid-cols-2">
-          <FieldSelect label="Instrument" value={instrument} onChange={setInstrument} options={INSTRUMENTS} />
-          <FieldSelect label="Genre" value={genre} onChange={setGenre} options={GENRES} />
+          {kind === "jam" ? (
+            <div className="sm:col-span-2">
+              <HometownField
+                label="Place"
+                place={jamPlace}
+                onPlace={(place) => {
+                  setJamPlace(place);
+                  setTitle((current) =>
+                    current === "" || current.startsWith("Want to jam") ? `Want to jam in ${place.city}` : current,
+                  );
+                }}
+              />
+            </div>
+          ) : (
+            <FieldSelect label="Instrument" value={instrument} onChange={setInstrument} options={INSTRUMENTS} />
+          )}
+          <FieldSelect label={kind === "jam" ? "Style" : "Genre"} value={genre} onChange={setGenre} options={GENRES} />
+          {kind === "jam" ? null : (
+            <label className="grid gap-1.5 text-sm">
+              <span className="font-medium">City</span>
+              <Select value={citySlug} onValueChange={setCitySlug}>
+                <SelectTrigger className="h-10 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {cities.map((item) => (
+                    <SelectItem key={item.slug} value={item.slug}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
+          )}
           <label className="grid gap-1.5 text-sm">
-            <span className="font-medium">City</span>
-            <Select value={citySlug} onValueChange={setCitySlug}>
-              <SelectTrigger className="h-10 w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {cities.map((item) => (
-                  <SelectItem key={item.slug} value={item.slug}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </label>
-          <label className="grid gap-1.5 text-sm">
-            <span className="font-medium">Dates</span>
-            <Input className="h-10" value={dates} onChange={(event) => setDates(event.target.value)} placeholder="Nov 21, or ongoing" />
+            <span className="font-medium">{kind === "jam" ? "Time" : "Dates"}</span>
+            <Input className="h-10" value={dates} onChange={(event) => setDates(event.target.value)} placeholder={kind === "jam" ? "Fri, Nov 6, 2026 · 2:00pm" : "Nov 21, or ongoing"} />
           </label>
         </div>
+        {kind === "jam" ? null : (
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" className="size-4 accent-rust" checked={paid} onChange={(event) => setPaid(event.target.checked)} />
           This is paid
         </label>
+        )}
         {paid ? (
           <label className="grid gap-1.5 text-sm">
             <span className="font-medium">Pay note</span>
@@ -374,7 +418,7 @@ function ListingCard({ listing }: { listing: Listing }) {
     <Link href={`/board/${listing.id}`} className="rounded-2xl border bg-card p-4 transition hover:border-rust/40">
       <div className="flex flex-wrap items-center gap-2">
         <span className="rounded-full bg-ink px-2 py-0.5 text-[11px] font-semibold text-cream uppercase">
-          {listing.kind === "fill-in" ? "Fill-in" : "Member"}
+          {listing.kind === "jam" ? "Jam" : listing.kind === "fill-in" ? "Fill-in" : "Member"}
         </span>
         <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase", listing.paid ? "bg-pine text-cream" : "bg-sand")}>
           {listing.paid ? "Paid" : "Unpaid"}
@@ -385,10 +429,25 @@ function ListingCard({ listing }: { listing: Listing }) {
         {listing.instrument} · {listing.genre} · {listing.city}
       </p>
       <p className="mt-2 text-sm">{listing.dates}</p>
+      <JamDistance listing={listing} />
       <p className="mt-1 text-sm font-medium">{listing.paid ? listing.payNote : "Unpaid"}</p>
       <p className="mt-2 text-xs text-muted-foreground">Posted by {listing.postedByName}</p>
     </Link>
   );
+}
+
+export function JamDistance({ listing }: { listing: Listing }) {
+  const { snapshot } = useApp();
+  if (listing.kind !== "jam") return null;
+  const home =
+    snapshot.role === "band"
+      ? getBand(snapshot.bandId)
+      : snapshot.role === "venue"
+        ? getVenue(snapshot.venueId)
+        : getMusician(snapshot.musicianId);
+  const miles = milesFromHome(listing, home);
+  if (miles == null) return null;
+  return <p className="mt-1 text-sm">{miles === 0 ? "In your city" : `${miles} mi from you`}</p>;
 }
 
 function Info({ label, value }: { label: string; value: string }) {

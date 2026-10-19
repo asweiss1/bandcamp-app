@@ -15,7 +15,11 @@ export function Dashboard() {
   const { snapshot } = useApp();
   const name = roleLabel(snapshot.role, snapshot.bandId, snapshot.venueId, snapshot.musicianId);
   const mine = snapshot.bookings.filter((booking) => {
-    if (snapshot.role === "band") return booking.bandId === snapshot.bandId;
+    if (snapshot.role === "band") {
+      if (booking.bandId === snapshot.bandId) return true;
+      const bill = booking.billId ? snapshot.bills.find((item) => item.id === booking.billId) : undefined;
+      return bill?.members.some((member) => member.bandId === snapshot.bandId) ?? false;
+    }
     if (snapshot.role === "venue") return booking.venueId === snapshot.venueId;
     return false;
   });
@@ -54,19 +58,26 @@ export function Dashboard() {
             : "Requests, offers, counters, and nights that are actually on the calendar."
         }
         actions={
-          snapshot.role === "venue" ? (
-            <Button asChild className="h-10">
-              <Link href="/dates/new">Post a date</Link>
-            </Button>
-          ) : snapshot.role === "band" ? (
-            <Button asChild className="h-10">
-              <Link href="/tour">Open the route</Link>
-            </Button>
-          ) : (
-            <Button asChild className="h-10">
-              <Link href="/board/new">Post a listing</Link>
-            </Button>
-          )
+          <>
+            {snapshot.role === "venue" ? (
+              <Button asChild className="h-10">
+                <Link href="/dates/new">Post a date</Link>
+              </Button>
+            ) : snapshot.role === "band" ? (
+              <Button asChild className="h-10">
+                <Link href="/tour">Open the route</Link>
+              </Button>
+            ) : (
+              <Button asChild className="h-10">
+                <Link href="/board/new">Post a listing</Link>
+              </Button>
+            )}
+            {snapshot.role !== "musician" ? (
+              <Button asChild variant="outline" className="h-10">
+                <Link href="/bills">Shared bills</Link>
+              </Button>
+            ) : null}
+          </>
         }
       />
       {snapshot.role !== "musician" ? (

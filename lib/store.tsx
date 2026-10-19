@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useMemo, useSyncExternalStore } from "react";
 import { syncCatalog, ownsProfile, isAccount } from "@/lib/account";
+import { billConfirmedClash, billPendingWarning, billProblem, memberBandIds } from "@/lib/bills";
 import {
   candidateForApplication,
   candidateForBooking,
@@ -12,6 +13,7 @@ import {
   pendingOverlap,
   type Commitment,
 } from "@/lib/conflicts";
+import { pairLinks } from "@/lib/links";
 import { getBand, getMusician, getVenue } from "@/lib/catalog";
 import { clearAudioTracks } from "@/lib/audio-db";
 import { termsError, uid } from "@/lib/deal";
@@ -37,6 +39,7 @@ import type {
   FuelType,
   FuelOverride,
   OwnedProfile,
+  BillMember,
 } from "@/lib/types";
 
 const SYNC_EVENT = "bandcamp-sync";
@@ -67,6 +70,13 @@ function readMemory() {
       nightStays: Array.isArray(memory.nightStays) ? memory.nightStays : initialSnapshot.nightStays,
       vehicles: Array.isArray(memory.vehicles) ? memory.vehicles : initialSnapshot.vehicles,
       fuelOverrides: Array.isArray(memory.fuelOverrides) ? memory.fuelOverrides : initialSnapshot.fuelOverrides,
+    };
+  }
+  if (!Array.isArray(memory.bandLinks) || !Array.isArray(memory.bills)) {
+    memory = {
+      ...memory,
+      bandLinks: Array.isArray(memory.bandLinks) ? memory.bandLinks : initialSnapshot.bandLinks,
+      bills: Array.isArray(memory.bills) ? memory.bills : initialSnapshot.bills,
     };
   }
   if (!isAccount(memory.account)) {
@@ -116,7 +126,7 @@ type AppContextValue = {
     input: Pick<
       Listing,
       "kind" | "title" | "instrument" | "genre" | "city" | "citySlug" | "paid" | "payNote" | "dates" | "description"
-    >,
+    > & { lat?: number; lng?: number },
   ) => Result<string>;
   expressInterest: (input: {
     listingId?: string;
@@ -144,6 +154,11 @@ type AppContextValue = {
     },
   ) => Result<string>;
   activateProfile: (id: string) => Result<string>;
+  requestBandLink: (toBandId: string) => Result<string>;
+  respondBandLink: (id: string, status: "accepted" | "declined") => Result<string>;
+  saveBill: (input: { id?: string; name: string; members: BillMember[] }) => Result<string>;
+  pitchBill: (billId: string, openDateId: string, terms: Terms) => Result<string>;
+  offerBill: (billId: string, openDateId: string, terms: Terms) => Result<string>;
   exploreDemo: (role?: Role) => void;
 };
 
@@ -393,7 +408,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
         const candidate = candidateForBooking(current, booking, "confirmed");
         if (!candidate) return { ok: false, error: "That date is no longer listed." };
-        const clash = confirmedClash(current, candidate);
+        const bill = booking.billId ? current.bills.find((item) => item.id === booking.billId) : undefined;
+        const clash = bill
+          ? billConfirmedClash(current, memberBandIds(bill.members), booking)
+          : confirmedClash(current, candidate);
         if (clash) return { ok: false, error: clash };
         const note = "Accepted. This date is confirmed.";
         const accepted: Booking = {
@@ -416,11 +434,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           }
           return item;
         });
-        const settled = settleConfirmed(current, candidate, {
+        let settled = settleConfirmed(current, candidate, {
           bookings: sameNight,
           applications: current.applications,
           interests: current.interests,
         });
+        if (bill) {
+          for (const bandId of memberBandIds(bill.members)) {
+            if (bandId === booking.bandId) continue;
+            const member = candidateForBooking(
+              current,
+              { ...accepted, id: `${accepted.id}:${bandId}`, bandId },
+              "confirmed",
+            );
+            if (!member) continue;
+            settled = settleConfirmed(current, member, settled);
+          }
+        }
         update({ ...current, ...settled });
         return { ok: true, data: booking.id };
       },
@@ -867,6 +897,179 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           musicianId: profile.role === "musician" ? profile.id : current.musicianId,
         });
         return { ok: true, data: id };
+      },
+      requestBandLink: (toBandId) => {
+        const current = readMemory();
+        if (current.role !== "band") return { ok: false, error: "Switch to a band to send a link request." };
+        if (toBandId === current.bandId) return { ok: false, error: "Pick another band." };
+        if (!getBand(toBandId)) return { ok: false, error: "That band isn't listed." };
+        if (pairLinks(current.bandLinks, current.bandId, toBandId).length > 0) {
+          return { ok: false, error: "A link with that band is already open." };
+        }
+        const link = {
+          id: uid("link"),
+          fromBandId: current.bandId,
+          toBandId,
+          status: "pending" as const,
+          createdAt: new Date().toISOString(),
+        };
+        update({ ...current, bandLinks: [link, ...current.bandLinks] });
+        return { ok: true, data: link.id };
+      },
+      respondBandLink: (id, status) => {
+        const current = readMemory();
+        const link = current.bandLinks.find((item) => item.id === id);
+        if (!link || link.status !== "pending") return { ok: false, error: "That request is already closed." };
+        if (current.role !== "band" || current.bandId !== link.toBandId) {
+          return { ok: false, error: "Only the band that was asked can answer." };
+        }
+        update({
+          ...current,
+          bandLinks: current.bandLinks.map((item) => (item.id === id ? { ...item, status } : item)),
+        });
+        return { ok: true, data: id };
+      },
+      saveBill: ({ id, name, members }) => {
+        const current = readMemory();
+        if (current.role !== "band") return { ok: false, error: "Switch to a band to build a bill." };
+        const title = name.trim();
+        if (title.length < 2) return { ok: false, error: "Name the bill." };
+        const lineup = members.map((member) => ({ ...member, setTime: member.setTime.trim() }));
+        if (!lineup.some((member) => member.bandId === current.bandId && member.role === "Headliner")) {
+          return { ok: false, error: "The band building the bill is the headliner." };
+        }
+        const problem = billProblem(lineup);
+        if (problem) return { ok: false, error: problem };
+        if (id) {
+          const existing = current.bills.find((item) => item.id === id);
+          if (!existing || existing.leadBandId !== current.bandId) {
+            return { ok: false, error: "Only the lead band can edit this bill." };
+          }
+          const booking = existing.bookingId
+            ? current.bookings.find((item) => item.id === existing.bookingId)
+            : undefined;
+          if (booking && booking.status === "accepted") {
+            return { ok: false, error: "This bill is already confirmed." };
+          }
+          update({
+            ...current,
+            bills: current.bills.map((item) => (item.id === id ? { ...item, name: title, members: lineup } : item)),
+          });
+          return { ok: true, data: id };
+        }
+        const bill = {
+          id: uid("bill"),
+          name: title,
+          leadBandId: current.bandId,
+          members: lineup,
+          openDateId: null,
+          venueId: null,
+          bookingId: null,
+          createdAt: new Date().toISOString(),
+        };
+        update({ ...current, bills: [bill, ...current.bills] });
+        return { ok: true, data: bill.id };
+      },
+      pitchBill: (billId, openDateId, terms) => {
+        const current = readMemory();
+        const invalid = termsError(terms);
+        if (invalid) return { ok: false, error: invalid };
+        if (current.role !== "band") return { ok: false, error: "Switch to a band to pitch a bill." };
+        const bill = current.bills.find((item) => item.id === billId);
+        if (!bill) return { ok: false, error: "That bill is gone." };
+        if (bill.leadBandId !== current.bandId) {
+          return { ok: false, error: "Only the headlining band can pitch this bill." };
+        }
+        const problem = billProblem(bill.members);
+        if (problem) return { ok: false, error: problem };
+        const openDate = current.openDates.find((item) => item.id === openDateId);
+        if (!openDate) return { ok: false, error: "That date is no longer listed." };
+        if (dateFill(openDate.id, current.bookings) === "filled") {
+          return { ok: false, error: "That date is already confirmed." };
+        }
+        const held = bill.bookingId ? current.bookings.find((item) => item.id === bill.bookingId) : undefined;
+        if (held && held.status !== "declined") {
+          return { ok: false, error: "This bill already has an active conversation." };
+        }
+        if (duplicateBooking(current, openDate.id, current.bandId)) {
+          return { ok: false, error: "You already have a conversation on this date." };
+        }
+        const note = terms.note.trim() || "We'd like this date as a stacked bill.";
+        const booking: Booking = {
+          id: uid("bk"),
+          openDateId: openDate.id,
+          bandId: current.bandId,
+          venueId: openDate.venueId,
+          billId: bill.id,
+          status: "requested",
+          awaiting: "venue",
+          terms: { ...terms, note },
+          events: [eventFor(current, "band", "request", terms, note)],
+          createdAt: new Date().toISOString(),
+        };
+        const clash = billConfirmedClash(current, memberBandIds(bill.members), booking);
+        if (clash) return { ok: false, error: clash };
+        const warning = billPendingWarning(current, memberBandIds(bill.members), booking) ?? undefined;
+        update({
+          ...current,
+          bookings: [booking, ...current.bookings],
+          bills: current.bills.map((item) =>
+            item.id === bill.id
+              ? { ...item, openDateId: openDate.id, venueId: openDate.venueId, bookingId: booking.id }
+              : item,
+          ),
+        });
+        return { ok: true, data: booking.id, warning };
+      },
+      offerBill: (billId, openDateId, terms) => {
+        const current = readMemory();
+        const invalid = termsError(terms);
+        if (invalid) return { ok: false, error: invalid };
+        if (current.role !== "venue") return { ok: false, error: "Switch to a venue to offer a bill." };
+        const bill = current.bills.find((item) => item.id === billId);
+        if (!bill) return { ok: false, error: "That bill is gone." };
+        const problem = billProblem(bill.members);
+        if (problem) return { ok: false, error: problem };
+        const openDate = current.openDates.find((item) => item.id === openDateId);
+        if (!openDate || openDate.venueId !== current.venueId) {
+          return { ok: false, error: "Pick one of your open dates." };
+        }
+        if (dateFill(openDate.id, current.bookings) === "filled") {
+          return { ok: false, error: "That date is already confirmed." };
+        }
+        const held = bill.bookingId ? current.bookings.find((item) => item.id === bill.bookingId) : undefined;
+        if (held && held.status !== "declined") {
+          return { ok: false, error: "This bill already has an active conversation." };
+        }
+        if (duplicateBooking(current, openDate.id, bill.leadBandId)) {
+          return { ok: false, error: "There's already an active conversation with that band." };
+        }
+        const note = terms.note.trim() || "One offer for the whole bill.";
+        const booking: Booking = {
+          id: uid("bk"),
+          openDateId: openDate.id,
+          bandId: bill.leadBandId,
+          venueId: current.venueId,
+          billId: bill.id,
+          status: "offered",
+          awaiting: "band",
+          terms: { ...terms, note },
+          events: [eventFor(current, "venue", "offer", terms, note)],
+          createdAt: new Date().toISOString(),
+        };
+        const clash = billConfirmedClash(current, memberBandIds(bill.members), booking);
+        if (clash) return { ok: false, error: clash };
+        const warning = billPendingWarning(current, memberBandIds(bill.members), booking) ?? undefined;
+        update({
+          ...current,
+          bookings: [booking, ...current.bookings],
+          bills: current.bills.map((item) =>
+            item.id === bill.id
+              ? { ...item, openDateId: openDate.id, venueId: current.venueId, bookingId: booking.id }
+              : item,
+          ),
+        });
+        return { ok: true, data: booking.id, warning };
       },
       exploreDemo: (role = "band") => {
         const current = readMemory();

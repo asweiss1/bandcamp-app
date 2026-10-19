@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start -p 4317 -H 0.0.0.0",
     "lint": "eslint",
-    "test": "tsx --test lib/conflicts.test.ts lib/geo.test.ts"
+    "test": "tsx --test lib/*.test.ts"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

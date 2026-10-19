@@ -9,6 +9,7 @@ import { dealDetails, dealHeadline, formatDayLong, formatTime } from "@/lib/deal
 import { canWithdraw, isYourMove } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import type { Terms } from "@/lib/types";
+import { BillLineup } from "@/components/bills";
 import { DealFields } from "@/components/deal-fields";
 import { OriginalsBadge } from "@/components/originals";
 import { BandSamples } from "@/components/samples";
@@ -110,6 +111,7 @@ export function PhoneGig({ id }: { id: string }) {
         <p className="mt-2 text-sm text-muted-foreground">
           {formatDayLong(openDate.date)} · {openDate.showTime} · {venue.city}
         </p>
+        <BillLineup billId={booking.billId} surface="phone" />
       </div>
 
       {booking.status === "accepted" ? (

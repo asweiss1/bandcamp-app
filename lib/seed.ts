@@ -1,5 +1,7 @@
 import { seedApplications, seedOpportunities } from "@/lib/opportunities";
 import type {
+  BandLink,
+  Bill,
   Booking,
   Interest,
   Listing,
@@ -621,6 +623,73 @@ export const seedBookings: Booking[] = [
       },
     ],
   },
+  {
+    id: "bk-bill-1120",
+    openDateId: "od-yucca-1120",
+    bandId: "mesa-dust",
+    venueId: "yucca-room",
+    billId: "bill-high-desert",
+    status: "requested",
+    awaiting: "venue",
+    terms: terms({
+      dealType: "guarantee",
+      guarantee: 1600,
+      backline: true,
+      loadIn: "16:00",
+      note: "Stacked bill: Mesa Dust headlines at 9:30, Salt Choir opens at 8:00. One offer covers both bands. Pay splits 70/30.",
+    }),
+    createdAt: "2026-10-18T18:10:00.000Z",
+    events: [
+      {
+        id: "ev-bill-1",
+        at: "2026-10-18T18:10:00.000Z",
+        actor: "band",
+        actorName: "Mesa Dust",
+        kind: "request",
+        terms: terms({
+          dealType: "guarantee",
+          guarantee: 1600,
+          backline: true,
+          loadIn: "16:00",
+          note: "Stacked bill: Mesa Dust headlines at 9:30, Salt Choir opens at 8:00. One offer covers both bands. Pay splits 70/30.",
+        }),
+        note: "Stacked bill: Mesa Dust headlines at 9:30, Salt Choir opens at 8:00. One offer covers both bands. Pay splits 70/30.",
+      },
+    ],
+  },
+];
+
+export const seedBandLinks: BandLink[] = [
+  {
+    id: "link-mesa-salt",
+    fromBandId: "mesa-dust",
+    toBandId: "salt-choir",
+    status: "accepted",
+    createdAt: "2026-10-12T16:00:00.000Z",
+  },
+  {
+    id: "link-night-mesa",
+    fromBandId: "night-market",
+    toBandId: "mesa-dust",
+    status: "pending",
+    createdAt: "2026-10-18T19:00:00.000Z",
+  },
+];
+
+export const seedBills: Bill[] = [
+  {
+    id: "bill-high-desert",
+    name: "High desert Friday",
+    leadBandId: "mesa-dust",
+    members: [
+      { bandId: "mesa-dust", role: "Headliner", setTime: "9:30pm", splitPercent: 70 },
+      { bandId: "salt-choir", role: "Opener", setTime: "8:00pm", splitPercent: 30 },
+    ],
+    openDateId: "od-yucca-1120",
+    venueId: "yucca-room",
+    bookingId: "bk-bill-1120",
+    createdAt: "2026-10-18T18:00:00.000Z",
+  },
 ];
 
 export const seedListings: Listing[] = [
@@ -775,6 +844,27 @@ export const seedListings: Listing[] = [
       "We need a fourth on keys for one late Friday. You bring a board that can do a string pad and a bass stab. Soundcheck at 7.",
     contact: "priya@neonparish.example",
     createdAt: "2026-10-13T22:00:00.000Z",
+  },
+  {
+    id: "ls-jam-phoenix",
+    kind: "jam",
+    title: "Want to jam before doors",
+    instrument: "Any",
+    genre: "Desert rock",
+    city: "Phoenix, AZ",
+    citySlug: "phoenix-az",
+    lat: 33.4484,
+    lng: -112.074,
+    paid: false,
+    payNote: "Unpaid",
+    dates: "Fri, Nov 6, 2026 · 2:00pm",
+    postedByName: "Mesa Dust",
+    posterRole: "band",
+    posterId: "mesa-dust",
+    description:
+      "Want to jam before doors at The Yucca Room. Bring a guitar, a voice, or just sit in. Two hours, then we load in for the night.",
+    contact: "june@mesadust.example",
+    createdAt: "2026-10-17T15:00:00.000Z",
   },
 ];
 
@@ -934,6 +1024,8 @@ export const initialSnapshot: Snapshot = {
   nightStays: seedNightStays,
   vehicles: seedVehicles,
   fuelOverrides: [],
+  bandLinks: seedBandLinks,
+  bills: seedBills,
   account: {
     phase: "welcome",
     demo: false,

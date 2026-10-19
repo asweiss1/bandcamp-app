@@ -7,7 +7,9 @@ import { planBatchClash } from "@/lib/conflicts";
 import { defaultTerms, formatDay, money } from "@/lib/deal";
 import { fuelAssumptions, gallonPrice, fuelSourceLabel, priceDrive, rigFor, type FuelQuote, type Rig } from "@/lib/fuel";
 import { useFuelQuote } from "@/lib/fuel-client";
+import { getBand } from "@/lib/catalog";
 import { placeForSlug, SAMPLE_PLACE, type SavedPlace } from "@/lib/geo";
+import { linkedBandIds } from "@/lib/links";
 import { HometownField } from "@/components/hometown-field";
 import { searchLinksFor } from "@/lib/lodging";
 import {
@@ -40,6 +42,14 @@ export function TourPlanner({ surface }: { surface: "desk" | "phone" }) {
   const [minGuarantee, setMinGuarantee] = useState(300);
   const [loop, setLoop] = useState(true);
   const [sending, setSending] = useState(false);
+  const [withIds, setWithIds] = useState<string[]>([]);
+  const mates = useMemo(() => {
+    if (snapshot.role !== "band") return [];
+    return linkedBandIds(snapshot.bandLinks, snapshot.bandId)
+      .map((id) => getBand(id))
+      .filter((band) => band != null);
+  }, [snapshot.role, snapshot.bandLinks, snapshot.bandId]);
+  const riding = mates.filter((band) => withIds.includes(band.id));
   const quote = useFuelQuote();
   const rig = useMemo(
     () => rigFor(snapshot.vehicles.filter((vehicle) => vehicle.bandId === snapshot.bandId)),
@@ -228,6 +238,35 @@ export function TourPlanner({ surface }: { surface: "desk" | "phone" }) {
             ))}
           </div>
         </Field>
+        {snapshot.role === "band" && mates.length > 0 ? (
+          <div className="grid gap-2">
+            <p className="text-sm font-medium">Tour together</p>
+            <p className="text-sm text-muted-foreground">
+              Linked bands share this route. Fuel and lodging split evenly. Guarantees stay with the gigs.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {mates.map((band) => {
+                const on = withIds.includes(band.id);
+                return (
+                  <button
+                    key={band.id}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() =>
+                      setWithIds(on ? withIds.filter((id) => id !== band.id) : [...withIds, band.id])
+                    }
+                    className={cn(
+                      "h-10 rounded-full px-3 text-sm font-medium",
+                      on ? "bg-ink text-cream" : "bg-sand",
+                    )}
+                  >
+                    {band.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
         <Button type="submit" className="h-11">
           Build this route
         </Button>
@@ -239,6 +278,7 @@ export function TourPlanner({ surface }: { surface: "desk" | "phone" }) {
         quote={quote}
         saved={Boolean(plan)}
         surface={surface}
+        mateNames={riding.map((band) => band.name)}
         onNight={(index, night) => {
           if (!plan) savePlan(built);
           setNight(index, night);
@@ -261,12 +301,19 @@ export function TourPlanner({ surface }: { surface: "desk" | "phone" }) {
   );
 }
 
+function joinNames(names: string[]) {
+  if (names.length <= 1) return names[0] ?? "";
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
+}
+
 function PlanResult({
   nights,
   rig,
   quote,
   saved,
   surface,
+  mateNames,
   onNight,
 }: {
   nights: PlanNight[];
@@ -274,6 +321,7 @@ function PlanResult({
   quote: FuelQuote;
   saved: boolean;
   surface: "desk" | "phone";
+  mateNames: string[];
   onNight: (index: number, night: PlanNight) => void;
 }) {
   const budget = useMemo(() => {
@@ -314,6 +362,13 @@ function PlanResult({
           {fuelAssumptions(rig, quote)} Drives use straight-line distance × 1.3 at 55 mph, not live traffic. Lodging
           is a flat sample rate: $28 camp, $89 motel, $165 hotel.
         </p>
+        {mateNames.length > 0 ? (
+          <p className="mt-2 text-sm leading-relaxed text-cream">
+            Split {mateNames.length + 1} ways with {joinNames(mateNames)}. Each band covers{" "}
+            {money(Math.round(budget.gas / (mateNames.length + 1)))} of the fuel and{" "}
+            {money(Math.round(budget.lodgingTotal / (mateNames.length + 1)))} of the lodging.
+          </p>
+        ) : null}
         {saved ? <p className="mt-2 text-xs text-amber">Saved on this device.</p> : null}
       </div>
       <ol className="grid gap-3">

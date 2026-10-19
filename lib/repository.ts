@@ -51,6 +51,8 @@ export const localRepository: Repository = {
         nightStays: Array.isArray(parsed.nightStays) ? parsed.nightStays : fallback.nightStays,
         vehicles: Array.isArray(parsed.vehicles) ? parsed.vehicles : fallback.vehicles,
         fuelOverrides: Array.isArray(parsed.fuelOverrides) ? parsed.fuelOverrides : fallback.fuelOverrides,
+        bandLinks: Array.isArray(parsed.bandLinks) ? parsed.bandLinks : fallback.bandLinks,
+        bills: Array.isArray(parsed.bills) ? parsed.bills : fallback.bills,
         account: isAccount(parsed.account)
           ? parsed.account
           : { phase: "ready", demo: true, activeId: null, profiles: [] },

@@ -178,6 +178,7 @@ function MobileLink({
 function MoreMenu({ pathname }: { pathname: string }) {
   const extra = [
     { href: "/bands", label: "Bands" },
+    { href: "/bills", label: "Bills" },
     { href: "/venues", label: "Venues" },
     { href: "/musicians", label: "Musicians" },
     { href: "/near", label: "Near you" },

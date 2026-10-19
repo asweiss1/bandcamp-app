@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { formatWhen } from "@/lib/deal";
+import { JamDistance } from "@/components/board-views";
 import { interestsForListing, listingOwner, profileId } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import type { ListingKind } from "@/lib/types";
@@ -17,6 +18,7 @@ const filters: { id: "all" | ListingKind; label: string }[] = [
   { id: "all", label: "All" },
   { id: "fill-in", label: "Fill-in" },
   { id: "member", label: "Permanent" },
+  { id: "jam", label: "Jam" },
 ];
 
 export function PhoneBoard() {
@@ -33,7 +35,7 @@ export function PhoneBoard() {
         <p className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">Board</p>
         <h1 className="mt-1 font-display text-4xl leading-none tracking-tight">Players wanted</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Fill-in nights and permanent chairs. A note is interest, not a hire.
+          Fill-in nights, permanent chairs, and want-to-jam posts. A note is how you answer.
         </p>
       </div>
       <div className="flex gap-2">
@@ -62,13 +64,14 @@ export function PhoneBoard() {
             <li key={listing.id}>
               <Link href={`/phone/board/${listing.id}`} className="block rounded-2xl border bg-card px-4 py-3">
                 <div className="flex flex-wrap gap-1.5">
-                  <Tag>{listing.kind === "fill-in" ? "Fill-in" : "Permanent"}</Tag>
+                  <Tag>{listing.kind === "jam" ? "Jam" : listing.kind === "fill-in" ? "Fill-in" : "Permanent"}</Tag>
                   <Tag tone={listing.paid ? "paid" : "plain"}>{listing.paid ? "Paid" : "Unpaid"}</Tag>
                 </div>
                 <p className="mt-2 font-medium leading-snug">{listing.title}</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {listing.instrument} · {listing.city}
+                  {listing.instrument} · {listing.genre} · {listing.city}
                 </p>
+                <JamDistance listing={listing} />
                 <p className="mt-1 text-xs text-muted-foreground">{listing.dates}</p>
               </Link>
             </li>
@@ -129,7 +132,7 @@ export function PhoneListing({ id }: { id: string }) {
       </Link>
       <div>
         <div className="flex flex-wrap gap-1.5">
-          <Tag>{listing.kind === "fill-in" ? "Fill-in" : "Permanent"}</Tag>
+          <Tag>{listing.kind === "jam" ? "Jam" : listing.kind === "fill-in" ? "Fill-in" : "Permanent"}</Tag>
           <Tag tone={listing.paid ? "paid" : "plain"}>{listing.paid ? "Paid" : "Unpaid"}</Tag>
         </div>
         <h1 className="mt-2 font-display text-4xl leading-[0.95] tracking-tight">{listing.title}</h1>
