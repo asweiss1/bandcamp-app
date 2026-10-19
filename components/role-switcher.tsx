@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { profileDetail, profileName } from "@/lib/account";
 import { bands, getBand, getMusician, getVenue, musicians, venues } from "@/lib/catalog";
 import { useApp } from "@/lib/store";
 import type { Role } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,12 +26,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const roles: { id: Role; label: string; hint: string }[] = [
-  { id: "band", label: "Band", hint: "Request dates, answer offers, plan the route." },
-  { id: "venue", label: "Venue", hint: "Post open dates and send or answer offers." },
-  { id: "musician", label: "Musician", hint: "Browse the board and raise a hand." },
-];
-
 export function roleLabel(role: Role, bandId: string, venueId: string, musicianId: string) {
   if (role === "band") return getBand(bandId)?.name ?? "Band";
   if (role === "venue") return getVenue(venueId)?.name ?? "Venue";
@@ -37,9 +34,11 @@ export function roleLabel(role: Role, bandId: string, venueId: string, musicianI
 
 export function RoleSwitcher({ className }: { className?: string }) {
   const router = useRouter();
-  const { snapshot, setRole, setBandId, setVenueId, setMusicianId, reset } = useApp();
+  const { snapshot, setRole, setBandId, setVenueId, setMusicianId, reset, activateProfile, exploreDemo } = useApp();
   const [open, setOpen] = useState(false);
+  const [samplesOpen, setSamplesOpen] = useState(false);
   const name = roleLabel(snapshot.role, snapshot.bandId, snapshot.venueId, snapshot.musicianId);
+  const demo = snapshot.account.demo;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -49,65 +48,94 @@ export function RoleSwitcher({ className }: { className?: string }) {
           className={`max-w-[46vw] rounded-full border bg-card px-3 py-1.5 text-left focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none sm:max-w-none ${className ?? ""}`}
         >
           <span className="block text-[10px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
-            View as {snapshot.role}
+            {demo ? "Sample profile" : snapshot.role}
           </span>
           <span className="block truncate text-sm font-semibold">{name}</span>
         </button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl">Who are you tonight?</DialogTitle>
+          <DialogTitle className="font-display text-2xl">{demo ? "Sample book" : "Your profiles"}</DialogTitle>
           <DialogDescription>
-            There is no login in this prototype. Switching roles only changes which desk and
-            which actions you see. Everything is saved in this browser.
+            {demo
+              ? "These are seeded Southwest profiles for trying the flows. Your own profiles stay saved on this device."
+              : "Switch profiles, edit this one, or add another. Everything stays in this browser."}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-2">
-          {roles.map((role) => {
-            const selected = snapshot.role === role.id;
+          {snapshot.account.profiles.map((profile) => {
+            const selected = !demo && snapshot.account.activeId === profile.id;
             return (
               <button
-                key={role.id}
+                key={profile.id}
                 type="button"
                 aria-pressed={selected}
-                onClick={() => setRole(role.id)}
-                className={`rounded-xl border px-3 py-3 text-left focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none ${selected ? "border-rust bg-accent" : "bg-card hover:bg-sand"}`}
+                onClick={() => {
+                  const result = activateProfile(profile.id);
+                  if (!result.ok) toast.error(result.error);
+                }}
+                className={cn("rounded-xl border px-3 py-3 text-left", selected ? "border-rust bg-accent" : "bg-card")}
               >
-                <span className="block font-semibold">{role.label}</span>
-                <span className="text-sm text-muted-foreground">{role.hint}</span>
+                <span className="block font-semibold">{profileName(profile)}</span>
+                <span className="text-sm text-muted-foreground">{profileDetail(profile)}</span>
               </button>
             );
           })}
+          {snapshot.account.profiles.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No profile of your own yet.</p>
+          ) : null}
         </div>
-        {snapshot.role === "band" ? (
-          <ProfileSelect
-            label="Band"
-            value={snapshot.bandId}
-            onChange={setBandId}
-            options={bands.map((band) => ({ id: band.id, label: `${band.name} · ${band.city}` }))}
-          />
-        ) : null}
-        {snapshot.role === "venue" ? (
-          <ProfileSelect
-            label="Venue"
-            value={snapshot.venueId}
-            onChange={setVenueId}
-            options={venues.map((venue) => ({
-              id: venue.id,
-              label: `${venue.name} · ${venue.city}`,
-            }))}
-          />
-        ) : null}
-        {snapshot.role === "musician" ? (
-          <ProfileSelect
-            label="Musician"
-            value={snapshot.musicianId}
-            onChange={setMusicianId}
-            options={musicians.map((musician) => ({
-              id: musician.id,
-              label: `${musician.name} · ${musician.instruments.join(", ")}`,
-            }))}
-          />
+        <div className="flex flex-wrap gap-2">
+          {!demo && snapshot.account.activeId ? (
+            <Button asChild className="h-10">
+              <Link href={`/start?edit=${snapshot.account.activeId}`} onClick={() => setOpen(false)}>
+                Edit profile
+              </Link>
+            </Button>
+          ) : null}
+          <Button asChild variant="outline" className="h-10">
+            <Link href="/start" onClick={() => setOpen(false)}>
+              Add a profile
+            </Link>
+          </Button>
+          {demo ? null : (
+            <Button variant="outline" className="h-10" onClick={() => exploreDemo(snapshot.role)}>
+              Explore demo data
+            </Button>
+          )}
+        </div>
+        {demo ? (
+          <div className="grid gap-2">
+            <button type="button" className="text-left text-sm font-semibold text-rust" onClick={() => setSamplesOpen((open) => !open)}>
+              {samplesOpen ? "Hide sample profiles" : "Switch sample profile"}
+            </button>
+            {samplesOpen ? (
+              <div className="grid gap-3">
+                <div className="grid gap-2">
+                  {(["band", "venue", "musician"] as Role[]).map((role) => (
+                    <button
+                      key={role}
+                      type="button"
+                      aria-pressed={snapshot.role === role}
+                      onClick={() => setRole(role)}
+                      className={cn("rounded-xl border px-3 py-2 text-left text-sm", snapshot.role === role ? "border-rust bg-accent" : "bg-card")}
+                    >
+                      {role === "band" ? "Band" : role === "venue" ? "Venue" : "Musician"}
+                    </button>
+                  ))}
+                </div>
+                {snapshot.role === "band" ? (
+                  <ProfileSelect label="Sample band" value={snapshot.bandId} onChange={setBandId} options={bands.map((band) => ({ id: band.id, label: `${band.name} · ${band.city}` }))} />
+                ) : null}
+                {snapshot.role === "venue" ? (
+                  <ProfileSelect label="Sample venue" value={snapshot.venueId} onChange={setVenueId} options={venues.map((venue) => ({ id: venue.id, label: `${venue.name} · ${venue.city}` }))} />
+                ) : null}
+                {snapshot.role === "musician" ? (
+                  <ProfileSelect label="Sample musician" value={snapshot.musicianId} onChange={setMusicianId} options={musicians.map((musician) => ({ id: musician.id, label: `${musician.name} · ${musician.instruments.join(", ")}` }))} />
+                ) : null}
+              </div>
+            ) : null}
+          </div>
         ) : null}
         <div className="flex flex-wrap gap-2">
           <Button

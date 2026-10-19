@@ -1,4 +1,4 @@
-import { cities, getCity } from "@/lib/catalog";
+import { cities, getCity, getExtraPlace } from "@/lib/catalog";
 
 export type Place = {
   id: string;
@@ -172,6 +172,8 @@ export function driveBetween(a: { lat: number; lng: number }, b: { lat: number; 
 }
 
 export function placeForSlug(slug: string): Place | null {
+  const extra = getExtraPlace(slug);
+  if (extra) return extra;
   const city = getCity(slug);
   const coords = CITY_COORDS[slug];
   if (!city || !coords) return null;

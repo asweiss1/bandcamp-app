@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 const setups = ["Acoustic", "Battery amp", "Small PA"];
 
 export function OpportunityDetail({ id, surface }: { id: string; surface: "phone" | "desk" }) {
-  const { snapshot, applyToOpportunity, withdrawApplication } = useApp();
+  const { snapshot, applyToOpportunity, withdrawApplication, confirmApplication } = useApp();
   const opportunity = snapshot.opportunities.find((item) => item.id === id);
   const back = surface === "phone" ? "/phone/book" : "/dates";
   const backLabel = surface === "phone" ? "← Opportunities" : "← Booking opportunities";
@@ -54,6 +54,7 @@ export function OpportunityDetail({ id, surface }: { id: string; surface: "phone
       }
       onApply={applyToOpportunity}
       onWithdraw={withdrawApplication}
+      onConfirm={confirmApplication}
     />
   );
   return surface === "desk" ? <PageFrame>{body}</PageFrame> : body;
@@ -69,6 +70,7 @@ function OpportunityBody({
   stayHref,
   onApply,
   onWithdraw,
+  onConfirm,
 }: {
   opportunity: Opportunity;
   bandName?: string;
@@ -77,8 +79,9 @@ function OpportunityBody({
   back: string;
   backLabel: string;
   stayHref: string;
-  onApply: (id: string, input: { setup: string; note: string }) => { ok: true; data: string } | { ok: false; error: string };
+  onApply: (id: string, input: { setup: string; note: string }) => { ok: true; data: string; warning?: string } | { ok: false; error: string };
   onWithdraw: (id: string) => { ok: true; data: string } | { ok: false; error: string };
+  onConfirm: (id: string) => { ok: true; data: string } | { ok: false; error: string };
 }) {
   const [setup, setSetup] = useState(setups[0]);
   const [note, setNote] = useState("");
@@ -95,7 +98,17 @@ function OpportunityBody({
     }
     setError(null);
     setOpen(false);
-    toast("Application sent");
+    toast(result.warning ?? "Application sent");
+  }
+
+  function confirmHold() {
+    if (!mine) return;
+    const result = onConfirm(mine.id);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    toast("Hold confirmed. Other talks on that night are closed.");
   }
 
   function withdraw() {
@@ -161,6 +174,11 @@ function OpportunityBody({
           <p className="mt-1 text-sm text-muted-foreground">
             {mine.setup}. {mine.note}
           </p>
+          {mine.status === "applied" ? (
+            <Button className="mt-3 h-11 w-full" onClick={confirmHold}>
+              Mark this hold confirmed
+            </Button>
+          ) : null}
           <Button variant="outline" className="mt-3 h-11 w-full" onClick={withdraw}>
             Withdraw
           </Button>

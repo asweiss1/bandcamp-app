@@ -1,5 +1,5 @@
-import { bands, getVenue, venues } from "@/lib/catalog";
-import { CITY_COORDS, milesBetween, placeForSlug, type Place } from "@/lib/geo";
+import { getVenue, listBands, listVenues } from "@/lib/catalog";
+import { milesBetween, placeForSlug, type Place } from "@/lib/geo";
 import { dateFill } from "@/lib/queries";
 import type { Snapshot } from "@/lib/types";
 
@@ -15,9 +15,9 @@ export type NearHit = {
 };
 
 function milesToSlug(place: Place, slug: string) {
-  const coords = CITY_COORDS[slug];
-  if (!coords) return null;
-  return Math.round(milesBetween(place, coords));
+  const dest = placeForSlug(slug);
+  if (!dest) return null;
+  return Math.round(milesBetween(place, dest));
 }
 
 export function nearFeed(snapshot: Snapshot, place: Place, radiusMiles: number, surface: "desk" | "phone") {
@@ -42,7 +42,7 @@ export function nearFeed(snapshot: Snapshot, place: Place, radiusMiles: number, 
   dates.sort((a, b) => a.miles - b.miles || a.meta.localeCompare(b.meta));
 
   const bandHits: NearHit[] = [];
-  for (const band of bands) {
+  for (const band of listBands()) {
     const home = milesToSlug(place, band.citySlug);
     const hold = snapshot.bookings.find((booking) => {
       if (booking.bandId !== band.id || booking.status === "declined") return false;
@@ -107,7 +107,7 @@ export function nearFeed(snapshot: Snapshot, place: Place, radiusMiles: number, 
   }
   posts.sort((a, b) => a.miles - b.miles);
 
-  const known = venues.some((venue) => milesToSlug(place, venue.citySlug) != null && milesToSlug(place, venue.citySlug)! <= radiusMiles);
+  const known = listVenues().some((venue) => milesToSlug(place, venue.citySlug) != null && milesToSlug(place, venue.citySlug)! <= radiusMiles);
   return {
     dates: dates.slice(0, 12),
     bands: bandHits.slice(0, 8),

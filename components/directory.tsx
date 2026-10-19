@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { bands, cities, GENRES, getCity, getMusician, getVenue, musicians, venues } from "@/lib/catalog";
+import { cities, GENRES, getBand, getCity, getMusician, getVenue, listMusicians, listVenues } from "@/lib/catalog";
 import { dateFill, sortByDate } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import type { Venue } from "@/lib/types";
@@ -41,7 +41,7 @@ export function BandIndex() {
 export function VenueIndex() {
   const [city, setCity] = useState("all");
   const [genre, setGenre] = useState("all");
-  const rows = venues.filter((venue) => {
+  const rows = listVenues().filter((venue) => {
     if (city !== "all" && venue.citySlug !== city) return false;
     if (genre !== "all" && !venue.genres.includes(genre)) return false;
     return true;
@@ -65,8 +65,8 @@ export function VenueIndex() {
 }
 
 export function BandProfile({ id }: { id: string }) {
-  const band = bands.find((item) => item.id === id);
   const { snapshot } = useApp();
+  const band = getBand(id);
   const [offerOpen, setOfferOpen] = useState(false);
   if (!band) return <Missing href="/bands" label="Back to bands" title="No band by that name." />;
   const gigs = snapshot.bookings.filter((booking) => booking.bandId === band.id && booking.status !== "declined");
@@ -85,6 +85,7 @@ export function BandProfile({ id }: { id: string }) {
           </span>
         ))}
       </div>
+      {band.photo ? <img src={band.photo} alt="" className="mt-4 size-24 rounded-2xl object-cover" /> : null}
       <h1 className="mt-3 font-display text-5xl tracking-tight">{band.name}</h1>
       <div className="mt-3 flex flex-wrap gap-1.5">
         {band.styles.map((style) => (
@@ -174,8 +175,8 @@ export function BandProfile({ id }: { id: string }) {
 }
 
 export function VenueProfile({ id }: { id: string }) {
-  const venue = venues.find((item) => item.id === id);
   const { snapshot } = useApp();
+  const venue = getVenue(id);
   if (!venue) return <Missing href="/venues" label="Back to venues" title="No venue by that name." />;
   const dates = sortByDate(snapshot.openDates.filter((item) => item.venueId === venue.id));
   return (
@@ -183,7 +184,9 @@ export function VenueProfile({ id }: { id: string }) {
       <Link href="/venues" className="text-sm font-medium text-rust">
         ← Venues
       </Link>
+      {venue.photo ? <img src={venue.photo} alt="" className="mt-4 size-24 rounded-2xl object-cover" /> : null}
       <h1 className="mt-3 font-display text-5xl tracking-tight">{venue.name}</h1>
+      {venue.address ? <p className="mt-2 text-sm text-muted-foreground">{venue.address}</p> : null}
       <p className="mt-2 text-lg text-muted-foreground">
         {venue.neighborhood}, {venue.city} · {venue.capacity} capacity
       </p>
@@ -233,7 +236,7 @@ export function MusicianIndex() {
     <PageFrame>
       <PageIntro eyebrow="Players" title="Musicians" lede="People behind the board listings. Reach out from a profile or from a specific gig." />
       <div className="grid gap-3 sm:grid-cols-2">
-        {musicians.map((musician) => (
+        {listMusicians().map((musician) => (
           <Link key={musician.id} href={`/musicians/${musician.id}`} className="rounded-2xl border bg-card p-4 hover:border-rust/40">
             <p className="font-display text-2xl">{musician.name}</p>
             <p className="text-sm text-muted-foreground">
@@ -248,8 +251,8 @@ export function MusicianIndex() {
 }
 
 export function MusicianProfile({ id }: { id: string }) {
-  const musician = getMusician(id);
   const { snapshot, expressInterest } = useApp();
+  const musician = getMusician(id);
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -274,10 +277,19 @@ export function MusicianProfile({ id }: { id: string }) {
       <Link href="/board" className="text-sm font-medium text-rust">
         ← Board
       </Link>
+      {musician.photo ? <img src={musician.photo} alt="" className="mt-4 size-24 rounded-2xl object-cover" /> : null}
       <h1 className="mt-3 font-display text-5xl">{musician.name}</h1>
       <p className="mt-2 text-muted-foreground">
-        {musician.instruments.join(", ")} · {musician.genres.join(", ")} · {musician.city}
+        {musician.instruments.join(", ")} · {(musician.styles ?? musician.genres).join(", ")} · {musician.city}
+        {musician.radiusMiles ? ` · ${musician.radiusMiles} mi` : ""}
       </p>
+      {musician.seeks && musician.seeks.length > 0 ? (
+        <p className="mt-2 text-sm">
+          {musician.seeks.includes("fill-in") ? "Fill-ins" : ""}
+          {musician.seeks.includes("fill-in") && musician.seeks.includes("member") ? " · " : ""}
+          {musician.seeks.includes("member") ? "Joining a band" : ""}
+        </p>
+      ) : null}
       <p className="mt-4 max-w-2xl leading-relaxed">{musician.bio}</p>
       <dl className="mt-6 grid gap-3 sm:grid-cols-2">
         <Stat label="Availability" value={musician.availability} />
@@ -286,6 +298,11 @@ export function MusicianProfile({ id }: { id: string }) {
       <p className="mt-4 text-sm">
         <a className="text-rust underline" href={`mailto:${musician.email}`}>{musician.email}</a>
       </p>
+      {self ? (
+        <div className="mt-6 max-w-2xl">
+          <BandSamples bandId={musician.id} />
+        </div>
+      ) : null}
       {listings.length > 0 ? (
         <div className="mt-6 grid gap-2">
           {listings.map((listing) => (

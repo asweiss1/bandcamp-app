@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { planBatchClash } from "@/lib/conflicts";
 import { defaultTerms, formatDay, money } from "@/lib/deal";
 import { fuelAssumptions, gallonPrice, fuelSourceLabel, priceDrive, rigFor, type FuelQuote, type Rig } from "@/lib/fuel";
 import { useFuelQuote } from "@/lib/fuel-client";
@@ -75,9 +76,25 @@ export function TourPlanner({ surface }: { surface: "desk" | "phone" }) {
       toast.error("Switch to a band to send these gig requests.");
       return;
     }
+    const stops = current.nights
+      .filter((night) => night.kind === "gig" && night.openDateId)
+      .map((night) => ({
+        openDateId: night.openDateId as string,
+        date: night.date,
+        lat: night.place.lat,
+        lng: night.place.lng,
+        citySlug: night.place.id,
+        label: night.venueName ?? night.title,
+      }));
+    const clash = planBatchClash(snapshot, snapshot.bandId, stops, maxDriveHours);
+    if (clash) {
+      toast.error(clash);
+      return;
+    }
     setSending(true);
     let sent = 0;
     let skipped = 0;
+    let warning: string | undefined;
     for (const night of current.nights) {
       if (night.kind !== "gig" || !night.openDateId) continue;
       const result = requestDate(
@@ -88,8 +105,10 @@ export function TourPlanner({ surface }: { surface: "desk" | "phone" }) {
           note: `Tour plan for ${night.place.label} on ${night.date}. Sample request from the route builder.`,
         }),
       );
-      if (result.ok) sent += 1;
-      else skipped += 1;
+      if (result.ok) {
+        sent += 1;
+        warning ??= result.warning;
+      } else skipped += 1;
     }
     setSending(false);
     savePlan(current);
@@ -100,6 +119,7 @@ export function TourPlanner({ surface }: { surface: "desk" | "phone" }) {
     toast.success(
       `Sent ${sent} gig ${sent === 1 ? "request" : "requests"}. Lodging picks stay on this plan.${skipped ? ` ${skipped} already in talks.` : ""}`,
     );
+    if (warning) toast(warning);
   }
 
   const shown = plan ?? built;

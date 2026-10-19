@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSyncExternalStore } from "react";
 import { CalendarDays, LayoutDashboard, Menu, MoonStar, Smartphone, Tent, Users } from "lucide-react";
+import { Onboarding } from "@/components/onboarding";
 import { isYourMove } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -35,11 +37,19 @@ function active(pathname: string, href: string) {
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { snapshot } = useApp();
+  const ready = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const moves = snapshot.bookings.filter((booking) => isYourMove(booking, snapshot)).length;
+  const phone = pathname === "/phone" || pathname.startsWith("/phone/");
 
-  if (pathname === "/phone" || pathname.startsWith("/phone/")) {
-    return <>{children}</>;
+  if (!ready) return <div className="min-h-dvh bg-paper" />;
+  if (snapshot.account.phase === "welcome") {
+    return <Onboarding surface={phone ? "phone" : "desk"} />;
   }
+  if (phone) return <>{children}</>;
 
   return (
     <div className="flex min-h-full flex-col">
@@ -93,13 +103,23 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
+      {snapshot.account.demo ? (
+        <div className="border-b bg-sand">
+          <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-2 text-sm sm:px-6">
+            <p>You are exploring sample profiles. Your own profiles stay on this device.</p>
+            <Link href="/start" className="font-semibold text-rust">
+              Your profiles
+            </Link>
+          </div>
+        </div>
+      ) : null}
       <main id="content" className="flex-1 pb-24 md:pb-10">
         {children}
       </main>
       <footer className="hidden border-t md:block">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-6 py-4 text-xs text-muted-foreground">
           <p>BandCamp is a working prototype. Lodging laws and room rates are example data.</p>
-          <p>No account, no payment, no contract — yet.</p>
+          <p>Profiles stay in this browser until accounts exist. No payment, no contract — yet.</p>
         </div>
       </footer>
       <nav

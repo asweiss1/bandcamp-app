@@ -76,6 +76,9 @@ export type Band = {
   routeFrom: string | null;
   routeTo: string | null;
   routeCities: string[];
+  photo?: string | null;
+  lat?: number;
+  lng?: number;
 };
 
 export type Venue = {
@@ -93,6 +96,10 @@ export type Venue = {
   bio: string;
   backline: string;
   loadInNotes: string;
+  address?: string;
+  photo?: string | null;
+  lat?: number;
+  lng?: number;
 };
 
 export type Musician = {
@@ -106,6 +113,29 @@ export type Musician = {
   email: string;
   availability: string;
   paidPreference: string;
+  styles?: string[];
+  radiusMiles?: number;
+  seeks?: ("fill-in" | "member")[];
+  photo?: string | null;
+  lat?: number;
+  lng?: number;
+};
+
+export type OwnedProfile = {
+  id: string;
+  role: Role;
+  createdAt: string;
+  updatedAt: string;
+  band: Band | null;
+  venue: Venue | null;
+  musician: Musician | null;
+};
+
+export type Account = {
+  phase: "welcome" | "ready";
+  demo: boolean;
+  activeId: string | null;
+  profiles: OwnedProfile[];
 };
 
 export type ListingKind = "fill-in" | "member";
@@ -138,6 +168,7 @@ export type Interest = {
   fromId: string;
   message: string;
   createdAt: string;
+  status?: "pending" | "confirmed" | "declined";
 };
 
 export type OpportunityKind = "permit" | "festival";
@@ -269,6 +300,7 @@ export type Snapshot = {
   nightStays: NightStay[];
   vehicles: Vehicle[];
   fuelOverrides: FuelOverride[];
+  account: Account;
 };
 
 export type DateFill = "open" | "in-talks" | "filled";

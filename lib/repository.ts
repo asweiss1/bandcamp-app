@@ -1,3 +1,4 @@
+import { isAccount } from "@/lib/account";
 import type { Snapshot } from "@/lib/types";
 
 /**
@@ -6,8 +7,9 @@ import type { Snapshot } from "@/lib/types";
  * The prototype ships a LocalRepository that reads seeded data and writes
  * mutations to localStorage. Pages should not touch storage themselves.
  * A production client can replace LocalRepository with fetch calls that
- * honor the same Snapshot shape (bookings, open dates, listings, interests)
- * while auth and payments live on the server.
+ * honor the same Snapshot shape (bookings, open dates, listings, interests,
+ * and account.profiles) while auth and payments live on the server.
+ * account.profiles is the local stand-in for a signed-in user.
  */
 export interface Repository {
   load(fallback: Snapshot): Snapshot;
@@ -49,6 +51,9 @@ export const localRepository: Repository = {
         nightStays: Array.isArray(parsed.nightStays) ? parsed.nightStays : fallback.nightStays,
         vehicles: Array.isArray(parsed.vehicles) ? parsed.vehicles : fallback.vehicles,
         fuelOverrides: Array.isArray(parsed.fuelOverrides) ? parsed.fuelOverrides : fallback.fuelOverrides,
+        account: isAccount(parsed.account)
+          ? parsed.account
+          : { phase: "ready", demo: true, activeId: null, profiles: [] },
       };
     } catch {
       return fallback;

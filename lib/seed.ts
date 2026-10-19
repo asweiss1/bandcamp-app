@@ -934,4 +934,10 @@ export const initialSnapshot: Snapshot = {
   nightStays: seedNightStays,
   vehicles: seedVehicles,
   fuelOverrides: [],
+  account: {
+    phase: "welcome",
+    demo: false,
+    activeId: null,
+    profiles: [],
+  },
 };

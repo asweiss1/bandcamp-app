@@ -63,7 +63,7 @@ export function OfferDialog({
       setError(result.error);
       return;
     }
-    toast("Offer sent");
+    toast(result.warning ?? "Offer sent");
     onOpenChange(false);
     router.push(bookingHref(result.data));
   }

@@ -16,6 +16,7 @@ import {
 } from "@/lib/audio-db";
 import { uid } from "@/lib/deal";
 import { SEED_TRACKS } from "@/lib/seed-tracks";
+import { ownsProfile } from "@/lib/account";
 import { useApp } from "@/lib/store";
 import type { StreamService } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -194,7 +195,7 @@ function TrackRow({ track, showNotes = false }: { track: Playable; showNotes?: b
 
 function SampleEditor({ bandId }: { bandId: string }) {
   const { snapshot, addStreamLink, removeStreamLink } = useApp();
-  const editable = snapshot.role === "band" && snapshot.bandId === bandId;
+  const editable = ownsProfile(snapshot, bandId) && (snapshot.role === "band" || snapshot.role === "musician");
   const links = snapshot.streamLinks.filter((link) => link.bandId === bandId);
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");

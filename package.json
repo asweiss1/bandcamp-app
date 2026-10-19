@@ -6,7 +6,8 @@
     "dev": "next dev -p 4317 -H 0.0.0.0",
     "build": "next build",
     "start": "next start -p 4317 -H 0.0.0.0",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "tsx --test lib/conflicts.test.ts"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
@@ -32,6 +33,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.2",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }

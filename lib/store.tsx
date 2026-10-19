@@ -1,6 +1,17 @@
 "use client";
 
 import { createContext, useContext, useMemo, useSyncExternalStore } from "react";
+import { syncCatalog, ownsProfile, isAccount } from "@/lib/account";
+import {
+  candidateForApplication,
+  candidateForBooking,
+  candidateForFillIn,
+  competingIds,
+  confirmedClash,
+  lodgingClash,
+  pendingOverlap,
+  type Commitment,
+} from "@/lib/conflicts";
 import { getBand, getMusician, getVenue } from "@/lib/catalog";
 import { clearAudioTracks } from "@/lib/audio-db";
 import { termsError, uid } from "@/lib/deal";
@@ -25,6 +36,7 @@ import type {
   VehicleType,
   FuelType,
   FuelOverride,
+  OwnedProfile,
 } from "@/lib/types";
 
 const SYNC_EVENT = "bandcamp-sync";
@@ -57,12 +69,20 @@ function readMemory() {
       fuelOverrides: Array.isArray(memory.fuelOverrides) ? memory.fuelOverrides : initialSnapshot.fuelOverrides,
     };
   }
+  if (!isAccount(memory.account)) {
+    memory = {
+      ...memory,
+      account: { phase: "ready", demo: true, activeId: null, profiles: [] },
+    };
+  }
+  syncCatalog(memory);
   return memory;
 }
 
 function writeMemory(next: Snapshot) {
   memory = next;
   loaded = true;
+  syncCatalog(next);
   localRepository.save(next);
   window.dispatchEvent(new Event(SYNC_EVENT));
 }
@@ -76,7 +96,7 @@ function serverSnapshot() {
   return initialSnapshot;
 }
 
-type Result<T> = { ok: true; data: T } | { ok: false; error: string };
+type Result<T> = { ok: true; data: T; warning?: string } | { ok: false; error: string };
 
 type AppContextValue = {
   ready: boolean;
@@ -104,7 +124,9 @@ type AppContextValue = {
     message: string;
   }) => Result<string>;
   applyToOpportunity: (opportunityId: string, input: { setup: string; note: string }) => Result<string>;
+  confirmApplication: (applicationId: string) => Result<string>;
   withdrawApplication: (applicationId: string) => Result<string>;
+  confirmInterest: (interestId: string) => Result<string>;
   setRepertoire: (bandId: string, patch: Partial<Omit<Repertoire, "bandId">>) => Result<string>;
   addStreamLink: (bandId: string, service: StreamService, url: string) => Result<string>;
   removeStreamLink: (id: string) => Result<string>;
@@ -112,6 +134,17 @@ type AppContextValue = {
   saveVehicle: (vehicle: Omit<Vehicle, "id" | "towMpg"> & { id?: string; towMpg?: number | null }) => Result<string>;
   removeVehicle: (id: string) => Result<string>;
   setFuelPrice: (bandId: string, legId: string, price: number | null) => Result<string>;
+  saveProfile: (
+    profile: OwnedProfile,
+    extras?: {
+      finish?: boolean;
+      originalsOnly?: boolean;
+      coversNote?: string;
+      openDates?: Omit<OpenDate, "id" | "venueId">[];
+    },
+  ) => Result<string>;
+  activateProfile: (id: string) => Result<string>;
+  exploreDemo: (role?: Role) => void;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -150,6 +183,54 @@ function duplicateBooking(snapshot: Snapshot, openDateId: string, bandId: string
   );
 }
 
+function declineBooking(item: Booking, note: string, actorName: string): Booking {
+  return {
+    ...item,
+    status: "declined",
+    awaiting: null,
+    events: [
+      ...item.events,
+      {
+        id: uid("ev"),
+        at: new Date().toISOString(),
+        actor: "venue",
+        actorName,
+        kind: "decline",
+        terms: item.terms,
+        note,
+      },
+    ],
+  };
+}
+
+function settleConfirmed(
+  current: Snapshot,
+  winner: Commitment,
+  next: Pick<Snapshot, "bookings" | "applications" | "interests">,
+) {
+  const rivals = competingIds({ ...current, ...next }, winner);
+  const closeNote = `Closed because ${winner.label} was confirmed.`;
+  const venue = getVenue(winner.venueId ?? "");
+  const closer = venue ? `${venue.bookerName} · ${venue.name}` : "BandCamp";
+  return {
+    bookings: next.bookings.map((item) => {
+      if (!rivals.bookingIds.includes(item.id)) return item;
+      if (item.status === "declined" || item.status === "accepted") return item;
+      return declineBooking(item, closeNote, closer);
+    }),
+    applications: next.applications.map((item) => {
+      if (!rivals.applicationIds.includes(item.id)) return item;
+      if (item.status === "declined" || item.status === "accepted") return item;
+      return { ...item, status: "declined" as const, note: `${item.note} ${closeNote}`.trim() };
+    }),
+    interests: next.interests.map((item) => {
+      if (!rivals.interestIds.includes(item.id)) return item;
+      if (item.status === "declined" || item.status === "confirmed") return item;
+      return { ...item, status: "declined" as const, message: `${item.message}\n${closeNote}` };
+    }),
+  };
+}
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const snapshot = useSyncExternalStore(subscribe, readMemory, serverSnapshot);
 
@@ -166,9 +247,44 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setVenueId: (venueId) => update({ ...readMemory(), venueId }),
       setMusicianId: (musicianId) => update({ ...readMemory(), musicianId }),
       reset: () => {
-        localRepository.clear();
-        void clearAudioTracks();
-        update(initialSnapshot);
+        const current = readMemory();
+        const ownedIds = new Set(current.account.profiles.map((profile) => profile.id));
+        if (ownedIds.size === 0) {
+          localRepository.clear();
+          void clearAudioTracks();
+          update(initialSnapshot);
+          return;
+        }
+        const demo = current.account.demo;
+        update({
+          ...initialSnapshot,
+          account: { ...current.account, phase: "ready" },
+          role: demo ? "band" : current.role,
+          bandId: demo ? "mesa-dust" : current.bandId,
+          venueId: demo ? "high-country" : current.venueId,
+          musicianId: demo ? "lena-ortiz" : current.musicianId,
+          vehicles: [
+            ...initialSnapshot.vehicles,
+            ...current.vehicles.filter((vehicle) => ownedIds.has(vehicle.bandId)),
+          ],
+          streamLinks: [
+            ...initialSnapshot.streamLinks,
+            ...current.streamLinks.filter((link) => ownedIds.has(link.bandId)),
+          ],
+          repertoires: [
+            ...initialSnapshot.repertoires,
+            ...current.repertoires.filter((item) => ownedIds.has(item.bandId)),
+          ],
+          openDates: [
+            ...initialSnapshot.openDates,
+            ...current.openDates.filter((date) => ownedIds.has(date.venueId)),
+          ],
+          nightStays: [
+            ...initialSnapshot.nightStays,
+            ...current.nightStays.filter((stay) => ownedIds.has(stay.bandId)),
+          ],
+          fuelOverrides: current.fuelOverrides.filter((item) => ownedIds.has(item.bandId)),
+        });
       },
       requestDate: (openDateId, terms) => {
         const current = readMemory();
@@ -198,8 +314,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           events: [eventFor(current, "band", "request", terms, note)],
           createdAt: new Date().toISOString(),
         };
+        const candidate = candidateForBooking(current, booking, "pending");
+        if (!candidate) return { ok: false, error: "That date is no longer listed." };
+        const clash = confirmedClash(current, candidate);
+        if (clash) return { ok: false, error: clash };
         update({ ...current, bookings: [booking, ...current.bookings] });
-        return { ok: true, data: booking.id };
+        return { ok: true, data: booking.id, warning: pendingOverlap(current, candidate) ?? undefined };
       },
       sendOffer: (openDateId, bandId, terms) => {
         const current = readMemory();
@@ -232,8 +352,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           events: [eventFor(current, "venue", "offer", terms, note)],
           createdAt: new Date().toISOString(),
         };
+        const candidate = candidateForBooking(current, booking, "pending");
+        if (!candidate) return { ok: false, error: "That date is no longer listed." };
+        const clash = confirmedClash(current, candidate);
+        if (clash) return { ok: false, error: clash };
         update({ ...current, bookings: [booking, ...current.bookings] });
-        return { ok: true, data: booking.id };
+        return { ok: true, data: booking.id, warning: pendingOverlap(current, candidate) ?? undefined };
       },
       counter: (bookingId, terms) => {
         const current = readMemory();
@@ -267,6 +391,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (!party || booking.awaiting !== party) {
           return { ok: false, error: "It's not your turn to accept." };
         }
+        const candidate = candidateForBooking(current, booking, "confirmed");
+        if (!candidate) return { ok: false, error: "That date is no longer listed." };
+        const clash = confirmedClash(current, candidate);
+        if (clash) return { ok: false, error: clash };
         const note = "Accepted. This date is confirmed.";
         const accepted: Booking = {
           ...booking,
@@ -277,35 +405,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         };
         const venue = getVenue(booking.venueId);
         const closer = venue ? `${venue.bookerName} · ${venue.name}` : "Venue";
-        const bookings = current.bookings.map((item) => {
+        const sameNight = current.bookings.map((item) => {
           if (item.id === booking.id) return accepted;
           if (
             item.openDateId === booking.openDateId &&
             item.status !== "declined" &&
             item.status !== "accepted"
           ) {
-            const declineNote = "The date was confirmed with another band.";
-            return {
-              ...item,
-              status: "declined" as const,
-              awaiting: null,
-              events: [
-                ...item.events,
-                {
-                  id: uid("ev"),
-                  at: new Date().toISOString(),
-                  actor: "venue" as const,
-                  actorName: closer,
-                  kind: "decline" as const,
-                  terms: item.terms,
-                  note: declineNote,
-                },
-              ],
-            };
+            return declineBooking(item, "The date was confirmed with another band.", closer);
           }
           return item;
         });
-        update({ ...current, bookings });
+        const settled = settleConfirmed(current, candidate, {
+          bookings: sameNight,
+          applications: current.applications,
+          interests: current.interests,
+        });
+        update({ ...current, ...settled });
         return { ok: true, data: booking.id };
       },
       decline: (bookingId, note) => {
@@ -393,9 +509,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           fromId: from.id,
           message: text,
           createdAt: new Date().toISOString(),
+          status: "pending",
         };
+        const listing = listingId ? current.listings.find((item) => item.id === listingId) : undefined;
+        const candidate = listing ? candidateForFillIn(interest, listing, "pending") : null;
+        if (candidate) {
+          const clash = confirmedClash(current, candidate);
+          if (clash) return { ok: false, error: clash };
+        }
         update({ ...current, interests: [interest, ...current.interests] });
-        return { ok: true, data: interest.id };
+        return {
+          ok: true,
+          data: interest.id,
+          warning: candidate ? pendingOverlap(current, candidate) ?? undefined : undefined,
+        };
       },
       applyToOpportunity: (opportunityId, { setup, note }) => {
         const current = readMemory();
@@ -430,7 +557,35 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           note: text,
           createdAt: new Date().toISOString(),
         };
+        const candidate = candidateForApplication(application, opportunity, "pending");
+        const clash = confirmedClash(current, candidate);
+        if (clash) return { ok: false, error: clash };
         update({ ...current, applications: [application, ...current.applications] });
+        return { ok: true, data: application.id, warning: pendingOverlap(current, candidate) ?? undefined };
+      },
+      confirmApplication: (applicationId) => {
+        const current = readMemory();
+        const application = current.applications.find((item) => item.id === applicationId);
+        if (!application) return { ok: false, error: "That application is gone." };
+        if (current.role !== "band" || current.bandId !== application.bandId) {
+          return { ok: false, error: "Only the band on the application can confirm it." };
+        }
+        if (application.status === "accepted") return { ok: false, error: "This hold is already confirmed." };
+        if (application.status !== "applied") return { ok: false, error: "This application is already closed." };
+        const opportunity = current.opportunities.find((item) => item.id === application.opportunityId);
+        if (!opportunity) return { ok: false, error: "That listing is gone." };
+        const candidate = candidateForApplication(application, opportunity, "confirmed");
+        const clash = confirmedClash(current, candidate);
+        if (clash) return { ok: false, error: clash };
+        const applications = current.applications.map((item) =>
+          item.id === application.id ? { ...item, status: "accepted" as const } : item,
+        );
+        const settled = settleConfirmed(current, candidate, {
+          bookings: current.bookings,
+          applications,
+          interests: current.interests,
+        });
+        update({ ...current, ...settled });
         return { ok: true, data: application.id };
       },
       withdrawApplication: (applicationId) => {
@@ -451,12 +606,40 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         });
         return { ok: true, data: application.id };
       },
+      confirmInterest: (interestId) => {
+        const current = readMemory();
+        const interest = current.interests.find((item) => item.id === interestId);
+        if (!interest?.listingId) return { ok: false, error: "That note is gone." };
+        const listing = current.listings.find((item) => item.id === interest.listingId);
+        if (!listing) return { ok: false, error: "That listing is gone." };
+        if (listing.kind !== "fill-in") return { ok: false, error: "Only a fill-in night can be confirmed." };
+        const owner = posterIdentity(current);
+        if (listing.posterId !== owner.id || listing.posterRole !== current.role) {
+          return { ok: false, error: "Only the listing owner can confirm a player." };
+        }
+        if (interest.status === "confirmed") return { ok: false, error: "This player is already confirmed." };
+        if (interest.status === "declined") return { ok: false, error: "This note is already closed." };
+        const candidate = candidateForFillIn(interest, listing, "confirmed");
+        if (!candidate) return { ok: false, error: "That listing needs a date before it can be confirmed." };
+        const clash = confirmedClash(current, candidate);
+        if (clash) return { ok: false, error: clash };
+        const interests = current.interests.map((item) =>
+          item.id === interest.id ? { ...item, status: "confirmed" as const } : item,
+        );
+        const settled = settleConfirmed(current, candidate, {
+          bookings: current.bookings,
+          applications: current.applications,
+          interests,
+        });
+        update({ ...current, ...settled });
+        return { ok: true, data: interest.id };
+      },
       setRepertoire: (bandId, patch) => {
         const current = readMemory();
         if (current.role !== "band" || current.bandId !== bandId) {
           return { ok: false, error: "Switch to this band to update the setlist." };
         }
-        if (!getBand(bandId)) return { ok: false, error: "That band is not in the sample set." };
+        if (!getBand(bandId)) return { ok: false, error: "Save the band profile first." };
         const existing =
           current.repertoires.find((item) => item.bandId === bandId) ?? {
             bandId,
@@ -478,8 +661,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       },
       addStreamLink: (bandId, service, url) => {
         const current = readMemory();
-        if (current.role !== "band" || current.bandId !== bandId) {
-          return { ok: false, error: "Switch to this band to add a link." };
+        if (!ownsProfile(current, bandId)) {
+          return { ok: false, error: "Switch to this profile to add a link." };
         }
         const href = url.trim();
         if (!/^https?:\/\/\S+$/i.test(href) || href.length > 200) {
@@ -495,8 +678,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const current = readMemory();
         const link = current.streamLinks.find((item) => item.id === id);
         if (!link) return { ok: false, error: "That link is already gone." };
-        if (current.role !== "band" || current.bandId !== link.bandId) {
-          return { ok: false, error: "Switch to this band to remove a link." };
+        if (!ownsProfile(current, link.bandId)) {
+          return { ok: false, error: "Switch to this profile to remove a link." };
         }
         update({ ...current, streamLinks: current.streamLinks.filter((item) => item.id !== id) });
         return { ok: true, data: id };
@@ -512,6 +695,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (stay.status === "booked" && stay.confirmation.trim().length < 4) {
           return { ok: false, error: "Add a confirmation note. Sample text is fine." };
         }
+        const roomTaken = lodgingClash(current.nightStays, stay);
+        if (roomTaken) return { ok: false, error: roomTaken };
         const next: NightStay = {
           id: stay.id ?? uid("ns"),
           bandId: stay.bandId,
@@ -600,6 +785,99 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         };
         update({ ...current, fuelOverrides: [...rest, next] });
         return { ok: true, data: next.id };
+      },
+      saveProfile: (profile, extras) => {
+        const current = readMemory();
+        const name =
+          profile.role === "band"
+            ? profile.band?.name
+            : profile.role === "venue"
+              ? profile.venue?.name
+              : profile.musician?.name;
+        if (!name || name.trim().length < 2) return { ok: false, error: "Give this profile a name." };
+        const now = new Date().toISOString();
+        const existing = current.account.profiles.find((item) => item.id === profile.id);
+        const nextProfile: OwnedProfile = {
+          ...profile,
+          createdAt: existing?.createdAt ?? now,
+          updatedAt: now,
+        };
+        const profiles = existing
+          ? current.account.profiles.map((item) => (item.id === nextProfile.id ? nextProfile : item))
+          : [...current.account.profiles, nextProfile];
+        let repertoires = current.repertoires;
+        if (profile.role === "band" && extras && extras.originalsOnly != null) {
+          const repertoire: Repertoire = {
+            bandId: profile.id,
+            originalsOnly: extras.originalsOnly,
+            coversNote: (extras.coversNote ?? "").slice(0, 240),
+            rightsAttested: extras.originalsOnly,
+          };
+          repertoires = repertoires.some((item) => item.bandId === profile.id)
+            ? repertoires.map((item) => (item.bandId === profile.id ? repertoire : item))
+            : [...repertoires, repertoire];
+        }
+        let openDates = current.openDates;
+        if (profile.role === "venue" && extras?.openDates) {
+          const additions = extras.openDates
+            .filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date.date))
+            .filter(
+              (date) =>
+                !openDates.some(
+                  (item) => item.venueId === profile.id && item.date === date.date && item.showTime === date.showTime,
+                ),
+            )
+            .map((date) => ({
+              ...date,
+              id: uid("od"),
+              venueId: profile.id,
+              genres: date.genres.length > 0 ? date.genres : profile.venue?.genres ?? [],
+              notes: date.notes.slice(0, 240),
+            }));
+          openDates = [...openDates, ...additions];
+        }
+        const finish = Boolean(extras?.finish);
+        update({
+          ...current,
+          account: {
+            phase: finish || current.account.phase === "ready" ? "ready" : "welcome",
+            demo: false,
+            activeId: profile.id,
+            profiles,
+          },
+          role: profile.role,
+          bandId: profile.role === "band" ? profile.id : current.bandId,
+          venueId: profile.role === "venue" ? profile.id : current.venueId,
+          musicianId: profile.role === "musician" ? profile.id : current.musicianId,
+          repertoires,
+          openDates,
+        });
+        return { ok: true, data: profile.id };
+      },
+      activateProfile: (id) => {
+        const current = readMemory();
+        const profile = current.account.profiles.find((item) => item.id === id);
+        if (!profile) return { ok: false, error: "That profile is not on this device." };
+        update({
+          ...current,
+          account: { ...current.account, phase: "ready", demo: false, activeId: profile.id },
+          role: profile.role,
+          bandId: profile.role === "band" ? profile.id : current.bandId,
+          venueId: profile.role === "venue" ? profile.id : current.venueId,
+          musicianId: profile.role === "musician" ? profile.id : current.musicianId,
+        });
+        return { ok: true, data: id };
+      },
+      exploreDemo: (role = "band") => {
+        const current = readMemory();
+        update({
+          ...current,
+          account: { ...current.account, phase: "ready", demo: true },
+          role,
+          bandId: "mesa-dust",
+          venueId: "high-country",
+          musicianId: "lena-ortiz",
+        });
       },
     };
   }, [snapshot]);

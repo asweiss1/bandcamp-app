@@ -112,7 +112,7 @@ export default function HomePage() {
       <section className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
         <h2 className="font-display text-4xl tracking-tight">Pick a side of the table</h2>
         <p className="mt-2 max-w-2xl text-muted-foreground">
-          No accounts yet. These three profiles are already mid-conversation, so the desks are not empty.
+          Or open the sample Southwest book. These three profiles are already mid-conversation, so the desks are not empty.
         </p>
         <div className="mt-6 rounded-3xl bg-ink p-3 text-cream sm:p-4">
           <EnterBar />

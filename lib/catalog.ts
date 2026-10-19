@@ -699,18 +699,56 @@ export const musicians: Musician[] = [
   },
 ];
 
+type ExtraPlace = { id: string; label: string; city: string; state: string; lat: number; lng: number };
+
+let ownedBands: Band[] = [];
+let ownedVenues: Venue[] = [];
+let ownedMusicians: Musician[] = [];
+let extraPlaces: ExtraPlace[] = [];
+
+export function publishOwnedCatalog(next: {
+  bands: Band[];
+  venues: Venue[];
+  musicians: Musician[];
+  places: ExtraPlace[];
+}) {
+  ownedBands = next.bands;
+  ownedVenues = next.venues;
+  ownedMusicians = next.musicians;
+  extraPlaces = next.places;
+}
+
+export function getExtraPlace(id: string) {
+  return extraPlaces.find((place) => place.id === id) ?? null;
+}
+
+export function listBands() {
+  return [...ownedBands, ...bands.filter((band) => !ownedBands.some((owned) => owned.id === band.id))];
+}
+
+export function listVenues() {
+  return [...ownedVenues, ...venues.filter((venue) => !ownedVenues.some((owned) => owned.id === venue.id))];
+}
+
+export function listMusicians() {
+  return [
+    ...ownedMusicians,
+    ...musicians.filter((musician) => !ownedMusicians.some((owned) => owned.id === musician.id)),
+  ];
+}
+
 export function getCity(slug: string) {
   return cities.find((city) => city.slug === slug);
 }
 
 export function getBand(id: string) {
-  return bands.find((band) => band.id === id);
+  return ownedBands.find((band) => band.id === id) ?? bands.find((band) => band.id === id);
 }
 
 export function getVenue(id: string) {
-  return venues.find((venue) => venue.id === id);
+  return ownedVenues.find((venue) => venue.id === id) ?? venues.find((venue) => venue.id === id);
 }
 
 export function getMusician(id: string) {
-  return musicians.find((musician) => musician.id === id);
+  return ownedMusicians.find((musician) => musician.id === id) ?? musicians.find((musician) => musician.id === id);
 }

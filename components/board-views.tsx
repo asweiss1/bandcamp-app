@@ -8,7 +8,7 @@ import { cities, GENRES, INSTRUMENTS } from "@/lib/catalog";
 import { formatWhen } from "@/lib/deal";
 import { interestsForListing, listingOwner } from "@/lib/queries";
 import { useApp } from "@/lib/store";
-import type { Listing, ListingKind } from "@/lib/types";
+import type { Interest, Listing, ListingKind } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { PageFrame, PageIntro } from "@/components/shell";
 import { Button } from "@/components/ui/button";
@@ -117,7 +117,7 @@ export function BoardBrowser() {
 
 export function ListingDetail({ id }: { id: string }) {
   const router = useRouter();
-  const { snapshot, expressInterest } = useApp();
+  const { snapshot, expressInterest, confirmInterest } = useApp();
   const listing = snapshot.listings.find((item) => item.id === id);
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -152,7 +152,7 @@ export function ListingDetail({ id }: { id: string }) {
       setError(result.error);
       return;
     }
-    toast("Interest sent");
+    toast(result.warning ?? "Interest sent");
     router.push("/dashboard");
   }
 
@@ -205,7 +205,16 @@ export function ListingDetail({ id }: { id: string }) {
               {notes.map((interest) => (
                 <li key={interest.id} className="rounded-xl border bg-card px-4 py-3">
                   <p className="font-medium">{interest.fromName}</p>
-                  <p className="mt-1 text-sm">{interest.message}</p>
+                  <p className="mt-1 text-sm whitespace-pre-wrap">{interest.message}</p>
+                  <InterestConfirm
+                    listingKind={listing.kind}
+                    interest={interest}
+                    onConfirm={() => {
+                      const result = confirmInterest(interest.id);
+                      if (!result.ok) toast.error(result.error);
+                      else toast("Player confirmed. Other talks on that night are closed.");
+                    }}
+                  />
                 </li>
               ))}
             </ul>
@@ -229,6 +238,29 @@ export function ListingDetail({ id }: { id: string }) {
         )}
       </section>
     </PageFrame>
+  );
+}
+
+export function InterestConfirm({
+  listingKind,
+  interest,
+  onConfirm,
+}: {
+  listingKind: ListingKind;
+  interest: Interest;
+  onConfirm: () => void;
+}) {
+  if (listingKind !== "fill-in" || interest.fromRole !== "musician") return null;
+  if (interest.status === "confirmed") {
+    return <p className="mt-2 text-sm font-medium">Confirmed for this night.</p>;
+  }
+  if (interest.status === "declined") {
+    return <p className="mt-2 text-sm text-muted-foreground">Closed.</p>;
+  }
+  return (
+    <Button type="button" className="mt-3 h-10" onClick={onConfirm}>
+      Confirm
+    </Button>
   );
 }
 

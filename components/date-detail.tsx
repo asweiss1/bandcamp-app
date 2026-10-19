@@ -56,7 +56,7 @@ export function DateDetail({ id }: { id: string }) {
       setError(result.error);
       return;
     }
-    toast("Request sent");
+    toast(result.warning ?? "Request sent");
     router.push(`/bookings/${result.data}`);
   }
 

@@ -1,4 +1,4 @@
-import { getVenue, venues } from "@/lib/catalog";
+import { getVenue, listVenues } from "@/lib/catalog";
 import { addDays } from "@/lib/deal";
 import { driveBetween, placeForSlug, type Place } from "@/lib/geo";
 import { staysFor } from "@/lib/lodging";
@@ -302,7 +302,7 @@ export function asRest(night: PlanNight): PlanNight {
 }
 
 export function venuesInPlan(openDates: OpenDate[], bookings: Booking[]) {
-  return venues.filter((venue) =>
+  return listVenues().filter((venue) =>
     openDates.some(
       (openDate) => openDate.venueId === venue.id && dateFill(openDate.id, bookings) !== "filled",
     ),

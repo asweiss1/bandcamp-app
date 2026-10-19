@@ -9,6 +9,7 @@ import { interestsForListing, listingOwner, profileId } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import type { ListingKind } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { InterestConfirm } from "@/components/board-views";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -83,7 +84,7 @@ export function PhoneBoard() {
 
 export function PhoneListing({ id }: { id: string }) {
   const router = useRouter();
-  const { snapshot, expressInterest } = useApp();
+  const { snapshot, expressInterest, confirmInterest } = useApp();
   const listing = snapshot.listings.find((item) => item.id === id);
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -117,7 +118,7 @@ export function PhoneListing({ id }: { id: string }) {
     }
     setMessage("");
     setError(null);
-    toast("Interest sent");
+    toast(result.warning ?? "Interest sent");
     router.refresh();
   }
 
@@ -156,7 +157,16 @@ export function PhoneListing({ id }: { id: string }) {
               {notes.map((interest) => (
                 <li key={interest.id} className="rounded-2xl border bg-card px-4 py-3">
                   <p className="font-medium">{interest.fromName}</p>
-                  <p className="mt-1 text-sm">{interest.message}</p>
+                  <p className="mt-1 text-sm whitespace-pre-wrap">{interest.message}</p>
+                  <InterestConfirm
+                    listingKind={listing.kind}
+                    interest={interest}
+                    onConfirm={() => {
+                      const result = confirmInterest(interest.id);
+                      if (!result.ok) toast.error(result.error);
+                      else toast("Player confirmed. Other talks on that night are closed.");
+                    }}
+                  />
                 </li>
               ))}
             </ul>

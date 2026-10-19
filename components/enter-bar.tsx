@@ -7,21 +7,21 @@ import type { Role } from "@/lib/types";
 const choices: { role: Role; title: string; name: string; copy: string; href: string }[] = [
   {
     role: "band",
-    title: "View as band",
+    title: "Sample band",
     name: "Mesa Dust",
     copy: "A Phoenix band mid-route. Flagstaff made an offer. Cottonwood countered. Vegas is still a request.",
     href: "/dashboard",
   },
   {
     role: "venue",
-    title: "View as venue",
+    title: "Sample venue",
     name: "High Country Social",
     copy: "A Flagstaff room with an offer out to Mesa Dust and a Saturday request from Salt Choir.",
     href: "/dashboard",
   },
   {
     role: "musician",
-    title: "View as musician",
+    title: "Sample musician",
     name: "Lena Ortiz",
     copy: "A Tucson drummer with a listing up and a note already sent to Night Market.",
     href: "/board",
@@ -29,7 +29,7 @@ const choices: { role: Role; title: string; name: string; copy: string; href: st
 ];
 
 export function EnterBar() {
-  const { setRole } = useApp();
+  const { exploreDemo } = useApp();
   const router = useRouter();
 
   return (
@@ -39,7 +39,7 @@ export function EnterBar() {
           key={choice.role}
           type="button"
           onClick={() => {
-            setRole(choice.role);
+            exploreDemo(choice.role);
             router.push(choice.href);
           }}
           className="rounded-2xl border border-cream/15 bg-cream/5 px-4 py-4 text-left transition hover:border-amber/60 hover:bg-cream/10 focus-visible:ring-3 focus-visible:ring-amber/60 focus-visible:outline-none"

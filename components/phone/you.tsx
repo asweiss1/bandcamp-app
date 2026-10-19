@@ -1,10 +1,14 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
+import { profileDetail, profileName } from "@/lib/account";
 import { bands, getMusician, musicians, venues } from "@/lib/catalog";
 import { useApp } from "@/lib/store";
 import type { Role } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { ProfileWizard } from "@/components/onboarding";
 import { RepertoirePanel } from "@/components/originals";
 import { VehiclePanel } from "@/components/vehicles";
 import { BandSamples } from "@/components/samples";
@@ -17,18 +21,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import Link from "next/link";
-
-const roles: { id: Role; label: string; hint: string }[] = [
-  { id: "band", label: "Band", hint: "Next gig, the route, and offers." },
-  { id: "venue", label: "Venue", hint: "Holds at the room and open nights." },
-  { id: "musician", label: "Musician", hint: "The board and a city to sleep in." },
-];
 
 export function PhoneYou() {
-  const { snapshot, setRole, setBandId, setVenueId, setMusicianId, reset } = useApp();
+  const { snapshot, setRole, setBandId, setVenueId, setMusicianId, reset, activateProfile, exploreDemo } = useApp();
+  const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [samplesOpen, setSamplesOpen] = useState(false);
   const name = roleLabel(snapshot.role, snapshot.bandId, snapshot.venueId, snapshot.musicianId);
   const musician = getMusician(snapshot.musicianId);
+  const demo = snapshot.account.demo;
+
+  if (adding || editing) {
+    return (
+      <ProfileWizard
+        surface="phone"
+        profileId={editing ? snapshot.account.activeId : null}
+        onDone={() => {
+          setAdding(false);
+          setEditing(false);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="grid gap-5 pb-2">
@@ -36,71 +50,62 @@ export function PhoneYou() {
         <p className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">You</p>
         <h1 className="mt-1 font-display text-4xl leading-none tracking-tight">{name}</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          No login in this prototype. Switching only changes which nights and which buttons you see. It stays in this browser, shared with the desk.
+          {demo
+            ? "You are exploring sample profiles. Create your own any time. It stays in this browser, shared with the desk."
+            : "This profile stays in this browser, shared with the desk, until accounts exist."}
         </p>
       </div>
 
       <div className="grid gap-2">
-        {roles.map((role) => {
-          const selected = snapshot.role === role.id;
+        {snapshot.account.profiles.map((profile) => {
+          const selected = !demo && snapshot.account.activeId === profile.id;
           return (
             <button
-              key={role.id}
+              key={profile.id}
               type="button"
               aria-pressed={selected}
-              onClick={() => setRole(role.id)}
-              className={cn(
-                "rounded-2xl border px-4 py-3 text-left",
-                selected ? "border-rust bg-accent" : "bg-card",
-              )}
+              onClick={() => {
+                const result = activateProfile(profile.id);
+                if (!result.ok) toast.error(result.error);
+              }}
+              className={cn("rounded-2xl border px-4 py-3 text-left", selected ? "border-rust bg-accent" : "bg-card")}
             >
-              <span className="block font-semibold">{role.label}</span>
-              <span className="text-sm text-muted-foreground">{role.hint}</span>
+              <span className="block font-semibold">{profileName(profile)}</span>
+              <span className="text-sm text-muted-foreground">{profileDetail(profile)}</span>
             </button>
           );
         })}
       </div>
 
-      {snapshot.role === "band" ? (
-        <ProfileSelect
-          label="Band"
-          value={snapshot.bandId}
-          onChange={setBandId}
-          options={bands.map((band) => ({ id: band.id, label: `${band.name} · ${band.city}` }))}
-        />
-      ) : null}
-      {snapshot.role === "band" ? <BandSamples bandId={snapshot.bandId} /> : null}
-      {snapshot.role === "band" ? <RepertoirePanel bandId={snapshot.bandId} /> : null}
-      {snapshot.role === "band" ? <VehiclePanel bandId={snapshot.bandId} /> : null}
-      {snapshot.role === "venue" ? (
-        <ProfileSelect
-          label="Venue"
-          value={snapshot.venueId}
-          onChange={setVenueId}
-          options={venues.map((venue) => ({ id: venue.id, label: `${venue.name} · ${venue.city}` }))}
-        />
-      ) : null}
-      {snapshot.role === "musician" ? (
-        <ProfileSelect
-          label="Musician"
-          value={snapshot.musicianId}
-          onChange={setMusicianId}
-          options={musicians.map((player) => ({
-            id: player.id,
-            label: `${player.name} · ${player.instruments.join(", ")}`,
-          }))}
-        />
-      ) : null}
-
-      {snapshot.role === "musician" && musician ? (
-        <p className="rounded-2xl bg-sand px-4 py-3 text-sm leading-relaxed">{musician.bio}</p>
+      {!demo && snapshot.role === "band" ? <BandSamples bandId={snapshot.bandId} /> : null}
+      {!demo && snapshot.role === "band" ? <RepertoirePanel bandId={snapshot.bandId} /> : null}
+      {!demo && snapshot.role === "band" ? <VehiclePanel bandId={snapshot.bandId} /> : null}
+      {!demo && snapshot.role === "musician" && musician ? (
+        <div className="grid gap-3">
+          <p className="rounded-2xl bg-sand px-4 py-3 text-sm leading-relaxed">{musician.bio}</p>
+          <BandSamples bandId={snapshot.musicianId} />
+        </div>
       ) : null}
 
       <div className="grid gap-2">
-        <Button asChild className="h-11">
-          <Link href="/phone">Back to next up</Link>
+        {!demo && snapshot.account.activeId ? (
+          <Button className="h-11" onClick={() => setEditing(true)}>
+            Edit profile
+          </Button>
+        ) : null}
+        <Button variant="outline" className="h-11" onClick={() => setAdding(true)}>
+          Add a profile
         </Button>
-        <Button asChild variant="outline" className="h-11">
+        {demo ? (
+          <Button variant="outline" className="h-11" onClick={() => setSamplesOpen((open) => !open)}>
+            {samplesOpen ? "Hide sample profiles" : "Switch sample profile"}
+          </Button>
+        ) : (
+          <Button variant="outline" className="h-11" onClick={() => exploreDemo("band")}>
+            Explore demo data
+          </Button>
+        )}
+        <Button asChild variant="ghost" className="h-11">
           <Link href="/dashboard">Open the full desk</Link>
         </Button>
         <Button
@@ -115,6 +120,32 @@ export function PhoneYou() {
         </Button>
       </div>
 
+      {demo && samplesOpen ? (
+        <div className="grid gap-3 rounded-2xl border bg-card p-3">
+          <p className="text-sm text-muted-foreground">Seeded profiles for trying booking, the route, and the board.</p>
+          {(["band", "venue", "musician"] as Role[]).map((role) => (
+            <button
+              key={role}
+              type="button"
+              aria-pressed={snapshot.role === role}
+              onClick={() => setRole(role)}
+              className={cn("rounded-xl border px-3 py-2 text-left text-sm", snapshot.role === role ? "border-rust bg-accent" : "bg-sand")}
+            >
+              {role === "band" ? "Band" : role === "venue" ? "Venue" : "Musician"}
+            </button>
+          ))}
+          {snapshot.role === "band" ? (
+            <SampleSelect label="Sample band" value={snapshot.bandId} onChange={setBandId} options={bands.map((band) => ({ id: band.id, label: band.name }))} />
+          ) : null}
+          {snapshot.role === "venue" ? (
+            <SampleSelect label="Sample venue" value={snapshot.venueId} onChange={setVenueId} options={venues.map((venue) => ({ id: venue.id, label: venue.name }))} />
+          ) : null}
+          {snapshot.role === "musician" ? (
+            <SampleSelect label="Sample musician" value={snapshot.musicianId} onChange={setMusicianId} options={musicians.map((player) => ({ id: player.id, label: player.name }))} />
+          ) : null}
+        </div>
+      ) : null}
+
       <section className="rounded-2xl border bg-card px-4 py-4">
         <h2 className="font-display text-2xl">Add it to the home screen</h2>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
@@ -125,7 +156,7 @@ export function PhoneYou() {
   );
 }
 
-function ProfileSelect({
+function SampleSelect({
   label,
   value,
   onChange,

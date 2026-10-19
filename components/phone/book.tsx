@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { bands, GENRES, cities, getBand, getVenue } from "@/lib/catalog";
+import { GENRES, cities, getBand, getVenue, listBands } from "@/lib/catalog";
 import { dealHeadline, defaultTerms, formatDayLong, money, monthParts } from "@/lib/deal";
 import { activeApplication, activeBooking, dateFill, sortByDate } from "@/lib/queries";
 import { useApp } from "@/lib/store";
@@ -275,7 +275,7 @@ export function PhoneDate({ id }: { id: string }) {
   const visibleTalks = related.filter(
     (booking) => ownsVenue || (snapshot.role === "band" && booking.bandId === snapshot.bandId),
   );
-  const availableBands = bands.filter((item) => {
+  const availableBands = listBands().filter((item) => {
     if (related.some((booking) => booking.bandId === item.id)) return false;
     if (originalsOnly && !repertoireFor(item.id, snapshot.repertoires).originalsOnly) return false;
     return true;
@@ -288,7 +288,7 @@ export function PhoneDate({ id }: { id: string }) {
       setError(result.error);
       return;
     }
-    toast("Request sent");
+    toast(result.warning ?? "Request sent");
     router.push(`/phone/gig/${result.data}`);
   }
 
@@ -299,7 +299,7 @@ export function PhoneDate({ id }: { id: string }) {
       setError(result.error);
       return;
     }
-    toast("Offer sent");
+    toast(result.warning ?? "Offer sent");
     router.push(`/phone/gig/${result.data}`);
   }
 

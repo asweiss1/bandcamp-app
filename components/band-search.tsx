@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AUDIO_EVENT, listAllTracks } from "@/lib/audio-db";
 import { searchBands, type TrackTitle } from "@/lib/band-search";
-import { bands, cities, STYLE_TAGS, SUBSTYLE_TAGS } from "@/lib/catalog";
+import { cities, listBands, STYLE_TAGS, SUBSTYLE_TAGS } from "@/lib/catalog";
 import { useApp } from "@/lib/store";
 import type { Band } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -59,7 +59,7 @@ export function BandSearch({ surface }: { surface: "desk" | "phone" }) {
 
   const rows = useMemo(
     () =>
-      searchBands(bands, snapshot, uploads, {
+      searchBands(listBands(), snapshot, uploads, {
         text,
         styles,
         substyles,
