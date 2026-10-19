@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { defaultTerms, formatDay, money } from "@/lib/deal";
+import { fuelAssumptions, gallonPrice, fuelSourceLabel, priceDrive, rigFor, type FuelQuote, type Rig } from "@/lib/fuel";
+import { useFuelQuote } from "@/lib/fuel-client";
 import { placeForSlug, SAMPLE_PLACE, searchPlaces, type Place, type SavedPlace } from "@/lib/geo";
 import { searchLinksFor } from "@/lib/lodging";
 import {
@@ -17,6 +19,7 @@ import {
 import { usePlace } from "@/lib/place";
 import { useApp } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { PriceField } from "@/components/fuel-price";
 import { OriginalsBadge } from "@/components/originals";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +42,11 @@ export function TourPlanner({ surface }: { surface: "desk" | "phone" }) {
   const [minGuarantee, setMinGuarantee] = useState(300);
   const [loop, setLoop] = useState(true);
   const [sending, setSending] = useState(false);
+  const quote = useFuelQuote();
+  const rig = useMemo(
+    () => rigFor(snapshot.vehicles.filter((vehicle) => vehicle.bandId === snapshot.bandId)),
+    [snapshot.vehicles, snapshot.bandId],
+  );
 
   const built = useMemo(
     () =>
@@ -107,7 +115,8 @@ export function TourPlanner({ surface }: { surface: "desk" | "phone" }) {
         </div>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           A start town and a number of days. The builder lines up open rooms, permits, and fairs along a
-          drive, leaves rest days where nothing fits, and prices gas and lodging with sample rates.
+          drive, leaves rest days where nothing fits, and prices fuel from the listed vehicle plus lodging
+          sample rates.
         </p>
       </div>
 
@@ -209,12 +218,8 @@ export function TourPlanner({ surface }: { surface: "desk" | "phone" }) {
 
       <PlanResult
         nights={shown.nights}
-        miles={shown.miles}
-        gas={shown.gas}
-        lodgingTotal={shown.lodgingTotal}
-        guarantees={shown.guarantees}
-        net={shown.net}
-        assumptions={shown.assumptions}
+        rig={rig}
+        quote={quote}
         saved={Boolean(plan)}
         surface={surface}
         onNight={(index, night) => {
@@ -241,39 +246,57 @@ export function TourPlanner({ surface }: { surface: "desk" | "phone" }) {
 
 function PlanResult({
   nights,
-  miles,
-  gas,
-  lodgingTotal,
-  guarantees,
-  net,
-  assumptions,
+  rig,
+  quote,
   saved,
   surface,
   onNight,
 }: {
   nights: PlanNight[];
-  miles: number;
-  gas: number;
-  lodgingTotal: number;
-  guarantees: number;
-  net: number;
-  assumptions: string;
+  rig: Rig;
+  quote: FuelQuote;
   saved: boolean;
   surface: "desk" | "phone";
   onNight: (index: number, night: PlanNight) => void;
 }) {
+  const budget = useMemo(() => {
+    let gallons = 0;
+    let gas = 0;
+    for (const night of nights) {
+      if (night.driveMiles <= 0) continue;
+      const leg = priceDrive(night.driveMiles, night.place.state, night.fuelPriceOverride ?? null, rig, quote);
+      gallons += leg.gallons;
+      gas += leg.cost;
+    }
+    const rounded = Math.round(gas);
+    const lodgingTotal = nights.reduce((sum, night) => sum + night.lodgingCost, 0);
+    const guarantees = nights.reduce((sum, night) => sum + night.guarantee, 0);
+    const miles = nights.reduce((sum, night) => sum + night.driveMiles, 0);
+    return {
+      miles,
+      gallons,
+      gas: rounded,
+      lodgingTotal,
+      guarantees,
+      net: guarantees - rounded - lodgingTotal,
+    };
+  }, [nights, rig, quote]);
+
   return (
     <div className="grid gap-3">
       <div className="rounded-2xl bg-ink p-4 text-cream">
         <p className="text-xs font-semibold tracking-[0.16em] text-amber uppercase">
           Estimated budget · sample
         </p>
-        <p className="mt-2 font-display text-4xl">{money(net)}</p>
+        <p className="mt-2 font-display text-4xl">{money(budget.net)}</p>
         <p className="mt-1 text-sm text-cream/75">
-          {money(guarantees)} in guarantees, minus {money(gas)} gas and {money(lodgingTotal)} lodging · {miles}{" "}
-          road miles
+          {money(budget.guarantees)} in guarantees, minus {money(budget.gas)} fuel and {money(budget.lodgingTotal)}{" "}
+          lodging · {budget.miles} road miles · {budget.gallons.toFixed(1)} gal
         </p>
-        <p className="mt-2 text-xs leading-relaxed text-cream/60">{assumptions}</p>
+        <p className="mt-2 text-xs leading-relaxed text-cream/60">
+          {fuelAssumptions(rig, quote)} Drives use straight-line distance × 1.3 at 55 mph, not live traffic. Lodging
+          is a flat sample rate: $28 camp, $89 motel, $165 hotel.
+        </p>
         {saved ? <p className="mt-2 text-xs text-amber">Saved on this device.</p> : null}
       </div>
       <ol className="grid gap-3">
@@ -304,6 +327,12 @@ function PlanResult({
                 {night.guarantee > 0 ? money(night.guarantee) : "No guarantee"}
                 {night.showTime ? ` · ${night.showTime}` : ""}
               </p>
+              <PlanFuel
+                night={night}
+                rig={rig}
+                quote={quote}
+                onCommit={(price) => onNight(index, { ...night, fuelPriceOverride: price })}
+              />
               <p className="mt-1 text-sm">
                 {night.lodgingName} · {money(night.lodgingCost)} sample
               </p>
@@ -367,6 +396,52 @@ function PlanResult({
           );
         })}
       </ol>
+    </div>
+  );
+}
+
+function PlanFuel({
+  night,
+  rig,
+  quote,
+  onCommit,
+}: {
+  night: PlanNight;
+  rig: Rig;
+  quote: FuelQuote;
+  onCommit: (price: number | null) => void;
+}) {
+  const fuel =
+    night.driveMiles > 0
+      ? priceDrive(night.driveMiles, night.place.state, night.fuelPriceOverride ?? null, rig, quote)
+      : null;
+
+  if (!fuel) return null;
+
+  const priceLine =
+    fuel.source === "override"
+      ? `Your price ${gallonPrice(fuel.price)}/gal · ${fuel.regionLabel} table ${gallonPrice(fuel.suggested)}`
+      : `${fuel.regionLabel} ${gallonPrice(fuel.price)}/gal · ${fuelSourceLabel(fuel.source, quote.week)}`;
+
+  return (
+    <div className="mt-1 grid gap-1">
+      <p className="text-xs font-medium text-rust">
+        {fuel.gallons.toFixed(1)} gal {fuel.fuel} · {money(fuel.cost)}
+      </p>
+      <p className="text-xs text-muted-foreground">{priceLine}</p>
+      <PriceField
+        key={`${night.date}-${night.place.id}-${night.fuelPriceOverride ?? "region"}`}
+        initial={night.fuelPriceOverride != null ? String(night.fuelPriceOverride) : ""}
+        placeholder={fuel.suggested.toFixed(3)}
+        label={`Fuel price for ${night.place.label}`}
+        onCommit={(value) => {
+          if (value != null && (!(value >= 0.5) || value > 20 || Number.isNaN(value))) {
+            toast.error("Enter a price between $0.50 and $20 a gallon.");
+            return;
+          }
+          onCommit(value == null ? null : Math.round(value * 1000) / 1000);
+        }}
+      />
     </div>
   );
 }

@@ -4,6 +4,8 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { gallonPrice, fuelSourceLabel } from "@/lib/fuel";
+import { useFuelQuote } from "@/lib/fuel-client";
 import { rulesFor, staysFor, STAY_GROUPS } from "@/lib/lodging";
 import { formatDay, formatTime, money } from "@/lib/deal";
 import { useApp } from "@/lib/store";
@@ -16,13 +18,15 @@ import {
   LODGING_LABEL,
   sampleCost,
   stayOn,
-  TOUR_ASSUMPTIONS,
+  tourFootnote,
   type GigKind,
   type LodgingKind,
   type TourNight,
+  type TourTotals,
 } from "@/lib/tour";
 import type { NightStay, Stay, StayType } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { PriceField } from "@/components/fuel-price";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -68,9 +72,10 @@ function typeLabel(type: StayType) {
 
 export function TourOverview({ surface }: { surface: "desk" | "phone" }) {
   const { snapshot } = useApp();
-  const { nights, totals } = useMemo(
-    () => buildTour(snapshot, snapshot.bandId),
-    [snapshot],
+  const quote = useFuelQuote();
+  const { nights, totals, rig } = useMemo(
+    () => buildTour(snapshot, snapshot.bandId, quote),
+    [snapshot, quote],
   );
   const [picked, setPicked] = useState<string | null>(null);
   const selected = nights.some((night) => night.id === picked) ? picked! : (nights[0]?.id ?? "");
@@ -122,11 +127,12 @@ export function TourOverview({ surface }: { surface: "desk" | "phone" }) {
                 bandId={snapshot.bandId}
                 record={stayOn(snapshot.nightStays, snapshot.bandId, night.date)}
                 canEdit={snapshot.role === "band"}
+                week={quote.week}
                 onOpen={() => selectFromDay(night.id)}
               />
             ))}
           </ol>
-          <p className="text-xs leading-relaxed text-muted-foreground">{TOUR_ASSUMPTIONS}</p>
+          <p className="text-xs leading-relaxed text-muted-foreground">{tourFootnote(rig, quote)}</p>
         </div>
       </div>
     </div>
@@ -141,6 +147,7 @@ function NightCard({
   bandId,
   record,
   canEdit,
+  week,
   onOpen,
 }: {
   night: TourNight;
@@ -150,6 +157,7 @@ function NightCard({
   bandId: string;
   record: NightStay | null;
   canEdit: boolean;
+  week: string;
   onOpen: () => void;
 }) {
   const kind = lodgingKind(record);
@@ -192,12 +200,8 @@ function NightCard({
             No gig. The van stays in {night.city}.
           </span>
         )}
-        {night.leg ? (
-          <span className="mt-1 block text-xs font-medium text-rust">
-            {night.leg.miles === 0 ? "Stay put · 0 mi" : `${night.leg.hours}h · ${night.leg.miles} mi`}
-          </span>
-        ) : null}
       </button>
+      <FuelLeg night={night} bandId={bandId} canEdit={canEdit} week={week} />
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Pill className={stayTone[kind]}>{LODGING_LABEL[kind]}</Pill>
         {dealHref ? (
@@ -387,25 +391,59 @@ function LodgingPanel({
   );
 }
 
-function Totals({
-  totals,
+function FuelLeg({
+  night,
+  bandId,
+  canEdit,
+  week,
 }: {
-  totals: {
-    confirmed: number;
-    pending: number;
-    lodging: number;
-    heldLodging: number;
-    miles: number;
-    gas: number;
-    net: number;
-  };
+  night: TourNight;
+  bandId: string;
+  canEdit: boolean;
+  week: string;
 }) {
+  const { setFuelPrice } = useApp();
+  const fuel = night.fuel;
+
+  if (!night.leg) return null;
+  if (night.leg.miles === 0 || !fuel) {
+    return <p className="mt-1 text-xs font-medium text-rust">Stay put · 0 mi</p>;
+  }
+
+  const priceLine =
+    fuel.source === "override"
+      ? `Your price ${gallonPrice(fuel.price)}/gal · ${fuel.regionLabel} table ${gallonPrice(fuel.suggested)}`
+      : `${fuel.regionLabel} ${gallonPrice(fuel.price)}/gal · ${fuelSourceLabel(fuel.source, week)}`;
+
+  return (
+    <div className="mt-2 grid gap-1">
+      <p className="text-xs font-medium text-rust">
+        {night.leg.hours}h · {night.leg.miles} mi · {fuel.gallons.toFixed(1)} gal {fuel.fuel} · {money(fuel.cost)}
+      </p>
+      <p className="text-xs text-muted-foreground">{priceLine}</p>
+      {canEdit ? (
+        <PriceField
+          key={`${night.id}-${fuel.source}-${fuel.price}`}
+          initial={fuel.source === "override" ? String(fuel.price) : ""}
+          placeholder={fuel.suggested.toFixed(3)}
+          label={`Fuel price for ${night.city}`}
+          onCommit={(value) => {
+            const result = setFuelPrice(bandId, night.id, value);
+            if (!result.ok) toast.error(result.error);
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function Totals({ totals }: { totals: TourTotals }) {
   const cells = [
     ["Confirmed", money(totals.confirmed)],
     ["Pending", money(totals.pending)],
     ["Lodging", money(totals.lodging)],
     ["Held lodging", money(totals.heldLodging)],
-    ["Est. gas", money(totals.gas)],
+    ["Fuel", money(totals.gas)],
     ["Net", money(totals.net)],
   ];
   return (
@@ -417,8 +455,8 @@ function Totals({
         </div>
       ))}
       <p className="col-span-2 text-xs text-muted-foreground sm:col-span-3 lg:col-span-6">
-        {totals.miles} miles of sample driving. Held rooms stay out of the net until you mark them booked. Net is
-        confirmed guarantees minus booked lodging and gas.
+        {totals.miles} miles · {totals.gallons.toFixed(1)} gal. Held rooms stay out of the net until you mark them
+        booked. Net is confirmed guarantees minus booked lodging and fuel.
       </p>
     </section>
   );

@@ -47,6 +47,8 @@ export const localRepository: Repository = {
         repertoires: Array.isArray(parsed.repertoires) ? parsed.repertoires : fallback.repertoires,
         streamLinks: Array.isArray(parsed.streamLinks) ? parsed.streamLinks : fallback.streamLinks,
         nightStays: Array.isArray(parsed.nightStays) ? parsed.nightStays : fallback.nightStays,
+        vehicles: Array.isArray(parsed.vehicles) ? parsed.vehicles : fallback.vehicles,
+        fuelOverrides: Array.isArray(parsed.fuelOverrides) ? parsed.fuelOverrides : fallback.fuelOverrides,
       };
     } catch {
       return fallback;

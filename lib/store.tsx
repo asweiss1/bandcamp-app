@@ -21,6 +21,10 @@ import type {
   Repertoire,
   NightStay,
   StreamService,
+  Vehicle,
+  VehicleType,
+  FuelType,
+  FuelOverride,
 } from "@/lib/types";
 
 const SYNC_EVENT = "bandcamp-sync";
@@ -38,7 +42,9 @@ function readMemory() {
     !Array.isArray(memory.applications) ||
     !Array.isArray(memory.repertoires) ||
     !Array.isArray(memory.streamLinks) ||
-    !Array.isArray(memory.nightStays)
+    !Array.isArray(memory.nightStays) ||
+    !Array.isArray(memory.vehicles) ||
+    !Array.isArray(memory.fuelOverrides)
   ) {
     memory = {
       ...memory,
@@ -47,6 +53,8 @@ function readMemory() {
       repertoires: Array.isArray(memory.repertoires) ? memory.repertoires : initialSnapshot.repertoires,
       streamLinks: Array.isArray(memory.streamLinks) ? memory.streamLinks : initialSnapshot.streamLinks,
       nightStays: Array.isArray(memory.nightStays) ? memory.nightStays : initialSnapshot.nightStays,
+      vehicles: Array.isArray(memory.vehicles) ? memory.vehicles : initialSnapshot.vehicles,
+      fuelOverrides: Array.isArray(memory.fuelOverrides) ? memory.fuelOverrides : initialSnapshot.fuelOverrides,
     };
   }
   return memory;
@@ -101,6 +109,9 @@ type AppContextValue = {
   addStreamLink: (bandId: string, service: StreamService, url: string) => Result<string>;
   removeStreamLink: (id: string) => Result<string>;
   setNightStay: (stay: Omit<NightStay, "id"> & { id?: string }) => Result<string>;
+  saveVehicle: (vehicle: Omit<Vehicle, "id" | "towMpg"> & { id?: string; towMpg?: number | null }) => Result<string>;
+  removeVehicle: (id: string) => Result<string>;
+  setFuelPrice: (bandId: string, legId: string, price: number | null) => Result<string>;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -515,6 +526,79 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         };
         const rest = current.nightStays.filter((item) => !(item.bandId === next.bandId && item.date === next.date));
         update({ ...current, nightStays: [...rest, next] });
+        return { ok: true, data: next.id };
+      },
+      saveVehicle: (vehicle) => {
+        const current = readMemory();
+        if (current.role !== "band" || current.bandId !== vehicle.bandId) {
+          return { ok: false, error: "Switch to this band to edit vehicles." };
+        }
+        const name = vehicle.name.trim();
+        if (name.length < 2) return { ok: false, error: "Name the vehicle." };
+        const types: VehicleType[] = ["van", "trailer", "rv", "car"];
+        if (!types.includes(vehicle.vehicleType)) return { ok: false, error: "Pick a vehicle type." };
+        const fuels: FuelType[] = ["gas", "diesel"];
+        if (!fuels.includes(vehicle.fuel)) return { ok: false, error: "Pick gas or diesel." };
+        if (!(vehicle.mpg > 0) || vehicle.mpg > 80) return { ok: false, error: "MPG needs to be between 1 and 80." };
+        let towMpg: number | null = null;
+        if (vehicle.towMpg != null) {
+          if (!(vehicle.towMpg > 0) || vehicle.towMpg > 80) {
+            return { ok: false, error: "Towing MPG needs to be between 1 and 80, or left blank." };
+          }
+          towMpg = Math.round(vehicle.towMpg * 10) / 10;
+        }
+        const own = current.vehicles.filter((item) => item.bandId === vehicle.bandId);
+        const existing = vehicle.id ? current.vehicles.find((item) => item.id === vehicle.id) : undefined;
+        if (existing && existing.bandId !== vehicle.bandId) {
+          return { ok: false, error: "That vehicle belongs to another band." };
+        }
+        if (!existing && own.length >= 6) return { ok: false, error: "This band already lists 6 vehicles." };
+        const next: Vehicle = {
+          id: existing?.id ?? uid("veh"),
+          bandId: vehicle.bandId,
+          name: name.slice(0, 40),
+          vehicleType: vehicle.vehicleType,
+          mpg: Math.round(vehicle.mpg * 10) / 10,
+          fuel: vehicle.fuel,
+          towMpg,
+        };
+        const vehicles = existing
+          ? current.vehicles.map((item) => (item.id === next.id ? next : item))
+          : [...current.vehicles, next];
+        update({ ...current, vehicles });
+        return { ok: true, data: next.id };
+      },
+      removeVehicle: (id) => {
+        const current = readMemory();
+        const vehicle = current.vehicles.find((item) => item.id === id);
+        if (!vehicle) return { ok: false, error: "That vehicle is already gone." };
+        if (current.role !== "band" || current.bandId !== vehicle.bandId) {
+          return { ok: false, error: "Switch to this band to remove a vehicle." };
+        }
+        update({ ...current, vehicles: current.vehicles.filter((item) => item.id !== id) });
+        return { ok: true, data: id };
+      },
+      setFuelPrice: (bandId, legId, price) => {
+        const current = readMemory();
+        if (current.role !== "band" || current.bandId !== bandId) {
+          return { ok: false, error: "Switch to this band to set a fuel price." };
+        }
+        const rest = current.fuelOverrides.filter((item) => !(item.bandId === bandId && item.legId === legId));
+        if (price == null) {
+          update({ ...current, fuelOverrides: rest });
+          return { ok: true, data: legId };
+        }
+        if (!(price >= 0.5) || price > 20 || Number.isNaN(price)) {
+          return { ok: false, error: "Enter a price between $0.50 and $20 a gallon." };
+        }
+        const existing = current.fuelOverrides.find((item) => item.bandId === bandId && item.legId === legId);
+        const next: FuelOverride = {
+          id: existing?.id ?? uid("fp"),
+          bandId,
+          legId,
+          price: Math.round(price * 1000) / 1000,
+        };
+        update({ ...current, fuelOverrides: [...rest, next] });
         return { ok: true, data: next.id };
       },
     };

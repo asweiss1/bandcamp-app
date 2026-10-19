@@ -50,6 +50,7 @@ export type PlanNight = {
   lodgingName: string;
   lodgingCost: number;
   choices: GigChoice[];
+  fuelPriceOverride?: number | null;
 };
 
 export type TourPlan = {
@@ -276,7 +277,10 @@ export function summarize(nights: PlanNight[]): TourPlan {
 }
 
 export function applyChoice(night: PlanNight, choice: GigChoice, lodging: LodgingPref): PlanNight {
-  return nightFromChoice(night.date, choice, lodging, night.choices);
+  return {
+    ...nightFromChoice(night.date, choice, lodging, night.choices),
+    fuelPriceOverride: night.fuelPriceOverride,
+  };
 }
 
 export function withLodging(night: PlanNight, lodging: LodgingPref): PlanNight {

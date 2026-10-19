@@ -906,6 +906,18 @@ export const seedNightStays: Snapshot["nightStays"] = [
   },
 ];
 
+export const seedVehicles: Snapshot["vehicles"] = [
+  {
+    id: "veh-mesa-sprinter",
+    bandId: "mesa-dust",
+    name: "Sprinter",
+    vehicleType: "van",
+    mpg: 14,
+    fuel: "diesel",
+    towMpg: 11,
+  },
+];
+
 export const initialSnapshot: Snapshot = {
   role: "band",
   bandId: "mesa-dust",
@@ -920,4 +932,6 @@ export const initialSnapshot: Snapshot = {
   repertoires: seedRepertoires,
   streamLinks: seedStreamLinks,
   nightStays: seedNightStays,
+  vehicles: seedVehicles,
+  fuelOverrides: [],
 };

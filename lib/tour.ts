@@ -1,5 +1,6 @@
 import { getCity, getVenue } from "@/lib/catalog";
 import { addDays, dealHeadline } from "@/lib/deal";
+import { fuelAssumptions, priceDrive, rigFor, SAMPLE_QUOTE, type FuelQuote, type LegFuel, type Rig } from "@/lib/fuel";
 import { driveBetween, placeForSlug } from "@/lib/geo";
 import { searchLinksFor } from "@/lib/lodging";
 import type { Booking, NightStay, Snapshot, StayType, Terms } from "@/lib/types";
@@ -29,8 +30,6 @@ export const LODGING_LABEL: Record<LodgingKind, string> = {
   open: "Not arranged",
 };
 
-const GAS_PRICE = 3.6;
-const MPG = 12;
 const RANK: Record<string, number> = {
   accepted: 4,
   offered: 3,
@@ -70,6 +69,7 @@ export type TourNight = {
   loadIn: string | null;
   showTime: string | null;
   leg: { miles: number; hours: number } | null;
+  fuel: LegFuel | null;
 };
 
 export type TourTotals = {
@@ -78,6 +78,7 @@ export type TourTotals = {
   lodging: number;
   heldLodging: number;
   miles: number;
+  gallons: number;
   gas: number;
   net: number;
 };
@@ -88,6 +89,7 @@ const emptyTotals: TourTotals = {
   lodging: 0,
   heldLodging: 0,
   miles: 0,
+  gallons: 0,
   gas: 0,
   net: 0,
 };
@@ -133,9 +135,10 @@ function placedStops(snapshot: Snapshot, bandId: string) {
   return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
 }
 
-export function buildTour(snapshot: Snapshot, bandId: string) {
+export function buildTour(snapshot: Snapshot, bandId: string, quote: FuelQuote = SAMPLE_QUOTE) {
+  const rig = rigFor(snapshot.vehicles.filter((vehicle) => vehicle.bandId === bandId));
   const stops = placedStops(snapshot, bandId);
-  if (stops.length === 0) return { nights: [] as TourNight[], totals: emptyTotals };
+  if (stops.length === 0) return { nights: [] as TourNight[], totals: emptyTotals, rig };
 
   const nights: TourNight[] = [];
   let cursor = stops[0].date;
@@ -166,12 +169,23 @@ export function buildTour(snapshot: Snapshot, bandId: string) {
       loadIn: stop?.booking.terms.loadIn ?? null,
       showTime: stop?.showTime ?? null,
       leg,
+      fuel: null,
     });
     previous = nights[nights.length - 1];
     cursor = addDays(cursor, 1);
   }
 
-  return { nights, totals: totalsFor(nights, snapshot.nightStays, bandId) };
+  const priced = nights.map((night) => {
+    if (!night.leg || night.leg.miles <= 0) return night;
+    const override =
+      snapshot.fuelOverrides.find((item) => item.bandId === bandId && item.legId === night.id)?.price ?? null;
+    return {
+      ...night,
+      fuel: priceDrive(night.leg.miles, night.state, override, rig, quote),
+    };
+  });
+
+  return { nights: priced, totals: totalsFor(priced, snapshot.nightStays, bandId), rig };
 }
 
 function totalsFor(nights: TourNight[], stays: NightStay[], bandId: string): TourTotals {
@@ -189,13 +203,15 @@ function totalsFor(nights: TourNight[], stays: NightStay[], bandId: string): Tou
   const relevant = stays.filter((stay) => stay.bandId === bandId && dates.has(stay.date));
   const lodging = relevant.filter((stay) => stay.status === "booked").reduce((sum, stay) => sum + stay.cost, 0);
   const heldLodging = relevant.filter((stay) => stay.status === "held").reduce((sum, stay) => sum + stay.cost, 0);
-  const gas = Math.round((miles / MPG) * GAS_PRICE);
+  const gallons = nights.reduce((sum, night) => sum + (night.fuel?.gallons ?? 0), 0);
+  const gas = Math.round(nights.reduce((sum, night) => sum + (night.fuel?.cost ?? 0), 0));
   return {
     confirmed,
     pending,
     lodging,
     heldLodging,
     miles,
+    gallons,
     gas,
     net: confirmed - lodging - gas,
   };
@@ -223,5 +239,6 @@ export function sampleCost(price: string) {
   return nums[0] ?? 0;
 }
 
-export const TOUR_ASSUMPTIONS =
-  "Sample budget. Drives use straight-line distance × 1.3 at 55 mph, not live traffic. Gas assumes a van at 12 mpg and $3.60 a gallon. Door-only talks count as a $0 guarantee. Marking a night booked only saves a note in this browser.";
+export function tourFootnote(rig: Rig, quote: FuelQuote) {
+  return `Sample budget. Drives use straight-line distance × 1.3 at 55 mph, not live traffic. ${fuelAssumptions(rig, quote)} Door-only talks count as a $0 guarantee. Marking a night booked only saves a note in this browser.`;
+}

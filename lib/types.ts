@@ -190,6 +190,27 @@ export type StreamLink = {
   url: string;
 };
 
+export type FuelType = "gas" | "diesel";
+
+export type VehicleType = "van" | "trailer" | "rv" | "car";
+
+export type Vehicle = {
+  id: string;
+  bandId: string;
+  name: string;
+  vehicleType: VehicleType;
+  mpg: number;
+  fuel: FuelType;
+  towMpg: number | null;
+};
+
+export type FuelOverride = {
+  id: string;
+  bandId: string;
+  legId: string;
+  price: number;
+};
+
 export type NightStay = {
   id: string;
   bandId: string;
@@ -246,6 +267,8 @@ export type Snapshot = {
   repertoires: Repertoire[];
   streamLinks: StreamLink[];
   nightStays: NightStay[];
+  vehicles: Vehicle[];
+  fuelOverrides: FuelOverride[];
 };
 
 export type DateFill = "open" | "in-talks" | "filled";

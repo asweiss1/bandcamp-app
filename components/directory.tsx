@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { BandSearch } from "@/components/band-search";
 import { OfferDialog } from "@/components/offer-dialog";
 import { RepertoirePanel } from "@/components/originals";
+import { VehiclePanel } from "@/components/vehicles";
 import { BandSamples } from "@/components/samples";
 import { PageFrame, PageIntro } from "@/components/shell";
 import { StatusPill } from "@/components/status-pill";
@@ -99,6 +100,9 @@ export function BandProfile({ id }: { id: string }) {
       </div>
       <div className="mt-6">
         <RepertoirePanel bandId={band.id} />
+      </div>
+      <div className="mt-6 max-w-2xl">
+        <VehiclePanel bandId={band.id} />
       </div>
       <dl className="mt-6 grid gap-3 sm:grid-cols-3">
         <Stat label="Typical fee" value={`$${band.feeMin.toLocaleString()}–$${band.feeMax.toLocaleString()}`} />
