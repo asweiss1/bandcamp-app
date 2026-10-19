@@ -10,6 +10,7 @@ import { canWithdraw, isYourMove } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import type { Terms } from "@/lib/types";
 import { DealFields } from "@/components/deal-fields";
+import { OriginalsBadge } from "@/components/originals";
 import { StatusPill, statusLabel } from "@/components/status-pill";
 import { Button } from "@/components/ui/button";
 import {
@@ -102,6 +103,9 @@ export function PhoneGig({ id }: { id: string }) {
         <h1 className="mt-2 font-display text-4xl leading-[0.95] tracking-tight">
           {band.name} at {venue.name}
         </h1>
+        <div className="mt-2">
+          <OriginalsBadge bandId={band.id} withInfo />
+        </div>
         <p className="mt-2 text-sm text-muted-foreground">
           {formatDayLong(openDate.date)} · {openDate.showTime} · {venue.city}
         </p>

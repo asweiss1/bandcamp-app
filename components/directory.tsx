@@ -11,6 +11,8 @@ import { useApp } from "@/lib/store";
 import type { Band, Terms, Venue } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { DealFields } from "@/components/deal-fields";
+import { OriginalsBadge, OriginalsFilter, RepertoirePanel } from "@/components/originals";
+import { repertoireFor } from "@/lib/repertoire";
 import { PageFrame, PageIntro } from "@/components/shell";
 import { StatusPill } from "@/components/status-pill";
 import { Button } from "@/components/ui/button";
@@ -33,11 +35,14 @@ export function BandIndex() {
   const [city, setCity] = useState("all");
   const [genre, setGenre] = useState("all");
   const [touring, setTouring] = useState<"all" | "touring" | "local">("all");
+  const [originalsOnly, setOriginalsOnly] = useState(false);
+  const { snapshot } = useApp();
   const rows = bands.filter((band) => {
     if (city !== "all" && band.citySlug !== city) return false;
     if (genre !== "all" && !band.genres.includes(genre)) return false;
     if (touring === "touring" && !band.touring) return false;
     if (touring === "local" && band.touring) return false;
+    if (originalsOnly && !repertoireFor(band.id, snapshot.repertoires).originalsOnly) return false;
     return true;
   });
   return (
@@ -45,9 +50,12 @@ export function BandIndex() {
       <PageIntro
         eyebrow="Profiles"
         title="Bands"
-        lede="Home city, draw, fee range, and whether they are trying to leave town."
+        lede="Home city, draw, fee range, and whether the set is all original. Venues can hide bands that play covers."
       />
       <Filters city={city} setCity={setCity} genre={genre} setGenre={setGenre} touring={touring} setTouring={setTouring} />
+      <div className="mb-4">
+        <OriginalsFilter checked={originalsOnly} onChange={setOriginalsOnly} />
+      </div>
       <div className="grid gap-3 sm:grid-cols-2">
         {rows.map((band) => (
           <BandCard key={band.id} band={band} />
@@ -108,6 +116,9 @@ export function BandProfile({ id }: { id: string }) {
       <h1 className="mt-3 font-display text-5xl tracking-tight">{band.name}</h1>
       <p className="mt-2 text-lg text-muted-foreground">Home city {band.city}</p>
       <p className="mt-4 max-w-2xl text-base leading-relaxed">{band.bio}</p>
+      <div className="mt-6">
+        <RepertoirePanel bandId={band.id} />
+      </div>
       <dl className="mt-6 grid gap-3 sm:grid-cols-3">
         <Stat label="Typical fee" value={`$${band.feeMin.toLocaleString()}–$${band.feeMax.toLocaleString()}`} />
         <Stat label="Draw" value={band.draw} />
@@ -466,8 +477,11 @@ function BandCard({ band }: { band: Band }) {
     <Link href={`/bands/${band.id}`} className="rounded-2xl border bg-card p-4 transition hover:border-rust/40">
       <div className="flex items-start justify-between gap-3">
         <h2 className="font-display text-2xl">{band.name}</h2>
-        <span className="rounded-full bg-sand px-2 py-1 text-[11px] font-semibold uppercase">
-          {band.touring ? "Touring" : "Local"}
+        <span className="flex flex-col items-end gap-1">
+          <span className="rounded-full bg-sand px-2 py-1 text-[11px] font-semibold uppercase">
+            {band.touring ? "Touring" : "Local"}
+          </span>
+          <OriginalsBadge bandId={band.id} />
         </span>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">{band.city}</p>

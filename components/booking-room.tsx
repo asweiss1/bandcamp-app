@@ -17,6 +17,7 @@ import { canWithdraw, isYourMove } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import type { Terms } from "@/lib/types";
 import { DealFields } from "@/components/deal-fields";
+import { OriginalsBadge } from "@/components/originals";
 import { PageFrame } from "@/components/shell";
 import { StatusPill, statusLabel } from "@/components/status-pill";
 import { Button } from "@/components/ui/button";
@@ -109,6 +110,9 @@ export function BookingRoom({ id }: { id: string }) {
       <h1 className="mt-3 font-display text-4xl tracking-tight sm:text-5xl">
         {band.name} at {venue.name}
       </h1>
+      <div className="mt-3">
+        <OriginalsBadge bandId={band.id} withInfo />
+      </div>
       <p className="mt-2 text-lg text-muted-foreground">
         {formatDayLong(openDate.date)} · {openDate.showTime} · {venue.city}
       </p>

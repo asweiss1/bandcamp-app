@@ -44,6 +44,7 @@ export const localRepository: Repository = {
         ...parsed,
         opportunities: Array.isArray(parsed.opportunities) ? parsed.opportunities : fallback.opportunities,
         applications: Array.isArray(parsed.applications) ? parsed.applications : fallback.applications,
+        repertoires: Array.isArray(parsed.repertoires) ? parsed.repertoires : fallback.repertoires,
       };
     } catch {
       return fallback;

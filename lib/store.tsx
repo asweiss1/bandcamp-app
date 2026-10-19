@@ -17,6 +17,7 @@ import type {
   Snapshot,
   Terms,
   Application,
+  Repertoire,
 } from "@/lib/types";
 
 const SYNC_EVENT = "bandcamp-sync";
@@ -29,11 +30,12 @@ function readMemory() {
     memory = localRepository.load(initialSnapshot);
     loaded = true;
   }
-  if (!Array.isArray(memory.opportunities) || !Array.isArray(memory.applications)) {
+  if (!Array.isArray(memory.opportunities) || !Array.isArray(memory.applications) || !Array.isArray(memory.repertoires)) {
     memory = {
       ...memory,
       opportunities: Array.isArray(memory.opportunities) ? memory.opportunities : initialSnapshot.opportunities,
       applications: Array.isArray(memory.applications) ? memory.applications : initialSnapshot.applications,
+      repertoires: Array.isArray(memory.repertoires) ? memory.repertoires : initialSnapshot.repertoires,
     };
   }
   return memory;
@@ -84,6 +86,7 @@ type AppContextValue = {
   }) => Result<string>;
   applyToOpportunity: (opportunityId: string, input: { setup: string; note: string }) => Result<string>;
   withdrawApplication: (applicationId: string) => Result<string>;
+  setRepertoire: (bandId: string, patch: Partial<Omit<Repertoire, "bandId">>) => Result<string>;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -421,6 +424,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           ),
         });
         return { ok: true, data: application.id };
+      },
+      setRepertoire: (bandId, patch) => {
+        const current = readMemory();
+        if (current.role !== "band" || current.bandId !== bandId) {
+          return { ok: false, error: "Switch to this band to update the setlist." };
+        }
+        if (!getBand(bandId)) return { ok: false, error: "That band is not in the sample set." };
+        const existing =
+          current.repertoires.find((item) => item.bandId === bandId) ?? {
+            bandId,
+            originalsOnly: false,
+            coversNote: "",
+            rightsAttested: false,
+          };
+        const next = {
+          ...existing,
+          ...patch,
+          bandId,
+          coversNote: (patch.coversNote ?? existing.coversNote).slice(0, 240),
+        };
+        const repertoires = current.repertoires.some((item) => item.bandId === bandId)
+          ? current.repertoires.map((item) => (item.bandId === bandId ? next : item))
+          : [...current.repertoires, next];
+        update({ ...current, repertoires });
+        return { ok: true, data: bandId };
       },
     };
   }, [snapshot]);

@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { nearFeed } from "@/lib/near";
 import { searchLinksFor } from "@/lib/lodging";
+import { useState } from "react";
 import { usePlace } from "@/lib/place";
+import { repertoireFor } from "@/lib/repertoire";
 import { useApp } from "@/lib/store";
+import { OriginalsBadge, OriginalsFilter } from "@/components/originals";
 import { PlacePicker } from "@/components/place-picker";
 
 const sections = [
@@ -16,6 +19,7 @@ const sections = [
 
 export function NearFeed({ surface }: { surface: "desk" | "phone" }) {
   const { snapshot } = useApp();
+  const [originalsOnly, setOriginalsOnly] = useState(false);
   const { place, radiusMiles, setPlace, setRadius } = usePlace();
   const feed = nearFeed(snapshot, place, radiusMiles, surface);
   const links = searchLinksFor(place.label);
@@ -60,12 +64,22 @@ export function NearFeed({ surface }: { surface: "desk" | "phone" }) {
         ))}
       </div>
       {sections.map((section) => {
-        const items = feed[section.key];
+        const items = feed[section.key].filter(
+          (item) =>
+            section.key !== "bands" ||
+            !originalsOnly ||
+            repertoireFor(item.id, snapshot.repertoires).originalsOnly,
+        );
         return (
           <section key={section.key} className="grid gap-2">
-            <h2 className="text-xs font-semibold tracking-[0.16em] text-muted-foreground uppercase">
-              {section.title}
-            </h2>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-xs font-semibold tracking-[0.16em] text-muted-foreground uppercase">
+                {section.title}
+              </h2>
+              {section.key === "bands" ? (
+                <OriginalsFilter checked={originalsOnly} onChange={setOriginalsOnly} />
+              ) : null}
+            </div>
             {items.length === 0 ? (
               <p className="rounded-2xl border bg-card px-4 py-3 text-sm text-muted-foreground">{section.empty}</p>
             ) : (
@@ -76,7 +90,14 @@ export function NearFeed({ surface }: { surface: "desk" | "phone" }) {
                   className="rounded-2xl border bg-card px-4 py-3"
                 >
                   <span className="flex items-start justify-between gap-3">
-                    <span className="font-medium leading-snug">{item.title}</span>
+                    <span className="font-medium leading-snug">
+                      {item.title}
+                      {section.key === "bands" ? (
+                        <span className="mt-1 block">
+                          <OriginalsBadge bandId={item.id} />
+                        </span>
+                      ) : null}
+                    </span>
                     <span className="shrink-0 rounded-full bg-sand px-2 py-1 text-[11px] font-semibold uppercase">
                       Sample
                     </span>

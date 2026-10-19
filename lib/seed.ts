@@ -803,6 +803,51 @@ export const seedInterests: Interest[] = [
   },
 ];
 
+export const seedRepertoires: Snapshot["repertoires"] = [
+  {
+    bandId: "mesa-dust",
+    originalsOnly: true,
+    coversNote: "",
+    rightsAttested: true,
+  },
+  {
+    bandId: "salt-choir",
+    originalsOnly: true,
+    coversNote: "",
+    rightsAttested: true,
+  },
+  {
+    bandId: "rio-ghosts",
+    originalsOnly: true,
+    coversNote: "",
+    rightsAttested: false,
+  },
+  {
+    bandId: "canyon-line",
+    originalsOnly: true,
+    coversNote: "",
+    rightsAttested: true,
+  },
+  {
+    bandId: "night-market",
+    originalsOnly: false,
+    coversNote: "We close with a short Motown medley. Sample note, not a real setlist.",
+    rightsAttested: false,
+  },
+  {
+    bandId: "neon-parish",
+    originalsOnly: false,
+    coversNote: "Two 1980s singles in the encore. Sample note, not a real setlist.",
+    rightsAttested: false,
+  },
+  {
+    bandId: "verde-line",
+    originalsOnly: false,
+    coversNote: "",
+    rightsAttested: false,
+  },
+];
+
 export const initialSnapshot: Snapshot = {
   role: "band",
   bandId: "mesa-dust",
@@ -814,4 +859,5 @@ export const initialSnapshot: Snapshot = {
   interests: seedInterests,
   opportunities: seedOpportunities,
   applications: seedApplications,
+  repertoires: seedRepertoires,
 };

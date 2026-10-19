@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getBand, getVenue } from "@/lib/catalog";
 import { dealHeadline, formatDay } from "@/lib/deal";
 import type { Booking, OpenDate } from "@/lib/types";
+import { OriginalsBadge } from "@/components/originals";
 import { StatusPill } from "@/components/status-pill";
 
 export function BookingRow({
@@ -25,8 +26,9 @@ export function BookingRow({
         <p className="text-sm text-muted-foreground">{openDate?.showTime}</p>
       </div>
       <div>
-        <p className="font-semibold">
+        <p className="flex flex-wrap items-center gap-2 font-semibold">
           {band?.name} at {venue?.name}
+          {band ? <OriginalsBadge bandId={band.id} /> : null}
         </p>
         <p className="text-sm text-muted-foreground">
           {venue?.city} · {dealHeadline(booking.terms)}

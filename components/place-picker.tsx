@@ -27,7 +27,13 @@ export function PlacePicker({
   const local = useMemo(() => (query.trim().length >= 2 ? searchPlaces(query) : []), [query]);
   const results = useMemo(() => {
     const seen = new Set(local.map((item) => item.label.toLowerCase()));
-    return [...local, ...remote.filter((item) => !seen.has(item.label.toLowerCase()))].slice(0, 8);
+    const extra = remote.filter((item) => {
+      const key = item.label.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    return [...local, ...extra].slice(0, 8);
   }, [local, remote]);
 
   useEffect(() => {

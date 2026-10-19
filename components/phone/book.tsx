@@ -10,6 +10,8 @@ import { activeApplication, activeBooking, dateFill, sortByDate } from "@/lib/qu
 import { useApp } from "@/lib/store";
 import type { OpenDate, OpportunityKind, Terms } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { OriginalsBadge, OriginalsFilter } from "@/components/originals";
+import { repertoireFor } from "@/lib/repertoire";
 import { DealFields } from "@/components/deal-fields";
 import { StatusPill } from "@/components/status-pill";
 import { Button } from "@/components/ui/button";
@@ -238,6 +240,7 @@ export function PhoneDate({ id }: { id: string }) {
     }),
   );
   const [chosenBand, setChosenBand] = useState("");
+  const [originalsOnly, setOriginalsOnly] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!openDate || !venue) {
@@ -263,9 +266,11 @@ export function PhoneDate({ id }: { id: string }) {
   const visibleTalks = related.filter(
     (booking) => ownsVenue || (snapshot.role === "band" && booking.bandId === snapshot.bandId),
   );
-  const availableBands = bands.filter(
-    (item) => !related.some((booking) => booking.bandId === item.id),
-  );
+  const availableBands = bands.filter((item) => {
+    if (related.some((booking) => booking.bandId === item.id)) return false;
+    if (originalsOnly && !repertoireFor(item.id, snapshot.repertoires).originalsOnly) return false;
+    return true;
+  });
 
   function submitRequest(event: React.FormEvent) {
     event.preventDefault();
@@ -350,7 +355,9 @@ export function PhoneDate({ id }: { id: string }) {
                 className="flex items-center justify-between gap-3 rounded-2xl border bg-card px-4 py-3"
               >
                 <span>
-                  <span className="block font-medium">{other?.name}</span>
+                  <span className="block font-medium">
+                    {other?.name} {other ? <OriginalsBadge bandId={other.id} /> : null}
+                  </span>
                   <span className="text-sm text-muted-foreground">{dealHeadline(booking.terms)}</span>
                 </span>
                 <StatusPill status={booking.status} />
@@ -382,7 +389,10 @@ export function PhoneDate({ id }: { id: string }) {
         asking ? (
           <form onSubmit={submitRequest} className="grid gap-3 rounded-2xl border bg-cream p-4">
             <h2 className="font-display text-2xl">Request this date</h2>
-            <p className="text-sm text-muted-foreground">Sending as {band?.name}.</p>
+            <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              Sending as {band?.name}.
+              {band ? <OriginalsBadge bandId={band.id} withInfo /> : null}
+            </p>
             <DealFields value={terms} onChange={setTerms} />
             {error ? (
               <p role="alert" className="text-sm text-destructive">
@@ -408,6 +418,7 @@ export function PhoneDate({ id }: { id: string }) {
             <p className="text-sm text-muted-foreground">
               From {venue.name}. They can accept, counter, or decline.
             </p>
+            <OriginalsFilter checked={originalsOnly} onChange={setOriginalsOnly} />
             {availableBands.length === 0 ? (
               <p className="text-sm">Every sample band already has a conversation on this night.</p>
             ) : (
@@ -425,7 +436,10 @@ export function PhoneDate({ id }: { id: string }) {
                         selected ? "border-rust bg-accent" : "bg-card",
                       )}
                     >
-                      <span className="block font-medium">{item.name}</span>
+                      <span className="flex flex-wrap items-center gap-2 font-medium">
+                        {item.name}
+                        <OriginalsBadge bandId={item.id} />
+                      </span>
                       <span className="text-xs text-muted-foreground">
                         {item.city} · {money(item.feeMin)}–{money(item.feeMax)} · {item.genres[0]}
                       </span>

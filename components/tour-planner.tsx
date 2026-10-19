@@ -17,6 +17,7 @@ import {
 import { usePlace } from "@/lib/place";
 import { useApp } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { OriginalsBadge } from "@/components/originals";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -101,6 +102,9 @@ export function TourPlanner({ surface }: { surface: "desk" | "phone" }) {
       <div>
         <p className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">Tour planner · sample</p>
         <h1 className="mt-1 font-display text-4xl leading-none tracking-tight sm:text-5xl">Days away</h1>
+        <div className="mt-3">
+          <OriginalsBadge bandId={snapshot.bandId} withInfo />
+        </div>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           A start town and a number of days. The builder lines up open rooms, permits, and fairs along a
           drive, leaves rest days where nothing fits, and prices gas and lodging with sample rates.
@@ -388,10 +392,12 @@ function CityField({
   const [query, setQuery] = useState("");
   const [remote, setRemote] = useState<Place[]>([]);
   const local = query.trim().length >= 2 ? searchPlaces(query) : [];
-  const matches = [
-    ...local,
-    ...remote.filter((item) => !local.some((known) => known.label.toLowerCase() === item.label.toLowerCase())),
-  ].slice(0, 8);
+  const matches = [...local];
+  for (const item of remote) {
+    if (matches.some((known) => known.label.toLowerCase() === item.label.toLowerCase())) continue;
+    matches.push(item);
+  }
+  matches.splice(8);
 
   useEffect(() => {
     if (query.trim().length < 2) return;

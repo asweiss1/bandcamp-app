@@ -10,6 +10,7 @@ import { activeBooking, dateFill } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import type { Terms } from "@/lib/types";
 import { DealFields } from "@/components/deal-fields";
+import { OriginalsBadge } from "@/components/originals";
 import { PageFrame } from "@/components/shell";
 import { StatusPill } from "@/components/status-pill";
 import { Button } from "@/components/ui/button";
@@ -122,7 +123,10 @@ export function DateDetail({ id }: { id: string }) {
                       className="flex items-center justify-between gap-3 rounded-xl border bg-card px-3 py-3"
                     >
                       <span>
-                        <span className="block font-medium">{other?.name}</span>
+                        <span className="flex flex-wrap items-center gap-2 font-medium">
+                          {other?.name}
+                          {other ? <OriginalsBadge bandId={other.id} /> : null}
+                        </span>
                         <span className="text-sm text-muted-foreground">
                           {dealHeadline(booking.terms)}
                         </span>
@@ -166,8 +170,9 @@ export function DateDetail({ id }: { id: string }) {
             <form onSubmit={submit} className="grid gap-4">
               <div>
                 <h2 className="font-display text-2xl">Request this date</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                   Sending as {band?.name}. The venue can accept, decline, or counter.
+                  {band ? <OriginalsBadge bandId={band.id} withInfo /> : null}
                 </p>
               </div>
               <DealFields value={terms} onChange={setTerms} />

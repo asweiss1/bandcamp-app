@@ -170,6 +170,13 @@ export type Application = {
   createdAt: string;
 };
 
+export type Repertoire = {
+  bandId: string;
+  originalsOnly: boolean;
+  coversNote: string;
+  rightsAttested: boolean;
+};
+
 export type StayType = "hotel" | "motel" | "rental" | "campground" | "van";
 
 export type Stay = {
@@ -210,6 +217,7 @@ export type Snapshot = {
   interests: Interest[];
   opportunities: Opportunity[];
   applications: Application[];
+  repertoires: Repertoire[];
 };
 
 export type DateFill = "open" | "in-talks" | "filled";
