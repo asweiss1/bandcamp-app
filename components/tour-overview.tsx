@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { rulesFor, staysFor, STAY_GROUPS } from "@/lib/lodging";
 import { formatDay, formatTime, money } from "@/lib/deal";
@@ -68,7 +68,10 @@ function typeLabel(type: StayType) {
 
 export function TourOverview({ surface }: { surface: "desk" | "phone" }) {
   const { snapshot } = useApp();
-  const { nights, totals } = buildTour(snapshot, snapshot.bandId);
+  const { nights, totals } = useMemo(
+    () => buildTour(snapshot, snapshot.bandId),
+    [snapshot],
+  );
   const [picked, setPicked] = useState<string | null>(null);
   const selected = nights.some((night) => night.id === picked) ? picked! : (nights[0]?.id ?? "");
 

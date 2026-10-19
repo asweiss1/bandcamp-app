@@ -171,21 +171,6 @@ export function buildTour(snapshot: Snapshot, bandId: string) {
     cursor = addDays(cursor, 1);
   }
 
-  const groups = new Map<string, number[]>();
-  nights.forEach((night, index) => {
-    const list = groups.get(night.citySlug) ?? [];
-    list.push(index);
-    groups.set(night.citySlug, list);
-  });
-  for (const indexes of groups.values()) {
-    if (indexes.length < 2) continue;
-    indexes.forEach((index, order) => {
-      const angle = (order / indexes.length) * Math.PI * 2 - Math.PI / 2;
-      nights[index].pinLat += Math.sin(angle) * 0.06;
-      nights[index].pinLng += Math.cos(angle) * 0.07;
-    });
-  }
-
   return { nights, totals: totalsFor(nights, snapshot.nightStays, bandId) };
 }
 
