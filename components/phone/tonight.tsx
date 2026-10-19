@@ -33,6 +33,12 @@ export function Tonight() {
             ? ` ${moves.length} ${moves.length === 1 ? "conversation is" : "conversations are"} waiting on you.`
             : " Nothing is waiting on you."}
         </p>
+        <Link
+          href="/phone/book"
+          className="mt-4 grid h-11 place-items-center rounded-lg bg-ink text-sm font-semibold text-cream"
+        >
+          {snapshot.role === "venue" ? "Post a night or send an offer" : "Book another night"}
+        </Link>
       </div>
 
       {moves.length > 0 ? (
@@ -247,10 +253,10 @@ function EmptyRoute() {
     <div className="rounded-2xl border bg-card px-4 py-4">
       <p className="font-medium">No nights on this route yet.</p>
       <p className="mt-1 text-sm text-muted-foreground">
-        Browse open dates on the desk, or switch who you are on the You tab.
+        Find an open date and send a request, or switch who you are on the You tab.
       </p>
-      <Link href="/dates" className="mt-3 inline-block text-sm font-semibold text-rust">
-        Open dates
+      <Link href="/phone/book" className="mt-3 inline-block text-sm font-semibold text-rust">
+        Book a night
       </Link>
     </div>
   );

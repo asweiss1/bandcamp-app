@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BedDouble, Map, MessageSquare, MoonStar, UserRound } from "lucide-react";
+import { BedDouble, CalendarDays, Map, MessageSquare, MoonStar, UserRound } from "lucide-react";
 import { isYourMove } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { href: "/phone", label: "Next", icon: MoonStar },
+  { href: "/phone/book", label: "Book", icon: CalendarDays },
   { href: "/phone/route", label: "Route", icon: Map },
   { href: "/phone/stay", label: "Stay", icon: BedDouble },
   { href: "/phone/board", label: "Board", icon: MessageSquare },
@@ -62,7 +63,7 @@ export function PhoneShell({ children }: { children: React.ReactNode }) {
           aria-label="Phone"
           className="border-t bg-paper/95 backdrop-blur"
         >
-          <div className="grid grid-cols-5 px-1 pt-1 pb-[max(0.35rem,env(safe-area-inset-bottom))]">
+          <div className="grid grid-cols-6 px-0.5 pt-1 pb-[max(0.35rem,env(safe-area-inset-bottom))]">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const selected = tabActive(pathname, tab.href);
@@ -72,11 +73,11 @@ export function PhoneShell({ children }: { children: React.ReactNode }) {
                   href={tab.href}
                   aria-current={selected ? "page" : undefined}
                   className={cn(
-                    "relative flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-lg text-[11px] font-medium text-muted-foreground",
+                    "relative flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-lg text-[10px] font-medium text-muted-foreground",
                     selected && "text-ink",
                   )}
                 >
-                  <Icon className="size-5" />
+                  <Icon className="size-4" />
                   {tab.label}
                   {tab.href === "/phone" && moves > 0 ? (
                     <span className="absolute top-1 right-2 min-w-4 rounded-full bg-amber px-1 text-center text-[10px] font-semibold text-ink">

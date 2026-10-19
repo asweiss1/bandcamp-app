@@ -65,7 +65,7 @@ export default function HomePage() {
               </Button>
             </div>
             <p className="mt-3 max-w-xl text-sm text-cream/60">
-              The phone app is the same desk, trimmed for the van: next gig, route, lodging rules, and quick replies.
+              The phone app is the same desk, trimmed for the van: book a night, answer an offer, follow the route, and see where you can sleep.
             </p>
           </div>
           <div className="rounded-3xl border border-cream/15 bg-cream/5 p-4">

@@ -83,7 +83,7 @@ export function PhoneRoute() {
             return (
               <Link
                 key={date.id}
-                href={`/dates/${date.id}`}
+                href={`/phone/book/${date.id}`}
                 className="rounded-2xl border bg-card px-4 py-3"
               >
                 <p className="font-medium">
