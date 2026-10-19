@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Outfit } from "next/font/google";
 import { Toaster } from "sonner";
+import { PlaceProvider } from "@/lib/place";
 import { AppProvider } from "@/lib/store";
 import { Shell } from "@/components/shell";
 import "./globals.css";
@@ -42,8 +43,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${outfit.variable} ${fraunces.variable} h-full antialiased`}>
       <body className="min-h-full bg-background text-foreground">
         <AppProvider>
-          <Shell>{children}</Shell>
-          <Toaster theme="light" position="top-center" />
+          <PlaceProvider>
+            <Shell>{children}</Shell>
+            <Toaster theme="light" position="top-center" />
+          </PlaceProvider>
         </AppProvider>
       </body>
     </html>

@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { cities, getCity, getMusician } from "@/lib/catalog";
 import { formatDay } from "@/lib/deal";
-import { rulesFor, searchLinks, STAY_GROUPS, staysFor } from "@/lib/lodging";
+import { rulesFor, searchLinks, searchLinksFor, STAY_GROUPS, staysFor } from "@/lib/lodging";
 import { useApp } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { liveStops, nextStop, viewerStops } from "@/components/phone/stops";
@@ -13,6 +13,7 @@ export function PhoneStay() {
   const params = useSearchParams();
   const { snapshot } = useApp();
   const requested = params.get("city");
+  const label = params.get("label");
   const stops = liveStops(viewerStops(snapshot));
   const upcoming = nextStop(stops);
   const homeSlug =
@@ -27,6 +28,34 @@ export function PhoneStay() {
 
   function pick(next: string) {
     router.replace(`/phone/stay?city=${next}`);
+  }
+
+  if (label && !(known && requested)) {
+    const outbound = searchLinksFor(label);
+    return (
+      <div className="grid gap-4 pb-2">
+        <div>
+          <p className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">Stay · sample links</p>
+          <h1 className="mt-1 font-display text-4xl leading-none tracking-tight">{label}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            No seeded lodging cards or local-rules briefing for this town. The buttons still search maps and places to sleep.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {outbound.map((link) => (
+            <a
+              key={link.label}
+              href={link.href}
+              target="_blank"
+              rel="noreferrer"
+              className="grid h-11 place-items-center rounded-lg border bg-card px-2 text-center text-xs font-semibold"
+            >
+              {link.label}
+            </a>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -96,6 +125,12 @@ export function PhoneStay() {
           </a>
         ))}
       </div>
+
+      {stays.length === 0 ? (
+        <p className="rounded-2xl border bg-card px-4 py-3 text-sm">
+          No sample lodging cards for {city?.city ?? "this town"}. Search buttons still open Airbnb, hotels, campgrounds, and a map.
+        </p>
+      ) : null}
 
       {STAY_GROUPS.map((group) => {
         const items = stays.filter((stay) => stay.type === group.type);

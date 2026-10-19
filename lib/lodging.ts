@@ -196,9 +196,8 @@ export function rulesFor(slug: string) {
   return localRules.find((rules) => rules.citySlug === slug);
 }
 
-export function searchLinks(slug: string, date?: string) {
-  const city = getCity(slug);
-  const place = city ? `${city.city}, ${city.state}` : slug;
+export function searchLinksFor(label: string, date?: string) {
+  const place = label.trim() || "United States";
   const checkout = date ? addDays(date, 1) : undefined;
   const airbnbDates =
     date && checkout ? `?checkin=${date}&checkout=${checkout}` : "";
@@ -222,4 +221,10 @@ export function searchLinks(slug: string, date?: string) {
       href: `https://www.google.com/maps/search/${encodeURIComponent(`overnight parking ${place}`)}`,
     },
   ];
+}
+
+export function searchLinks(slug: string, date?: string) {
+  const city = getCity(slug);
+  const place = city ? `${city.city}, ${city.state}` : slug;
+  return searchLinksFor(place, date);
 }

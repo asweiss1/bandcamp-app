@@ -46,9 +46,14 @@ export function TourView() {
             : `Showing ${band.name} because that band is selected. Switch to a band role to act on these dates.`
         }
         actions={
-          <Button asChild variant="outline" className="h-10">
-            <Link href={`/bands/${band.id}`}>Band profile</Link>
-          </Button>
+          <>
+            <Button asChild className="h-10">
+              <Link href="/plan">Plan a tour</Link>
+            </Button>
+            <Button asChild variant="outline" className="h-10">
+              <Link href={`/bands/${band.id}`}>Band profile</Link>
+            </Button>
+          </>
         }
       />
       {stops.length === 0 ? (

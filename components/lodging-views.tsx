@@ -44,17 +44,48 @@ export function LodgingCity({ slug, date }: { slug: string; date?: string }) {
   const city = getCity(slug);
   const rules = rulesFor(slug);
   const stays = staysFor(slug);
-  if (!city || !rules) {
+  if (!city) {
     return (
       <PageFrame>
         <h1 className="font-display text-4xl">That city isn&apos;t in the sample set.</h1>
+        <p className="mt-2 max-w-xl text-muted-foreground">
+          Search any US town from Near you. Maps and lodging links still open for a place that has no seeded rooms.
+        </p>
         <Button asChild className="mt-4 h-10">
-          <Link href="/lodging">All cities</Link>
+          <Link href="/near">Search a town</Link>
         </Button>
       </PageFrame>
     );
   }
   const links = searchLinks(slug, date);
+  if (!rules) {
+    return (
+      <PageFrame>
+        <Link href="/lodging" className="text-sm font-medium text-rust">
+          ← All cities
+        </Link>
+        <p className="mt-4 text-xs font-semibold tracking-[0.16em] text-rust uppercase">Sample city</p>
+        <h1 className="mt-2 font-display text-5xl tracking-tight">{city.label}</h1>
+        <p className="mt-2 max-w-2xl text-muted-foreground">{city.blurb}</p>
+        <div className="mt-5 rounded-2xl border border-amber/60 bg-accent px-4 py-4 text-sm leading-relaxed">
+          <p className="font-semibold">No sample lodging cards for this town.</p>
+          <p className="mt-1">
+            Rooms in the catalog can still be booked. These buttons search Airbnb, hotels, campgrounds, and a map.
+            They are outbound links, not live rates.
+          </p>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {links.map((link) => (
+            <Button key={link.label} asChild variant="outline" className="h-10">
+              <a href={link.href} target="_blank" rel="noreferrer">
+                {link.label}
+              </a>
+            </Button>
+          ))}
+        </div>
+      </PageFrame>
+    );
+  }
 
   return (
     <PageFrame>

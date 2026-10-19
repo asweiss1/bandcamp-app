@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BedDouble, CalendarDays, Map, MessageSquare, MoonStar, UserRound } from "lucide-react";
+import { usePlace } from "@/lib/place";
 import { isYourMove } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,7 @@ function tabActive(pathname: string, href: string) {
 export function PhoneShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { snapshot } = useApp();
+  const { place } = usePlace();
   const moves = snapshot.bookings.filter((booking) => isYourMove(booking, snapshot)).length;
 
   return (
@@ -49,9 +51,17 @@ export function PhoneShell({ children }: { children: React.ReactNode }) {
               </span>
             </span>
           </Link>
-          <Link href="/dashboard" className="text-xs font-semibold text-rust">
-            Full desk
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/phone/near"
+              className="max-w-28 truncate rounded-full bg-sand px-3 py-1 text-xs font-semibold"
+            >
+              {place.city}
+            </Link>
+            <Link href="/dashboard" className="text-xs font-semibold text-rust">
+              Desk
+            </Link>
+          </div>
         </header>
         <main
           id="phone-content"

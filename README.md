@@ -18,7 +18,9 @@ Open [http://127.0.0.1:4317](http://127.0.0.1:4317). The phone companion is [htt
 - **Next** shows the next gig and anything waiting on you. Musicians see board calls that match their instrument.
 - **Book** is the marketplace on the phone. Filter club dates, street-performance permits, and fairs by city, genre, and start date. A band sends a gig request or applies for a permit or a stage. A venue posts a night and offers it to a band. Accept, counter, and decline stay on the gig screen.
 - **Route** lines a band's holds up by date and city. A venue sees nights at the room, plus dates still open.
-- **Stay** is lodging and the sample local-rules briefing for the gig city (or any of the six sample cities).
+- **Stay** is lodging and the sample local-rules briefing for the gig city. Towns without seeded cards still get map and lodging search links.
+- The header city opens **Near you** (`/phone/near`): open dates, bands, permits, fairs, and board posts inside a radius you set. Search any US city, or use the device location when the browser allows it.
+- **Route** includes **Plan a tour** (`/phone/plan`). A start city and a number of days builds a sample route, drive times, lodging, and a budget. One tap sends gig requests through the same negotiation flow.
 - **Board** is fill-ins and permanent chairs, with the same interest note as the desk.
 - **You** switches the role and profile, resets demo data, and links back to the full desk.
 
@@ -31,16 +33,16 @@ npm run build
 npm start
 ```
 
-Deploy the Next.js app (for example on Vercel or any Node host). New bookings use dynamic routes, so a pure static file dump is a later step, not the default. Lodging and legal copy are example data and do not call outside APIs.
+Deploy the Next.js app (for example on Vercel or any Node host). New bookings use dynamic routes, so a pure static file dump is a later step, not the default. Lodging and legal copy are example data. City search can ask OpenStreetMap Nominatim through `/api/places`; the bundled US list still works if that lookup fails.
 
 ## What you can click through
 
 - **Profiles.** Bands list genre, home city, members, sample links, a fee range, touring vs local, and availability. Venues list city, capacity, genres, typical pay, booker contact, backline, and open dates. Musicians have their own short profiles.
 - **Marketplace.** Venues post nights. Bands filter by city, date, and genre, then request a gig. The same list includes sample street-performance permits and fair or festival calls; a band applies with a setup and a note. Venues send offers from a band profile. Deals are a guarantee, a door split, or a guarantee plus a percentage, with ticket price, backline, and load-in. Either side can counter, accept, or decline. Accepting confirms the night and closes other talks on that date. Permit and fair copy is example data, not an official application.
-- **Desks and a route.** Each role has a desk for requests, offers, and confirmed gigs. A band's tour view lines those nights up by date and city and points at lodging.
-- **Lodging.** Phoenix, Flagstaff, Cottonwood, Tucson, Albuquerque, and Las Vegas have sample hotels, motels, short-term rentals, campgrounds, and van or overnight-parking notes, plus a local-rules panel. Outbound buttons search Airbnb, hotel, campground, and map sites. The rules are labeled example data, not legal advice.
+- **Desks, a radius, and a route.** Each role has a desk for requests, offers, and confirmed gigs. Near you filters sample rooms, bands, permits, fairs, and board posts by a radius around a city you search or a device location. Plan a tour turns a start city and a number of days into a sample route, drive times, lodging, and a budget, then sends gig requests through the existing negotiation. The tour view still lines confirmed talks up by date.
+- **Lodging.** Phoenix, Flagstaff, Cottonwood, Tucson, Albuquerque, and Las Vegas have sample hotels, motels, short-term rentals, campgrounds, and van or overnight-parking notes, plus a local-rules panel. Other Southwest rooms (Prescott, Gallup, Santa Fe, Las Cruces, and more) can be booked without those cards. Any other US town still opens Airbnb, hotel, campground, and map search. The rules are labeled example data, not legal advice.
 - **Musician board.** Fill-in gigs and permanent chairs, filterable by instrument, genre, city, and pay. Interest is a note saved locally.
-- **Phone companion.** `/phone` is the road slice: next gig, booking open dates, route, lodging rules, quick accept or counter, and the board. The header phone icon and the landing page both open it.
+- **Phone companion.** `/phone` is the road slice: next gig, booking open dates, route, lodging rules, quick accept or counter, the board, near you, and the tour planner. The header phone icon and the landing page both open it.
 
 Switch roles with **View as** in the header. **Reset demo data** there puts the seeded conversations back.
 

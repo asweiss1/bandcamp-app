@@ -22,6 +22,8 @@ const links = [
   { href: "/venues", label: "Venues" },
   { href: "/lodging", label: "Lodging" },
   { href: "/board", label: "Board" },
+  { href: "/near", label: "Near" },
+  { href: "/plan", label: "Plan" },
   { href: "/tour", label: "Tour" },
   { href: "/dashboard", label: "Desk" },
 ];
@@ -159,6 +161,8 @@ function MoreMenu({ pathname }: { pathname: string }) {
     { href: "/bands", label: "Bands" },
     { href: "/venues", label: "Venues" },
     { href: "/musicians", label: "Musicians" },
+    { href: "/near", label: "Near you" },
+    { href: "/plan", label: "Plan a tour" },
     { href: "/tour", label: "Tour route" },
     { href: "/", label: "Home" },
     { href: "/phone", label: "Phone companion" },

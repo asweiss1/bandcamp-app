@@ -73,6 +73,11 @@ export function PhoneRoute() {
           })}
         </ol>
       )}
+      {snapshot.role === "band" ? (
+        <Link href="/phone/plan" className="grid h-11 place-items-center rounded-lg bg-ink text-sm font-semibold text-cream">
+          Plan a tour
+        </Link>
+      ) : null}
       {snapshot.role === "band" ? <RouteApplications /> : null}
       {openDates.length > 0 ? (
         <section className="grid gap-2">

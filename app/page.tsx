@@ -24,6 +24,10 @@ const features = [
     copy: "Street-performance windows and festival calls sit next to club dates. Apply from the phone, and the hold shows up on the route.",
   },
   {
+    title: "Near you, then a week on the road",
+    copy: "Search any US town or use this device. Open dates, bands, permits, and board posts sit inside a radius you set. A start city and a number of days builds a sample route, a budget, and gig requests.",
+  },
+  {
     title: "A route, not a pile of gigs",
     copy: "Touring bands see holds in drive order, plus other rooms still open in that window.",
   },
@@ -50,6 +54,9 @@ export default function HomePage() {
               negotiate the guarantee, line the cities up, and see where the van can stay.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
+              <Button asChild className="h-11 bg-amber px-5 text-ink hover:bg-amber/90">
+                <Link href="/near">See what is near you</Link>
+              </Button>
               <Button asChild className="h-11 bg-amber px-5 text-ink hover:bg-amber/90">
                 <Link href="/dates">Browse open dates</Link>
               </Button>
