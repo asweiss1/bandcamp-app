@@ -39,9 +39,9 @@ export function BandIndex() {
   return (
     <PageFrame>
       <PageIntro
-        eyebrow="For venues"
-        title="Find a band"
-        lede="Search by the band, a member, or a song title. Narrow by style, city, the dates they're routing, fee, music, size, and whether you can hear a sample."
+        eyebrow="Directory"
+        title="Find bands"
+        lede="Search by name, a player, or a song. Filter by hometown and radius, genre, lineup size, covers or originals, a verified profile, a sample, and a free date. Message them, tune in, invite them onto a night, or make an offer."
       />
       <BandSearch surface="desk" />
     </PageFrame>
@@ -175,6 +175,9 @@ export function BandProfile({ id }: { id: string }) {
             Send an offer
           </Button>
         ) : null}
+        <Button asChild variant="outline" className="h-10">
+          <Link href="/bands">Find bands</Link>
+        </Button>
         <Button asChild variant="outline" className="h-10">
           <Link href="/tour">Route</Link>
         </Button>

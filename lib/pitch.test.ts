@@ -63,7 +63,7 @@ test("Salt Choir's card shows shared history and Verde Line's does not", () => {
   assert.match(salt.rating, /from 1 room and 1 band/);
   assert.equal(salt.gigs, 1);
   assert.ok(salt.connections.includes("You both played The Yucca Room"));
-  assert.ok(salt.connections.includes("Linked with you"));
+  assert.ok(salt.connections.includes("Tuned in with you"));
 
   const verde = trustGlance(initialSnapshot, "mesa-dust", "verde-line", today);
   assert.equal(verde.verified, false);

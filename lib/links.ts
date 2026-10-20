@@ -9,6 +9,20 @@ export function pairLinks(links: BandLink[], a: string, b: string) {
   );
 }
 
+export function tuneOutLink(links: BandLink[], bandId: string, otherId: string) {
+  const link = links.find(
+    (item) =>
+      item.status === "accepted" &&
+      ((item.fromBandId === bandId && item.toBandId === otherId) ||
+        (item.fromBandId === otherId && item.toBandId === bandId)),
+  );
+  if (!link) return { ok: false as const, error: "You are not tuned in with that band." };
+  return {
+    ok: true as const,
+    links: links.map((item) => (item.id === link.id ? { ...item, status: "declined" as const } : item)),
+  };
+}
+
 export function linkedBandIds(links: BandLink[], bandId: string) {
   const ids = new Set<string>();
   for (const link of links) {

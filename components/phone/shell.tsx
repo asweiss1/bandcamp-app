@@ -142,6 +142,7 @@ function PhoneMore({ pathname }: { pathname: string }) {
   const { snapshot } = useApp();
   const mail = unreadTotal(snapshot);
   const links = [
+    { href: "/phone/bands", label: "Find bands" },
     { href: "/phone/inbox", label: mail > 0 ? `Inbox (${mail})` : "Inbox" },
     { href: "/phone/board", label: "Board" },
     { href: "/phone/book/calls", label: "Permits and fairs" },

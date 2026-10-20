@@ -205,7 +205,7 @@ export function DateDetail({ id }: { id: string }) {
                 your desk.
               </p>
               <Button asChild className="mt-4 h-10">
-                <Link href="/bands">Find a band to offer</Link>
+                <Link href="/bands">Find bands</Link>
               </Button>
             </div>
           ) : (

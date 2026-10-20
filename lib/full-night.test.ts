@@ -35,7 +35,7 @@ test("pay split presets stay whole percents that total 100", () => {
   assert.equal(splitPreset(5, "headliner"), null);
 });
 
-test("a Phoenix date suggests nearby linked and compatible bands", () => {
+test("a Phoenix date suggests nearby tuned-in and compatible bands", () => {
   const picks = suggestPartners({
     bandId: "mesa-dust",
     venueCitySlug: "phoenix-az",
@@ -54,7 +54,7 @@ test("a Phoenix date suggests nearby linked and compatible bands", () => {
   assert.ok(picks[0]?.overlap.includes("Americana"));
 });
 
-test("an accepted link can put a covers band on an originals bill", () => {
+test("an accepted tune-in can put a covers band on an originals bill", () => {
   const link: BandLink = {
     id: "link-mesa-lamp",
     fromBandId: "mesa-dust",

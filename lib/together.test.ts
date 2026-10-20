@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { billConfirmedClash, billProblem } from "@/lib/bills";
 import { defaultTerms } from "@/lib/deal";
-import { linkedBandIds, pairLinks } from "@/lib/links";
+import { linkedBandIds, pairLinks, tuneOutLink } from "@/lib/links";
 import { initialSnapshot } from "@/lib/seed";
 import type { BandLink, BillMember, Booking } from "@/lib/types";
 
@@ -115,7 +115,7 @@ test("an open link blocks a second request either direction", () => {
   assert.equal(pairLinks(declined, "mesa-dust", "night-market").length, 0);
 });
 
-test("linked band ids are the accepted pairs", () => {
+test("tuned-in band ids are the accepted pairs", () => {
   const links: BandLink[] = [
     {
       id: "link-ok",
@@ -133,4 +133,11 @@ test("linked band ids are the accepted pairs", () => {
     },
   ];
   assert.deepEqual(linkedBandIds(links, "mesa-dust"), ["salt-choir"]);
+  const closed = tuneOutLink(links, "mesa-dust", "salt-choir");
+  assert.equal(closed.ok, true);
+  if (!closed.ok) return;
+  assert.deepEqual(linkedBandIds(closed.links, "mesa-dust"), []);
+  assert.equal(pairLinks(closed.links, "mesa-dust", "salt-choir").length, 0);
+  const missing = tuneOutLink(closed.links, "mesa-dust", "salt-choir");
+  assert.equal(missing.ok, false);
 });

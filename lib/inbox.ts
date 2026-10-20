@@ -383,6 +383,35 @@ export function sendDirectMessage(
   };
 }
 
+export function ensureDirectThread(
+  snapshot: Snapshot,
+  toId: string,
+  toRole: "band" | "venue" | "musician",
+  now = new Date(),
+): MailResult<string> {
+  if (snapshot.role === "fan") return { ok: false, error: "Fans write from a band's page." };
+  if (snapshot.role !== "band" && snapshot.role !== "venue" && snapshot.role !== "musician") {
+    return { ok: false, error: "Switch to a band, a room, or a player to write." };
+  }
+  const me = viewer(snapshot);
+  if (toId === me.id && toRole === me.role) return { ok: false, error: "Pick someone else." };
+  if (!profileExists(toId, toRole)) return { ok: false, error: "That profile isn't listed." };
+  const target: MailParty = { id: toId, role: toRole };
+  const existing = snapshot.threads.find(
+    (thread) => thread.kind === "direct" && sameParties(thread.parties, [me, target]),
+  );
+  if (existing) return { ok: true, data: existing.id, snapshot };
+  const thread: MailThread = {
+    id: uid("th"),
+    kind: "direct",
+    parties: [me, target],
+    bookingId: null,
+    pitchId: null,
+    createdAt: now.toISOString(),
+  };
+  return { ok: true, data: thread.id, snapshot: { ...snapshot, threads: [thread, ...snapshot.threads] } };
+}
+
 export function sendFanMessage(
   snapshot: Snapshot,
   bandId: string,

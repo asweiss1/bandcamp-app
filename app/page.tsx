@@ -60,11 +60,11 @@ export default function HomePage() {
             </div>
             <p className="mt-3 max-w-xl text-sm text-cream/60">
               Book a gig starts with open dates near you. Book a whole tour opens the planner. Build a full
-              night packages nearby bands into one offer for a small room. Venues can{" "}
+              night packages nearby bands into one offer for a small room. Anyone can{" "}
               <Link href="/bands" className="font-semibold text-amber underline-offset-2 hover:underline">
-                find a band
+                find bands
               </Link>{" "}
-              and see ready-made bills. The same three buttons are on the{" "}
+              and tune in with 🎛️. Ready-made bills sit on the same page. The same three buttons are on the{" "}
               <Link href="/phone" className="font-semibold text-amber underline-offset-2 hover:underline">
                 phone
               </Link>

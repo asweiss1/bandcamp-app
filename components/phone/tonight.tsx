@@ -5,6 +5,7 @@ import { getMusician } from "@/lib/catalog";
 import { dealHeadline, formatDay, monthParts } from "@/lib/deal";
 import { listingOwner } from "@/lib/queries";
 import { useApp } from "@/lib/store";
+import { TuneInRequests } from "@/components/band-links";
 import { roleLabel } from "@/components/role-switcher";
 import { StatusPill } from "@/components/status-pill";
 import { slotLine } from "@/lib/daypart";
@@ -37,6 +38,7 @@ export function Tonight() {
         </p>
       </div>
 
+      <TuneInRequests />
       {moves.length > 0 ? (
         <section className="grid gap-2">
           <h2 className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">Your move</h2>

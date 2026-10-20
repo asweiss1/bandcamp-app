@@ -13,7 +13,7 @@ import {
   pendingOverlap,
   type Commitment,
 } from "@/lib/conflicts";
-import { pairLinks } from "@/lib/links";
+import { pairLinks, tuneOutLink } from "@/lib/links";
 import { getBand, getFan, getMusician, getVenue } from "@/lib/catalog";
 import { clearAudioTracks } from "@/lib/audio-db";
 import { alertsForConfirmation, isFollowing, nextRsvp, publicShow, todayIso } from "@/lib/fans";
@@ -21,6 +21,7 @@ import {
   blockFanAccount,
   contactProblem,
   ensureBookingThread,
+  ensureDirectThread,
   markRead,
   replyToThread,
   sendDirectMessage,
@@ -222,6 +223,7 @@ type AppContextValue = {
   activateProfile: (id: string) => Result<string>;
   requestBandLink: (toBandId: string) => Result<string>;
   respondBandLink: (id: string, status: "accepted" | "declined") => Result<string>;
+  tuneOut: (otherBandId: string) => Result<string>;
   saveBill: (input: { id?: string; name: string; members: BillMember[] }) => Result<string>;
   pitchBill: (billId: string, openDateId: string, terms: Terms) => Result<string>;
   offerBill: (billId: string, openDateId: string, terms: Terms) => Result<string>;
@@ -244,6 +246,7 @@ type AppContextValue = {
     note: string,
   ) => Result<string>;
   sendDirect: (toId: string, toRole: "band" | "venue" | "musician", body: string) => Result<string>;
+  openDirectThread: (toId: string, toRole: "band" | "venue" | "musician") => Result<string>;
   sendFanMail: (bandId: string, venueId: string | null, body: string) => Result<string>;
   replyThread: (threadId: string, body: string) => Result<string>;
   markThreadRead: (threadId: string) => Result<string>;
@@ -1091,11 +1094,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       },
       requestBandLink: (toBandId) => {
         const current = readMemory();
-        if (current.role !== "band") return { ok: false, error: "Switch to a band to send a link request." };
+        if (current.role !== "band") return { ok: false, error: "Switch to a band to tune in." };
         if (toBandId === current.bandId) return { ok: false, error: "Pick another band." };
         if (!getBand(toBandId)) return { ok: false, error: "That band isn't listed." };
         if (pairLinks(current.bandLinks, current.bandId, toBandId).length > 0) {
-          return { ok: false, error: "A link with that band is already open." };
+          return { ok: false, error: "A tune-in with that band is already open." };
         }
         const link = {
           id: uid("link"),
@@ -1119,6 +1122,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           bandLinks: current.bandLinks.map((item) => (item.id === id ? { ...item, status } : item)),
         });
         return { ok: true, data: id };
+      },
+      tuneOut: (otherBandId) => {
+        const current = readMemory();
+        if (current.role !== "band") return { ok: false, error: "Switch to a band to tune out." };
+        const next = tuneOutLink(current.bandLinks, current.bandId, otherBandId);
+        if (!next.ok) return next;
+        update({ ...current, bandLinks: next.links });
+        return { ok: true, data: otherBandId };
       },
       saveBill: ({ id, name, members }) => {
         const current = readMemory();
@@ -1550,6 +1561,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const result = sendDirectMessage(current, toId, toRole, body, todayIso());
         if (!result.ok) return result;
         update(result.snapshot);
+        return { ok: true, data: result.data };
+      },
+      openDirectThread: (toId, toRole) => {
+        const current = readMemory();
+        const result = ensureDirectThread(current, toId, toRole);
+        if (!result.ok) return result;
+        if (result.snapshot !== current) update(result.snapshot);
         return { ok: true, data: result.data };
       },
       sendFanMail: (bandId, venueId, body) => {

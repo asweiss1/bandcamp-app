@@ -114,6 +114,12 @@ export function PhoneBook({
         </p>
       </div>
       <Link
+        href="/phone/bands"
+        className="grid h-11 place-items-center rounded-lg bg-ink text-sm font-semibold text-cream"
+      >
+        Find bands
+      </Link>
+      <Link
         href="/phone/book/bills"
         className="grid h-11 place-items-center rounded-lg border text-sm font-semibold"
       >
@@ -136,20 +142,12 @@ export function PhoneBook({
       </div>
 
       {snapshot.role === "venue" ? (
-        <div className="grid gap-2">
-          <Link
-            href="/phone/bands"
-            className="grid h-11 place-items-center rounded-lg bg-ink text-sm font-semibold text-cream"
-          >
-            Find a band
-          </Link>
-          <Link
-            href="/phone/book/new"
-            className="grid h-11 place-items-center rounded-lg border text-sm font-semibold"
-          >
-            Post a date
-          </Link>
-        </div>
+        <Link
+          href="/phone/book/new"
+          className="grid h-11 place-items-center rounded-lg border text-sm font-semibold"
+        >
+          Post a date
+        </Link>
       ) : null}
 
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">

@@ -88,6 +88,9 @@ export function PhoneYou() {
         </div>
       ) : null}
 
+      <Button asChild className="h-11">
+        <Link href="/phone/bands">Find bands</Link>
+      </Button>
       <div className="grid gap-2">
         {!demo && snapshot.account.activeId ? (
           <Button className="h-11" onClick={() => setEditing(true)}>

@@ -127,11 +127,19 @@ export function NightChoices({ id, surface }: { id: string; surface: "desk" | "p
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           Pick a band you can stand behind. They see the slot and the split before {venue.name} hears anything.
         </p>
+        <Link href={surface === "phone" ? "/phone/bands" : "/bands"} className="mt-2 inline-block text-sm font-semibold text-rust">
+          Or search every band.
+        </Link>
       </div>
       {snapshot.role !== "band" || !band ? (
         <p className="rounded-2xl bg-sand px-4 py-3 text-sm">Switch to a band to invite someone onto this night.</p>
       ) : suggestions.length === 0 ? (
-        <p className="rounded-2xl bg-sand px-4 py-3 text-sm">No linked or compatible bands within 200 miles.</p>
+        <p className="rounded-2xl bg-sand px-4 py-3 text-sm">
+          No tuned-in or compatible bands within 200 miles.{" "}
+          <Link href={surface === "phone" ? "/phone/bands" : "/bands"} className="font-semibold text-rust">
+            Or search every band.
+          </Link>
+        </p>
       ) : (
         <ul className="grid gap-3">
           {suggestions.map((suggestion) => {
@@ -175,7 +183,7 @@ export function NightChoices({ id, surface }: { id: string; surface: "desk" | "p
                       ))}
                     </ul>
                   ) : (
-                    <p className="mt-2 text-sm text-muted-foreground">No shared rooms or linked bands yet.</p>
+                    <p className="mt-2 text-sm text-muted-foreground">No shared rooms or tuned-in bands yet.</p>
                   )}
                   <Button
                     type="button"

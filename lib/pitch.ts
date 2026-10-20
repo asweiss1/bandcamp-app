@@ -103,9 +103,9 @@ function scoreLabel(value: number) {
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
 
-export function trustGlance(snapshot: GlanceSnapshot, viewerBandId: string, otherBandId: string, today = todayIso()) {
-  const venueReviews = snapshot.reviews.filter((review) => review.toId === otherBandId && review.fromRole === "venue");
-  const peerReviews = snapshot.peerReviews.filter((review) => review.toBandId === otherBandId);
+export function bandRating(snapshot: Pick<Snapshot, "reviews" | "peerReviews">, bandId: string) {
+  const venueReviews = snapshot.reviews.filter((review) => review.toId === bandId && review.fromRole === "venue");
+  const peerReviews = snapshot.peerReviews.filter((review) => review.toBandId === bandId);
   const scores = [...venueReviews.map((review) => review.rating), ...peerReviews.map(peerScore)];
   const rooms = venueReviews.length;
   const bands = peerReviews.length;
@@ -113,10 +113,13 @@ export function trustGlance(snapshot: GlanceSnapshot, viewerBandId: string, othe
     rooms ? `${rooms} ${rooms === 1 ? "room" : "rooms"}` : "",
     bands ? `${bands} ${bands === 1 ? "band" : "bands"}` : "",
   ].filter(Boolean);
-  const rating =
-    scores.length === 0
-      ? "No reviews yet"
-      : `${scoreLabel(scores.reduce((sum, score) => sum + score, 0) / scores.length)} from ${who.join(" and ")}`;
+  if (scores.length === 0) return { score: null as number | null, label: "No reviews yet" };
+  const score = scores.reduce((sum, value) => sum + value, 0) / scores.length;
+  return { score, label: `${scoreLabel(score)} from ${who.join(" and ")}` };
+}
+
+export function trustGlance(snapshot: GlanceSnapshot, viewerBandId: string, otherBandId: string, today = todayIso()) {
+  const rating = bandRating(snapshot, otherBandId).label;
   const gigs = playedBookings(snapshot, otherBandId, today).length;
   const verified = isVerified("band", verificationFor(snapshot.verifications, otherBandId));
   const mine = new Set(playedBookings(snapshot, viewerBandId, today).map((booking) => booking.venueId));
@@ -128,12 +131,12 @@ export function trustGlance(snapshot: GlanceSnapshot, viewerBandId: string, othe
     if (line && !connections.includes(line)) connections.push(line);
   }
   if (linkedBandIds(snapshot.bandLinks, viewerBandId).includes(otherBandId)) {
-    connections.push("Linked with you");
+    connections.push("Tuned in with you");
   } else {
     const friends = new Set(linkedBandIds(snapshot.bandLinks, viewerBandId));
     const shared = linkedBandIds(snapshot.bandLinks, otherBandId).find((id) => friends.has(id));
     const name = shared ? getBand(shared)?.name : "";
-    if (name) connections.push(`Linked with ${name}`);
+    if (name) connections.push(`Tuned in with ${name}`);
   }
   return {
     verified,

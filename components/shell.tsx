@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/sheet";
 
 const links = [
-  { href: "/book", label: "Book", match: ["/book", "/dates", "/bookings", "/bands"] },
+  { href: "/book", label: "Book", match: ["/book", "/dates", "/bookings"] },
+  { href: "/bands", label: "Find bands", match: ["/bands"] },
   { href: "/inbox", label: "Inbox", match: ["/inbox"] },
   { href: "/plan", label: "Tour", match: ["/plan", "/tour", "/lodging"] },
   { href: "/dashboard", label: "Profile", match: ["/dashboard", "/start"] },
@@ -145,7 +146,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         className="fixed inset-x-0 bottom-0 z-40 border-t bg-paper/95 backdrop-blur print:hidden md:hidden"
       >
         <div className="grid grid-cols-4 px-1 pt-1 pb-[max(0.4rem,env(safe-area-inset-bottom))]">
-          <MobileLink href="/book" label="Book" pathname={pathname} icon={<CalendarDays />} badge={moves} match={["/book", "/dates", "/bookings", "/bands"]} />
+          <MobileLink href="/book" label="Book" pathname={pathname} icon={<CalendarDays />} badge={moves} match={["/book", "/dates", "/bookings"]} />
           <MobileLink href="/plan" label="Tour" pathname={pathname} icon={<Map />} match={["/plan", "/tour", "/lodging"]} />
           <MobileLink href="/dashboard" label="Profile" pathname={pathname} icon={<UserRound />} match={["/dashboard", "/start"]} />
           <MoreMenu pathname={pathname} />
@@ -193,6 +194,7 @@ function MoreMenu({ pathname, trigger = "tab" }: { pathname: string; trigger?: "
   const { snapshot } = useApp();
   const mail = unreadTotal(snapshot);
   const extra = [
+    { href: "/bands", label: "Find bands" },
     { href: "/inbox", label: mail > 0 ? `Inbox (${mail})` : "Inbox" },
     { href: "/board", label: "Board" },
     { href: "/dates?kind=calls", label: "Permits and fairs" },

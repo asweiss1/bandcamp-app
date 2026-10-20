@@ -13,6 +13,7 @@ import { bandSize } from "@/lib/size";
 import { useApp } from "@/lib/store";
 import { sizeFit } from "@/lib/trust";
 import { openInvites } from "@/lib/pitch";
+import { TuneInRequests } from "@/components/band-links";
 import { PlacePicker } from "@/components/place-picker";
 import { FullBillMark } from "@/components/full-night";
 import { pitchHref } from "@/components/pitch-room";
@@ -34,8 +35,16 @@ export function BookNear({ surface }: { surface: "desk" | "phone" }) {
   const music = band ? MUSIC_LABEL[repertoireFor(band.id, snapshot.repertoires).music] : null;
   const pieces = band ? bandSize(band, snapshot.sizes) : null;
 
+  const bandsHref = surface === "phone" ? "/phone/bands" : "/bands";
   const body = (
     <div id="book-near" className="grid gap-4">
+      <Link
+        href={bandsHref}
+        className="flex h-11 items-center justify-center rounded-lg bg-ink px-4 text-sm font-semibold text-cream"
+      >
+        Find bands
+      </Link>
+      <TuneInRequests />
       {invites.length > 0 ? (
         <section className="grid gap-2">
           <h2 className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">Invites</h2>

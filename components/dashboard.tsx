@@ -7,6 +7,7 @@ import { slotLine } from "@/lib/daypart";
 import { isYourMove, profileId } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import { roleLabel } from "@/components/role-switcher";
+import { TuneInRequests } from "@/components/band-links";
 import { BookActions } from "@/components/book-actions";
 import { TrustPanel } from "@/components/trust-panel";
 import { BookingRow } from "@/components/booking-row";
@@ -26,9 +27,14 @@ export function Dashboard() {
           title={`${name}'s shows`}
           lede="Confirmed shows from bands and rooms you follow, plus what's near home. Offers stay on the band and venue desks."
           actions={
-            <Button asChild className="h-10">
-              <Link href="/shows">What&apos;s happening</Link>
-            </Button>
+            <>
+              <Button asChild className="h-10">
+                <Link href="/shows">What&apos;s happening</Link>
+              </Button>
+              <Button asChild variant="outline" className="h-10">
+                <Link href="/bands">Find bands</Link>
+              </Button>
+            </>
           }
         />
         <TrustPanel />
@@ -94,6 +100,9 @@ export function Dashboard() {
                 <Link href="/board/new">Post a listing</Link>
               </Button>
             )}
+            <Button asChild variant="outline" className="h-10">
+              <Link href="/bands">Find bands</Link>
+            </Button>
             {snapshot.role !== "musician" ? (
               <Button asChild variant="outline" className="h-10">
                 <Link href="/bills">Shared bills</Link>
@@ -102,8 +111,9 @@ export function Dashboard() {
           </>
         }
       />
+      <TuneInRequests />
       {snapshot.role !== "musician" ? (
-        <div className="grid gap-8">
+        <div className="mt-8 grid gap-8">
           <Section title="Your move" empty="Nothing is waiting on you.">
             {moves.map((booking) => (
               <BookingRow

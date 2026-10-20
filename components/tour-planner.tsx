@@ -242,7 +242,7 @@ export function TourPlanner({ surface }: { surface: "desk" | "phone" }) {
           <div className="grid gap-2">
             <p className="text-sm font-medium">Tour together</p>
             <p className="text-sm text-muted-foreground">
-              Linked bands share this route. Fuel and lodging split evenly. Guarantees stay with the gigs.
+              Bands you&apos;re tuned in with share this route. Fuel and lodging split evenly. Guarantees stay with the gigs.
             </p>
             <div className="flex flex-wrap gap-2">
               {mates.map((band) => {

@@ -16,6 +16,7 @@ import {
   type MailBox,
 } from "@/lib/inbox";
 import { useApp } from "@/lib/store";
+import { TuneInRequests } from "@/components/band-links";
 import { PageFrame } from "@/components/shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,6 +71,7 @@ export function InboxIndex({ surface }: { surface: "desk" | "phone" }) {
 
   const bodyNode = (
     <div id="inbox" className="grid gap-4">
+      <TuneInRequests />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">Inbox</p>

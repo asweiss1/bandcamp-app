@@ -59,6 +59,9 @@ export function PhoneBand({ id }: { id: string }) {
           hasBackline={false}
         />
         <p className="mt-2 text-sm leading-relaxed">{band.bio}</p>
+        <Link href="/phone/bands" className="mt-3 inline-block text-sm font-semibold text-rust">
+          Find bands
+        </Link>
       </div>
       <ul className="grid gap-2">
         {band.members.map((member) => (

@@ -406,7 +406,7 @@ export function BillForm({ surface }: { surface: "desk" | "phone" }) {
                 <option value="">Pick a band</option>
                 {others.map((band) => (
                   <option key={band.id} value={band.id}>
-                    {linked.has(band.id) ? `${band.name} · linked` : band.name}
+                    {linked.has(band.id) ? `${band.name} · tuned in` : band.name}
                   </option>
                 ))}
               </select>
