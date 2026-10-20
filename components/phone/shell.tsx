@@ -75,7 +75,7 @@ export function PhoneShell({ children }: { children: React.ReactNode }) {
             >
               <Mail className="size-4" />
               {mail > 0 ? (
-                <span className="absolute -top-1 -right-1 min-w-4 rounded-full bg-amber px-1 text-center text-[10px] font-semibold text-ink">
+                <span className="absolute -top-1 -left-1 min-w-4 rounded-full bg-amber px-1 text-center text-[10px] font-semibold text-ink">
                   {mail}
                 </span>
               ) : null}
