@@ -4,6 +4,9 @@ import Link from "next/link";
 import { getBand, getVenue } from "@/lib/catalog";
 import { useApp } from "@/lib/store";
 import { BandLinks } from "@/components/band-links";
+import { BandMarks } from "@/components/originals";
+import { TurnaroundNote } from "@/components/turnaround-note";
+import { slotLine } from "@/lib/daypart";
 import { StatusPill } from "@/components/status-pill";
 
 export function PhoneBand({ id }: { id: string }) {
@@ -35,6 +38,9 @@ export function PhoneBand({ id }: { id: string }) {
       <div>
         <p className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">{band.city}</p>
         <h1 className="mt-1 font-display text-4xl leading-none tracking-tight">{band.name}</h1>
+        <div className="mt-2">
+          <BandMarks bandId={band.id} withInfo />
+        </div>
         <p className="mt-2 text-sm leading-relaxed">{band.bio}</p>
       </div>
       <ul className="grid gap-2">
@@ -72,13 +78,14 @@ export function PhoneBand({ id }: { id: string }) {
               const openDate = snapshot.openDates.find((item) => item.id === booking.openDateId);
               const venue = getVenue(booking.venueId);
               return (
-                <li key={booking.id}>
-                  <Link href={`/phone/gig/${booking.id}`} className="flex items-center justify-between gap-2 rounded-2xl border bg-card px-4 py-3">
+                <li key={booking.id} className="rounded-2xl border bg-card px-4 py-3">
+                  <Link href={`/phone/gig/${booking.id}`} className="flex items-center justify-between gap-2">
                     <span className="text-sm">
-                      {openDate?.date} · {venue?.name}
+                      {openDate ? `${openDate.date} · ${slotLine(openDate.showTime, openDate.daypart)}` : "Date"} · {venue?.name}
                     </span>
                     <StatusPill status={booking.status} />
                   </Link>
+                  <TurnaroundNote bookingId={booking.id} className="mt-2" />
                 </li>
               );
             })}

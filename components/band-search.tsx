@@ -6,10 +6,10 @@ import { AUDIO_EVENT, listAllTracks } from "@/lib/audio-db";
 import { searchBands, type TrackTitle } from "@/lib/band-search";
 import { cities, listBands, STYLE_TAGS, SUBSTYLE_TAGS } from "@/lib/catalog";
 import { useApp } from "@/lib/store";
-import type { Band } from "@/lib/types";
+import type { Band, MusicKind } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { OfferDialog } from "@/components/offer-dialog";
-import { OriginalsBadge, OriginalsFilter } from "@/components/originals";
+import { BandMarks, MusicFilter, SizeFilter } from "@/components/originals";
 import { BandSamples } from "@/components/samples";
 import { Input } from "@/components/ui/input";
 import {
@@ -33,7 +33,9 @@ export function BandSearch({ surface }: { surface: "desk" | "phone" }) {
   const [to, setTo] = useState("");
   const [feeMin, setFeeMin] = useState("");
   const [feeMax, setFeeMax] = useState("");
-  const [originalsOnly, setOriginalsOnly] = useState(false);
+  const [music, setMusic] = useState<"any" | MusicKind>("any");
+  const [sizeMin, setSizeMin] = useState<number | null>(null);
+  const [sizeMax, setSizeMax] = useState<number | null>(null);
   const [hasSamples, setHasSamples] = useState(false);
   const [uploads, setUploads] = useState<TrackTitle[]>([]);
   const [offer, setOffer] = useState<Band | null>(null);
@@ -69,10 +71,12 @@ export function BandSearch({ surface }: { surface: "desk" | "phone" }) {
         to,
         feeMin: numberOrNull(feeMin),
         feeMax: numberOrNull(feeMax),
-        originalsOnly,
+        music,
+        sizeMin,
+        sizeMax,
         hasSamples,
       }),
-    [snapshot, uploads, text, styles, substyles, citySlug, radius, from, to, feeMin, feeMax, originalsOnly, hasSamples],
+    [snapshot, uploads, text, styles, substyles, citySlug, radius, from, to, feeMin, feeMax, music, sizeMin, sizeMax, hasSamples],
   );
 
   function toggle(list: string[], value: string, setList: (next: string[]) => void) {
@@ -158,8 +162,9 @@ export function BandSearch({ surface }: { surface: "desk" | "phone" }) {
           />
         </label>
       </div>
+      <MusicFilter value={music} onChange={setMusic} />
+      <SizeFilter min={sizeMin} max={sizeMax} onChange={(min, max) => { setSizeMin(min); setSizeMax(max); }} />
       <div className="flex flex-wrap gap-4">
-        <OriginalsFilter checked={originalsOnly} onChange={setOriginalsOnly} />
         <label className="flex items-center gap-2 text-sm font-medium">
           <input type="checkbox" checked={hasSamples} onChange={(event) => setHasSamples(event.target.checked)} />
           Has music samples
@@ -167,7 +172,7 @@ export function BandSearch({ surface }: { surface: "desk" | "phone" }) {
       </div>
       <p className="text-sm text-muted-foreground">
         {rows.length} {rows.length === 1 ? "band" : "bands"}. Radius uses straight-line miles from the city you pick.
-        Touring dates use each band&apos;s seeded route plus nights already on the book.
+        Touring dates use each band&apos;s seeded route plus dates already on the book.
       </p>
       {rows.length === 0 ? (
         <p className="rounded-xl border border-dashed px-4 py-8 text-sm text-muted-foreground">
@@ -192,7 +197,7 @@ export function BandSearch({ surface }: { surface: "desk" | "phone" }) {
                 </span>
               </div>
               <div className="mt-3 flex flex-wrap gap-1.5">
-                <OriginalsBadge bandId={band.id} />
+                <BandMarks bandId={band.id} />
                 {band.styles.map((style) => (
                   <span key={style} className="rounded-full bg-sand px-2 py-1 text-[11px] font-medium">
                     {style}

@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { GENRES, getVenue } from "@/lib/catalog";
 import { useApp } from "@/lib/store";
-import type { OpenDate } from "@/lib/types";
+import type { Daypart, OpenDate } from "@/lib/types";
+import { DaypartField } from "@/components/daypart-field";
 import { cn } from "@/lib/utils";
 import { PageFrame, PageIntro } from "@/components/shell";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ export function PostDateForm() {
   const venue = getVenue(snapshot.venueId);
   const [date, setDate] = useState("2026-12-19");
   const [showTime, setShowTime] = useState("8:30pm");
+  const [daypart, setDaypart] = useState<Daypart>("evening");
   const [slot, setSlot] = useState<OpenDate["slot"]>("Headline");
   const [age, setAge] = useState<OpenDate["age"]>("21+");
   const [genres, setGenres] = useState<string[]>(["Americana"]);
@@ -31,7 +33,7 @@ export function PostDateForm() {
         <PageIntro
           eyebrow="Venues"
           title="Post an open date"
-          lede="Switch to a venue to put a night on the board."
+          lede="Switch to a venue to put a date on the board."
         />
         <Button asChild className="h-10">
           <Link href="/dates">Browse dates instead</Link>
@@ -48,7 +50,7 @@ export function PostDateForm() {
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
-    const result = postDate({ date, showTime, slot, age, genres, notes });
+    const result = postDate({ date, showTime, daypart, slot, age, genres, notes });
     if (!result.ok) {
       setError(result.error);
       return;
@@ -61,7 +63,7 @@ export function PostDateForm() {
     <PageFrame>
       <PageIntro
         eyebrow={venue.city}
-        title={`Post a night at ${venue.name}`}
+        title={`Post a date at ${venue.name}`}
         lede="This stays in the prototype board. A production venue account would notify bands who match the city and genre."
       />
       <form onSubmit={submit} className="grid max-w-2xl gap-4">
@@ -70,10 +72,16 @@ export function PostDateForm() {
             <span className="font-medium">Date</span>
             <Input className="h-10" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
           </label>
-          <label className="grid gap-1.5 text-sm">
-            <span className="font-medium">Show time</span>
-            <Input className="h-10" value={showTime} onChange={(event) => setShowTime(event.target.value)} />
-          </label>
+          <div className="sm:col-span-2">
+            <DaypartField
+              daypart={daypart}
+              showTime={showTime}
+              onChange={(next) => {
+                setDaypart(next.daypart);
+                setShowTime(next.showTime);
+              }}
+            />
+          </div>
           <label className="grid gap-1.5 text-sm">
             <span className="font-medium">Slot</span>
             <select

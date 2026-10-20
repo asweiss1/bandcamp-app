@@ -35,7 +35,7 @@ export function PhoneBoard() {
         <p className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">Board</p>
         <h1 className="mt-1 font-display text-4xl leading-none tracking-tight">Players wanted</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Fill-in nights, permanent chairs, and want-to-jam posts. A note is how you answer.
+          Fill-in dates, permanent chairs, and want-to-jam posts. A note is how you answer.
         </p>
       </div>
       <div className="flex gap-2">
@@ -167,7 +167,7 @@ export function PhoneListing({ id }: { id: string }) {
                     onConfirm={() => {
                       const result = confirmInterest(interest.id);
                       if (!result.ok) toast.error(result.error);
-                      else toast("Player confirmed. Other talks on that night are closed.");
+                      else toast("Player confirmed. Other talks on that date are closed.");
                     }}
                   />
                 </li>

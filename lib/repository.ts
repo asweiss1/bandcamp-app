@@ -1,4 +1,6 @@
 import { isAccount } from "@/lib/account";
+import { daypartFor } from "@/lib/daypart";
+import { normalizeRepertoires } from "@/lib/repertoire";
 import type { Snapshot } from "@/lib/types";
 
 /**
@@ -42,20 +44,30 @@ export const localRepository: Repository = {
       if (!raw) return fallback;
       const parsed: unknown = JSON.parse(raw);
       if (!isSnapshot(parsed)) return fallback;
+      const account = isAccount(parsed.account)
+        ? parsed.account
+        : { phase: "ready" as const, demo: true, activeId: null, profiles: [] };
       return {
         ...parsed,
         opportunities: Array.isArray(parsed.opportunities) ? parsed.opportunities : fallback.opportunities,
         applications: Array.isArray(parsed.applications) ? parsed.applications : fallback.applications,
-        repertoires: Array.isArray(parsed.repertoires) ? parsed.repertoires : fallback.repertoires,
+        repertoires: normalizeRepertoires(Array.isArray(parsed.repertoires) ? parsed.repertoires : fallback.repertoires),
         streamLinks: Array.isArray(parsed.streamLinks) ? parsed.streamLinks : fallback.streamLinks,
         nightStays: Array.isArray(parsed.nightStays) ? parsed.nightStays : fallback.nightStays,
         vehicles: Array.isArray(parsed.vehicles) ? parsed.vehicles : fallback.vehicles,
         fuelOverrides: Array.isArray(parsed.fuelOverrides) ? parsed.fuelOverrides : fallback.fuelOverrides,
         bandLinks: Array.isArray(parsed.bandLinks) ? parsed.bandLinks : fallback.bandLinks,
         bills: Array.isArray(parsed.bills) ? parsed.bills : fallback.bills,
-        account: isAccount(parsed.account)
-          ? parsed.account
-          : { phase: "ready", demo: true, activeId: null, profiles: [] },
+        sizes: Array.isArray(parsed.sizes) ? parsed.sizes : [],
+        openDates: parsed.openDates.map((date) => (date.daypart ? date : { ...date, daypart: daypartFor(date.showTime) })),
+        account: {
+          ...account,
+          profiles: account.profiles.map((profile) => {
+            if (!profile.band || (typeof profile.band.size === "number" && profile.band.size >= 1)) return profile;
+            const count = profile.band.members.length > 0 ? profile.band.members.length : 1;
+            return { ...profile, band: { ...profile.band, size: count } };
+          }),
+        },
       };
     } catch {
       return fallback;

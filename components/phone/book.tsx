@@ -5,14 +5,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { GENRES, cities, getBand, getVenue, listBands } from "@/lib/catalog";
+import { slotLine } from "@/lib/daypart";
 import { dealHeadline, defaultTerms, formatDayLong, money, monthParts } from "@/lib/deal";
 import { activeApplication, activeBooking, dateFill, sortByDate } from "@/lib/queries";
-import { useApp } from "@/lib/store";
-import type { OpenDate, OpportunityKind, Terms } from "@/lib/types";
-import { cn } from "@/lib/utils";
-import { OriginalsBadge, OriginalsFilter } from "@/components/originals";
-import { BandSamples } from "@/components/samples";
 import { repertoireFor } from "@/lib/repertoire";
+import { bandSize } from "@/lib/size";
+import { useApp } from "@/lib/store";
+import type { Daypart, MusicKind, OpenDate, OpportunityKind, Terms } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import { DaypartField } from "@/components/daypart-field";
+import { BandMarks, MusicFilter, SizeFilter } from "@/components/originals";
+import { TurnaroundNote } from "@/components/turnaround-note";
+import { BandSamples } from "@/components/samples";
 import { DealFields } from "@/components/deal-fields";
 import { StatusPill } from "@/components/status-pill";
 import { Button } from "@/components/ui/button";
@@ -78,7 +82,7 @@ export function PhoneBook() {
           {snapshot.role === "band"
             ? "Club dates, street-performance permits, and fairs. Request a room or apply for a permit or a stage."
             : snapshot.role === "venue"
-              ? "Your open nights are here, next to sample permits and fairs a band might play the same day."
+              ? "Your open dates are here, next to sample permits and fairs a band might play the same day."
               : "Rooms, permits, and fairs. Switch to a band on You to request or apply."}
         </p>
       </div>
@@ -115,7 +119,7 @@ export function PhoneBook() {
             href="/phone/book/new"
             className="grid h-11 place-items-center rounded-lg border text-sm font-semibold"
           >
-            Post a night
+            Post a date
           </Link>
         </div>
       ) : null}
@@ -165,7 +169,7 @@ export function PhoneBook() {
           checked={hideFilled}
           onChange={(event) => setHideFilled(event.target.checked)}
         />
-        Hide filled nights
+        Hide filled dates
       </label>
       <p className="text-sm text-muted-foreground">
         {rows.length} listing{rows.length === 1 ? "" : "s"}
@@ -175,7 +179,7 @@ export function PhoneBook() {
         <div className="rounded-2xl border border-dashed bg-card px-4 py-8 text-center">
           <p className="font-display text-2xl">Nothing matches.</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Widen the city, the kind, or the date. Filled club nights stay hidden until you uncheck that box.
+            Widen the city, the kind, or the date. Filled club dates stay hidden until you uncheck that box.
           </p>
         </div>
       ) : (
@@ -226,7 +230,7 @@ export function PhoneBook() {
                       <StatusPill status={row.mine?.status ?? row.fill} />
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {row.venue.city} · {row.openDate.showTime} · {row.openDate.slot}
+                      {row.venue.city} · {slotLine(row.openDate.showTime, row.openDate.daypart)} · {row.openDate.slot}
                     </p>
                     <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{row.venue.typicalDeal}</p>
                   </div>
@@ -255,7 +259,9 @@ export function PhoneDate({ id }: { id: string }) {
     }),
   );
   const [chosenBand, setChosenBand] = useState("");
-  const [originalsOnly, setOriginalsOnly] = useState(false);
+  const [music, setMusic] = useState<"any" | MusicKind>("any");
+  const [sizeMin, setSizeMin] = useState<number | null>(null);
+  const [sizeMax, setSizeMax] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   if (!openDate || !venue) {
@@ -283,7 +289,10 @@ export function PhoneDate({ id }: { id: string }) {
   );
   const availableBands = listBands().filter((item) => {
     if (related.some((booking) => booking.bandId === item.id)) return false;
-    if (originalsOnly && !repertoireFor(item.id, snapshot.repertoires).originalsOnly) return false;
+    if (music !== "any" && repertoireFor(item.id, snapshot.repertoires).music !== music) return false;
+    const pieces = bandSize(item, snapshot.sizes);
+    if (sizeMin != null && pieces < sizeMin) return false;
+    if (sizeMax != null && pieces > sizeMax) return false;
     return true;
   });
 
@@ -330,7 +339,7 @@ export function PhoneDate({ id }: { id: string }) {
         </div>
         <h1 className="mt-2 font-display text-4xl leading-[0.95] tracking-tight">{venue.name}</h1>
         <p className="mt-2 text-sm">
-          {formatDayLong(openDate.date)} · {openDate.showTime}
+          {formatDayLong(openDate.date)} · {slotLine(openDate.showTime, openDate.daypart)}
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
           {venue.neighborhood}, {venue.city} · {venue.capacity} cap
@@ -368,12 +377,13 @@ export function PhoneDate({ id }: { id: string }) {
                 <Link href={`/phone/gig/${booking.id}`} className="flex items-center justify-between gap-3">
                   <span>
                     <span className="block font-medium">
-                      {other?.name} {other ? <OriginalsBadge bandId={other.id} /> : null}
+                      {other?.name} {other ? <BandMarks bandId={other.id} /> : null}
                     </span>
                     <span className="text-sm text-muted-foreground">{dealHeadline(booking.terms)}</span>
                   </span>
                   <StatusPill status={booking.status} />
                 </Link>
+                <TurnaroundNote bookingId={booking.id} className="mt-2" />
                 {other ? <BandSamples bandId={other.id} variant="compact" /> : null}
               </article>
             );
@@ -405,7 +415,7 @@ export function PhoneDate({ id }: { id: string }) {
             <h2 className="font-display text-2xl">Request this date</h2>
             <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
               Sending as {band?.name}.
-              {band ? <OriginalsBadge bandId={band.id} withInfo /> : null}
+              {band ? <BandMarks bandId={band.id} withInfo /> : null}
             </p>
             <DealFields value={terms} onChange={setTerms} />
             {error ? (
@@ -432,9 +442,17 @@ export function PhoneDate({ id }: { id: string }) {
             <p className="text-sm text-muted-foreground">
               From {venue.name}. They can accept, counter, or decline.
             </p>
-            <OriginalsFilter checked={originalsOnly} onChange={setOriginalsOnly} />
+            <MusicFilter value={music} onChange={setMusic} />
+            <SizeFilter
+              min={sizeMin}
+              max={sizeMax}
+              onChange={(min, max) => {
+                setSizeMin(min);
+                setSizeMax(max);
+              }}
+            />
             {availableBands.length === 0 ? (
-              <p className="text-sm">Every sample band already has a conversation on this night.</p>
+              <p className="text-sm">Every sample band already has a conversation on this date.</p>
             ) : (
               <div className="grid gap-2">
                 {availableBands.map((item) => {
@@ -450,7 +468,7 @@ export function PhoneDate({ id }: { id: string }) {
                       <button type="button" aria-pressed={selected} onClick={() => pickBand(item.id)} className="w-full text-left">
                         <span className="flex flex-wrap items-center gap-2 font-medium">
                           {item.name}
-                          <OriginalsBadge bandId={item.id} />
+                          <BandMarks bandId={item.id} />
                         </span>
                         <span className="text-xs text-muted-foreground">
                           {item.city} · {money(item.feeMin)}–{money(item.feeMax)} · {item.genres[0]}
@@ -477,12 +495,12 @@ export function PhoneDate({ id }: { id: string }) {
           </form>
         ) : (
           <Button className="h-11" onClick={() => setOffering(true)}>
-            Offer this night to a band
+            Offer this date to a band
           </Button>
         )
       ) : (
         <p className="rounded-2xl bg-sand px-4 py-3 text-sm">
-          Switch to a band on the You tab to request this night
+          Switch to a band on the You tab to request this date
           {snapshot.role === "venue" ? ", or to this room if you book it" : ""}.
         </p>
       )}
@@ -496,6 +514,7 @@ export function PhonePostDate() {
   const venue = getVenue(snapshot.venueId);
   const [date, setDate] = useState("2026-12-19");
   const [showTime, setShowTime] = useState("8:30pm");
+  const [daypart, setDaypart] = useState<Daypart>("evening");
   const [slot, setSlot] = useState<OpenDate["slot"]>("Headline");
   const [age, setAge] = useState<OpenDate["age"]>("21+");
   const [genres, setGenres] = useState<string[]>(["Americana"]);
@@ -506,7 +525,7 @@ export function PhonePostDate() {
     return (
       <div className="grid gap-3 pb-2">
         <h1 className="font-display text-4xl">Post an open date</h1>
-        <p className="text-sm text-muted-foreground">Switch to a venue on the You tab to put a night up.</p>
+        <p className="text-sm text-muted-foreground">Switch to a venue on the You tab to put a date up.</p>
         <Button asChild className="h-11">
           <Link href="/phone/you">Switch who you are</Link>
         </Button>
@@ -522,7 +541,7 @@ export function PhonePostDate() {
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
-    const result = postDate({ date, showTime, slot, age, genres, notes });
+    const result = postDate({ date, showTime, daypart, slot, age, genres, notes });
     if (!result.ok) {
       setError(result.error);
       return;
@@ -538,7 +557,7 @@ export function PhonePostDate() {
       </Link>
       <div>
         <p className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">{venue.city}</p>
-        <h1 className="mt-1 font-display text-4xl leading-none tracking-tight">Post a night</h1>
+        <h1 className="mt-1 font-display text-4xl leading-none tracking-tight">Post a date</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           At {venue.name}. It shows up on this phone and on the desk.
         </p>
@@ -547,10 +566,14 @@ export function PhonePostDate() {
         <span className="font-medium">Date</span>
         <Input className="h-11" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
       </label>
-      <label className="grid gap-1.5 text-sm">
-        <span className="font-medium">Show time</span>
-        <Input className="h-11" value={showTime} onChange={(event) => setShowTime(event.target.value)} />
-      </label>
+      <DaypartField
+        daypart={daypart}
+        showTime={showTime}
+        onChange={(next) => {
+          setDaypart(next.daypart);
+          setShowTime(next.showTime);
+        }}
+      />
       <label className="grid gap-1.5 text-sm">
         <span className="font-medium">Slot</span>
         <select

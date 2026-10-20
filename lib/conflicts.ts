@@ -14,6 +14,9 @@ import type {
 /** Matches the tour planner's default max drive: straight-line miles × 1.3 at 55 mph. */
 export const DRIVE_LIMIT_HOURS = 6;
 
+/** A set occupies this many minutes from the listed start time. */
+export const SET_MINUTES = 90;
+
 export type Commitment = {
   id: string;
   source: "booking" | "application" | "fill-in";
@@ -102,7 +105,7 @@ function gigLabel(snapshot: Pick<Snapshot, "openDates">, booking: Booking) {
   const venue = getVenue(booking.venueId);
   const openDate = snapshot.openDates.find((item) => item.id === booking.openDateId);
   const where = venue ? `${venue.name}, ${venue.city}` : "a room";
-  const when = openDate ? formatDay(openDate.date) : "that night";
+  const when = openDate ? formatDay(openDate.date) : "that date";
   return `${where} on ${when}`;
 }
 
@@ -182,9 +185,39 @@ export function commitmentsFrom(snapshot: Pick<Snapshot, "bookings" | "openDates
   return list;
 }
 
-function sameSlot(a: Commitment, b: Commitment) {
+function singleDay(item: Commitment) {
+  return item.date === item.endDate;
+}
+
+function windowsOverlap(a: Commitment, b: Commitment) {
   if (a.showMinutes == null || b.showMinutes == null) return true;
-  return Math.abs(a.showMinutes - b.showMinutes) < 4 * 60;
+  return a.showMinutes < b.showMinutes + SET_MINUTES && b.showMinutes < a.showMinutes + SET_MINUTES;
+}
+
+function separableSameDay(a: Commitment, b: Commitment) {
+  return (
+    singleDay(a) &&
+    singleDay(b) &&
+    a.date === b.date &&
+    a.showMinutes != null &&
+    b.showMinutes != null &&
+    !windowsOverlap(a, b)
+  );
+}
+
+function sameDayDriveHours(a: Commitment, b: Commitment) {
+  if (!separableSameDay(a, b) || a.showMinutes == null || b.showMinutes == null) return null;
+  const earlier = a.showMinutes <= b.showMinutes ? a : b;
+  const later = earlier === a ? b : a;
+  const laterMinutes = later.showMinutes;
+  const earlierMinutes = earlier.showMinutes;
+  if (laterMinutes == null || earlierMinutes == null) return null;
+  const between = laterMinutes - earlierMinutes - SET_MINUTES;
+  if (earlier.citySlug && earlier.citySlug === later.citySlug) return null;
+  if (earlier.lat == null || earlier.lng == null || later.lat == null || later.lng == null) return null;
+  const drive = driveBetween({ lat: earlier.lat, lng: earlier.lng }, { lat: later.lat, lng: later.lng });
+  if (drive.hours * 60 <= between) return null;
+  return drive.hours;
 }
 
 function travelProblem(a: Commitment, b: Commitment, limit: number) {
@@ -212,9 +245,17 @@ function describe(existing: Commitment, candidate: Commitment, hours: number | n
         ? "This player"
         : getVenue(candidate.venueId ?? "")?.name ?? "This room";
   if (hours == null) {
-    return `${who} already has ${existing.label} confirmed. That night can't take another booking.`;
+    return `${who} already has ${existing.label} confirmed. That date already has an overlapping booking.`;
   }
   return `${who} already has ${existing.label} confirmed. The drive is ${hours} hours, past the planner's ${limit}-hour limit.`;
+}
+
+function describeSameDayDrive(existing: Commitment, candidate: Commitment, hours: number) {
+  const who =
+    candidate.bandId && existing.bandId === candidate.bandId
+      ? getBand(candidate.bandId)?.name ?? "This band"
+      : "This player";
+  return `${who} already has ${existing.label} confirmed. The drive is ${hours} hours and does not fit between those sets.`;
 }
 
 function describePending(existing: Commitment) {
@@ -240,7 +281,12 @@ export function clashWith(
     const side = relevant(hold, candidate);
     if (!side) continue;
     if (overlaps(hold, candidate)) {
-      if (side === "venue" && !sameSlot(hold, candidate)) continue;
+      if (separableSameDay(hold, candidate)) {
+        if (side === "venue") continue;
+        const hours = sameDayDriveHours(hold, candidate);
+        if (hours == null) continue;
+        return status === "confirmed" ? describeSameDayDrive(hold, candidate, hours) : describePending(hold);
+      }
       return status === "confirmed" ? describe(hold, candidate, null, limit) : describePending(hold);
     }
     if (side === "venue") continue;
@@ -345,7 +391,11 @@ export function competingIds(
     if (hold.id === winner.id && hold.source === winner.source) continue;
     const side = relevant(hold, winner);
     if (!side) continue;
-    const hit = overlaps(hold, winner) ? side !== "venue" || sameSlot(hold, winner) : side !== "venue" && travelProblem(hold, winner, DRIVE_LIMIT_HOURS) != null;
+    const hit = overlaps(hold, winner)
+      ? separableSameDay(hold, winner)
+        ? side !== "venue" && sameDayDriveHours(hold, winner) != null
+        : true
+      : side !== "venue" && travelProblem(hold, winner, DRIVE_LIMIT_HOURS) != null;
     if (!hit) continue;
     if (hold.source === "booking") bookingIds.push(hold.id);
     if (hold.source === "application") applicationIds.push(hold.id);

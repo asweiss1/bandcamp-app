@@ -27,6 +27,7 @@ import {
 import type { NightStay, Stay, StayType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { PriceField } from "@/components/fuel-price";
+import { TurnaroundNote } from "@/components/turnaround-note";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -85,7 +86,7 @@ export function TourOverview({ surface }: { surface: "desk" | "phone" }) {
       <div className="rounded-2xl border border-dashed px-4 py-10">
         <p className="font-display text-2xl">No dates on the route yet.</p>
         <p className="mt-2 text-sm text-muted-foreground">
-          Confirmed nights, open talks, and the days between them show up here.
+          Confirmed dates, open talks, and the days between them show up here.
         </p>
       </div>
     );
@@ -183,24 +184,37 @@ function NightCard({
                 {formatDay(night.date)} · {night.city}
               </span>
               <span className="mt-0.5 block font-display text-2xl leading-none">
-                {night.venueName ?? "Unbooked day off"}
+                {night.shows.length > 1
+                  ? night.shows.map((show) => show.venueName).join(" · ")
+                  : night.venueName ?? "Unbooked day off"}
               </span>
             </span>
           </span>
           <Pill className={gigTone[night.gig]}>{GIG_LABEL[night.gig]}</Pill>
         </span>
-        {night.deal ? <span className="mt-2 block text-sm">{night.deal}</span> : null}
-        {night.loadIn ? (
+        {night.shows.length > 1 ? (
+          <span className="mt-2 grid gap-1">
+            {night.shows.map((show) => (
+              <span key={show.bookingId} className="block text-sm">
+                {show.showTime} · {show.venueName} · {show.city} · {show.deal}
+              </span>
+            ))}
+          </span>
+        ) : night.deal ? (
+          <span className="mt-2 block text-sm">{night.deal}</span>
+        ) : null}
+        {night.shows.length === 0 ? (
+          <span className="mt-2 block text-sm text-muted-foreground">
+            No gig. The van stays in {night.city}.
+          </span>
+        ) : night.loadIn ? (
           <span className="mt-1 block text-sm text-muted-foreground">
             Load-in {formatTime(night.loadIn)}
             {night.showTime ? ` · Show ${night.showTime}` : ""}
           </span>
-        ) : (
-          <span className="mt-2 block text-sm text-muted-foreground">
-            No gig. The van stays in {night.city}.
-          </span>
-        )}
+        ) : null}
       </button>
+      {night.shows[0] ? <TurnaroundNote bookingId={night.shows[0].bookingId} className="mt-2" /> : null}
       <FuelLeg night={night} bandId={bandId} canEdit={canEdit} week={week} />
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Pill className={stayTone[kind]}>{LODGING_LABEL[kind]}</Pill>

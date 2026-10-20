@@ -10,7 +10,9 @@ import { activeBooking, dateFill } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import type { Terms } from "@/lib/types";
 import { DealFields } from "@/components/deal-fields";
-import { OriginalsBadge } from "@/components/originals";
+import { slotLine } from "@/lib/daypart";
+import { BandMarks } from "@/components/originals";
+import { TurnaroundNote } from "@/components/turnaround-note";
 import { BandSamples } from "@/components/samples";
 import { PageFrame } from "@/components/shell";
 import { StatusPill } from "@/components/status-pill";
@@ -75,7 +77,7 @@ export function DateDetail({ id }: { id: string }) {
           </div>
           <h1 className="mt-3 font-display text-4xl tracking-tight sm:text-5xl">{venue.name}</h1>
           <p className="mt-2 text-lg">
-            {formatDayLong(openDate.date)} · doors around {openDate.showTime}
+            {formatDayLong(openDate.date)} · {slotLine(openDate.showTime, openDate.daypart)}
           </p>
           <p className="mt-1 text-muted-foreground">
             {venue.neighborhood}, {venue.city} · {venue.capacity} capacity
@@ -123,7 +125,7 @@ export function DateDetail({ id }: { id: string }) {
                         <span>
                           <span className="flex flex-wrap items-center gap-2 font-medium">
                             {other?.name}
-                            {other ? <OriginalsBadge bandId={other.id} /> : null}
+                            {other ? <BandMarks bandId={other.id} /> : null}
                           </span>
                           <span className="text-sm text-muted-foreground">
                             {dealHeadline(booking.terms)}
@@ -131,6 +133,7 @@ export function DateDetail({ id }: { id: string }) {
                         </span>
                         <StatusPill status={booking.status} />
                       </Link>
+                      <TurnaroundNote bookingId={booking.id} className="mt-2" />
                       {other ? <BandSamples bandId={other.id} variant="compact" /> : null}
                     </article>
                   );
@@ -172,7 +175,7 @@ export function DateDetail({ id }: { id: string }) {
                 <h2 className="font-display text-2xl">Request this date</h2>
                 <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                   Sending as {band?.name}. The venue can accept, decline, or counter.
-                  {band ? <OriginalsBadge bandId={band.id} withInfo /> : null}
+                  {band ? <BandMarks bandId={band.id} withInfo /> : null}
                 </p>
               </div>
               <DealFields value={terms} onChange={setTerms} />

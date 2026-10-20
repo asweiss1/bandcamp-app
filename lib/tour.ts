@@ -1,4 +1,5 @@
 import { getCity, getVenue } from "@/lib/catalog";
+import { minutesOf } from "@/lib/conflicts";
 import { addDays, dealHeadline } from "@/lib/deal";
 import { fuelAssumptions, priceDrive, rigFor, SAMPLE_QUOTE, type FuelQuote, type LegFuel, type Rig } from "@/lib/fuel";
 import { driveBetween, placeForSlug } from "@/lib/geo";
@@ -50,6 +51,16 @@ export function guaranteeDollars(terms: Terms) {
   return terms.guarantee ?? 0;
 }
 
+export type TourShow = {
+  bookingId: string;
+  venueName: string;
+  showTime: string;
+  city: string;
+  deal: string;
+  gig: GigKind;
+  guarantee: number;
+};
+
 export type TourNight = {
   id: string;
   date: string;
@@ -68,6 +79,7 @@ export type TourNight = {
   guarantee: number;
   loadIn: string | null;
   showTime: string | null;
+  shows: TourShow[];
   leg: { miles: number; hours: number } | null;
   fuel: LegFuel | null;
 };
@@ -107,8 +119,8 @@ type PlacedStop = {
   showTime: string;
 };
 
-function placedStops(snapshot: Snapshot, bandId: string) {
-  const byDate = new Map<string, PlacedStop>();
+function placedDays(snapshot: Snapshot, bandId: string) {
+  const byDate = new Map<string, PlacedStop[]>();
   for (const booking of snapshot.bookings) {
     if (booking.bandId !== bandId || booking.status === "declined") continue;
     const openDate = snapshot.openDates.find((item) => item.id === booking.openDateId);
@@ -117,9 +129,8 @@ function placedStops(snapshot: Snapshot, bandId: string) {
     const place = placeForSlug(venue.citySlug);
     const city = getCity(venue.citySlug);
     if (!place || !city) continue;
-    const existing = byDate.get(openDate.date);
-    if (existing && (RANK[existing.booking.status] ?? 0) >= (RANK[booking.status] ?? 0)) continue;
-    byDate.set(openDate.date, {
+    const list = byDate.get(openDate.date) ?? [];
+    list.push({
       booking,
       date: openDate.date,
       citySlug: venue.citySlug,
@@ -131,43 +142,69 @@ function placedStops(snapshot: Snapshot, bandId: string) {
       venueName: venue.name,
       showTime: openDate.showTime,
     });
+    byDate.set(openDate.date, list);
   }
-  return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+  return [...byDate.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([, shows]) => shows.sort((a, b) => (minutesOf(a.showTime) ?? 0) - (minutesOf(b.showTime) ?? 0)));
+}
+
+function sleepStop(shows: PlacedStop[]) {
+  return [...shows].sort((a, b) => {
+    const time = (minutesOf(a.showTime) ?? -1) - (minutesOf(b.showTime) ?? -1);
+    if (time !== 0) return time;
+    return (RANK[a.booking.status] ?? 0) - (RANK[b.booking.status] ?? 0);
+  })[shows.length - 1];
+}
+
+function leadGig(shows: PlacedStop[]): GigKind {
+  const lead = [...shows].sort((a, b) => (RANK[b.booking.status] ?? 0) - (RANK[a.booking.status] ?? 0))[0];
+  return gigKind(lead.booking.status);
 }
 
 export function buildTour(snapshot: Snapshot, bandId: string, quote: FuelQuote = SAMPLE_QUOTE) {
   const rig = rigFor(snapshot.vehicles.filter((vehicle) => vehicle.bandId === bandId));
-  const stops = placedStops(snapshot, bandId);
-  if (stops.length === 0) return { nights: [] as TourNight[], totals: emptyTotals, rig };
+  const days = placedDays(snapshot, bandId);
+  if (days.length === 0) return { nights: [] as TourNight[], totals: emptyTotals, rig };
 
   const nights: TourNight[] = [];
-  let cursor = stops[0].date;
-  const last = stops[stops.length - 1].date;
+  let cursor = days[0][0].date;
+  const last = days[days.length - 1][0].date;
   let previous: PlacedStop | TourNight | null = null;
 
   while (cursor <= last && nights.length < 45) {
-    const stop = stops.find((item) => item.date === cursor);
-    const city = stop ?? previous;
-    if (!city) break;
-    const leg = previous ? driveBetween(previous, city) : null;
+    const shows = days.find((item) => item[0]?.date === cursor);
+    const anchor = shows ? sleepStop(shows) : previous;
+    if (!anchor) break;
+    const leg = previous ? driveBetween(previous, anchor) : null;
+    const listed: TourShow[] = (shows ?? []).map((show) => ({
+      bookingId: show.booking.id,
+      venueName: show.venueName,
+      showTime: show.showTime,
+      city: show.label,
+      deal: dealHeadline(show.booking.terms),
+      gig: gigKind(show.booking.status),
+      guarantee: guaranteeDollars(show.booking.terms),
+    }));
     nights.push({
       id: cursor,
       date: cursor,
-      city: city.city,
-      state: city.state,
-      citySlug: city.citySlug,
-      label: "label" in city && city.label ? city.label : `${city.city}, ${city.state}`,
-      lat: city.lat,
-      lng: city.lng,
-      pinLat: city.lat,
-      pinLng: city.lng,
-      gig: stop ? gigKind(stop.booking.status) : "off",
-      venueName: stop?.venueName ?? null,
-      bookingId: stop?.booking.id ?? null,
-      deal: stop ? dealHeadline(stop.booking.terms) : null,
-      guarantee: stop ? guaranteeDollars(stop.booking.terms) : 0,
-      loadIn: stop?.booking.terms.loadIn ?? null,
-      showTime: stop?.showTime ?? null,
+      city: anchor.city,
+      state: anchor.state,
+      citySlug: anchor.citySlug,
+      label: "label" in anchor && anchor.label ? anchor.label : `${anchor.city}, ${anchor.state}`,
+      lat: anchor.lat,
+      lng: anchor.lng,
+      pinLat: anchor.lat,
+      pinLng: anchor.lng,
+      gig: shows ? leadGig(shows) : "off",
+      venueName: shows && shows.length === 1 ? shows[0].venueName : shows ? `${shows.length} shows` : null,
+      bookingId: shows && shows.length === 1 ? shows[0].booking.id : anchor && shows ? sleepStop(shows).booking.id : null,
+      deal: shows && shows.length === 1 ? dealHeadline(shows[0].booking.terms) : null,
+      guarantee: listed.reduce((sum, show) => sum + show.guarantee, 0),
+      loadIn: shows && shows.length === 1 ? shows[0].booking.terms.loadIn : null,
+      showTime: shows && shows.length === 1 ? shows[0].showTime : null,
+      shows: listed,
       leg,
       fuel: null,
     });

@@ -18,7 +18,9 @@ import { useApp } from "@/lib/store";
 import type { Terms } from "@/lib/types";
 import { BillLineup } from "@/components/bills";
 import { DealFields } from "@/components/deal-fields";
-import { OriginalsBadge } from "@/components/originals";
+import { slotLine } from "@/lib/daypart";
+import { BandMarks } from "@/components/originals";
+import { TurnaroundNote } from "@/components/turnaround-note";
 import { BandSamples } from "@/components/samples";
 import { PageFrame } from "@/components/shell";
 import { StatusPill, statusLabel } from "@/components/status-pill";
@@ -113,11 +115,12 @@ export function BookingRoom({ id }: { id: string }) {
         {band.name} at {venue.name}
       </h1>
       <div className="mt-3">
-        <OriginalsBadge bandId={band.id} withInfo />
+        <BandMarks bandId={band.id} withInfo />
       </div>
       <p className="mt-2 text-lg text-muted-foreground">
-        {formatDayLong(openDate.date)} · {openDate.showTime} · {venue.city}
+        {formatDayLong(openDate.date)} · {slotLine(openDate.showTime, openDate.daypart)} · {venue.city}
       </p>
+      <TurnaroundNote bookingId={booking.id} className="mt-2" />
       <BillLineup billId={booking.billId} surface="desk" />
 
       {booking.status === "accepted" ? (
@@ -175,7 +178,7 @@ export function BookingRoom({ id }: { id: string }) {
                 <div>
                   <h2 className="font-display text-2xl">Answer the {statusLabel(booking.status).toLowerCase()}</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Accept locks the date and declines other open talks for this night. A counter
+                    Accept locks the date and declines other open talks for this time. A counter
                     sends the terms below back across the table.
                   </p>
                 </div>

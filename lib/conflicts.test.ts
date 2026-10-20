@@ -12,6 +12,7 @@ import {
   pendingOverlap,
   planBatchClash,
 } from "@/lib/conflicts";
+import { daypartFor } from "@/lib/daypart";
 import { defaultTerms } from "@/lib/deal";
 import type { Application, Booking, Interest, Listing, NightStay, OpenDate, Opportunity, Snapshot } from "@/lib/types";
 
@@ -25,6 +26,7 @@ function night(id: string, venueId: string, date: string, showTime: string): Ope
     slot: "Headline",
     age: "21+",
     notes: "",
+    daypart: daypartFor(showTime),
   };
 }
 
@@ -57,6 +59,7 @@ function snapshot(partial: Partial<Snapshot>): Snapshot {
     fuelOverrides: [],
     bandLinks: [],
     bills: [],
+    sizes: [],
     account: { phase: "ready", demo: true, activeId: null, profiles: [] },
     ...partial,
   };
@@ -69,7 +72,7 @@ const flagstaffNext = night("od-flag", "high-country", "2026-11-07", "8:00pm");
 const early = night("od-early", "yucca-room", "2026-11-06", "2:00pm");
 const late = night("od-late", "yucca-room", "2026-11-06", "10:00pm");
 
-test("a band cannot confirm a second gig on the same night", () => {
+test("a band cannot confirm a second gig the same date when the drive does not fit", () => {
   const current = snapshot({
     openDates: [yucca, chapelSameNight],
     bookings: [booking({ id: "bk-1", openDateId: yucca.id, bandId: "mesa-dust", venueId: "yucca-room", status: "accepted" })],
@@ -115,6 +118,17 @@ test("a room can keep two set times on one date when they are different slots", 
     bookings: [booking({ id: "bk-1", openDateId: early.id, bandId: "mesa-dust", venueId: "yucca-room", status: "accepted" })],
   });
   const next = booking({ id: "bk-2", openDateId: late.id, bandId: "salt-choir", venueId: "yucca-room", status: "offered" });
+  const candidate = candidateForBooking(current, next, "confirmed");
+  assert.ok(candidate);
+  assert.equal(confirmedClash(current, candidate), null);
+});
+
+test("a band can play two shows the same date in one city when the times do not overlap", () => {
+  const current = snapshot({
+    openDates: [early, late],
+    bookings: [booking({ id: "bk-1", openDateId: early.id, bandId: "mesa-dust", venueId: "yucca-room", status: "accepted" })],
+  });
+  const next = booking({ id: "bk-2", openDateId: late.id, bandId: "mesa-dust", venueId: "yucca-room", status: "offered" });
   const candidate = candidateForBooking(current, next, "confirmed");
   assert.ok(candidate);
   assert.equal(confirmedClash(current, candidate), null);

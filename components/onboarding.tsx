@@ -9,10 +9,13 @@ import type { SavedPlace } from "@/lib/geo";
 import { HometownField } from "@/components/hometown-field";
 import { readPhoto } from "@/lib/photo";
 import { repertoireFor } from "@/lib/repertoire";
+import { bandSize } from "@/lib/size";
 import { useApp } from "@/lib/store";
-import type { OpenDate, OwnedProfile, Role, Terms } from "@/lib/types";
+import type { Daypart, MusicKind, OpenDate, OwnedProfile, Role, Terms } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { DaypartField } from "@/components/daypart-field";
 import { DealFields } from "@/components/deal-fields";
+import { MusicChoice } from "@/components/originals";
 import { BandSamples } from "@/components/samples";
 import { VehiclePanel } from "@/components/vehicles";
 import { Button } from "@/components/ui/button";
@@ -21,13 +24,14 @@ import { Textarea } from "@/components/ui/textarea";
 
 const ROLES: { id: Role; label: string; hint: string }[] = [
   { id: "band", label: "Band", hint: "Request dates, answer offers, and price the drive." },
-  { id: "venue", label: "Venue", hint: "Post nights and send offers to bands." },
+  { id: "venue", label: "Venue", hint: "Post dates and send offers to bands." },
   { id: "musician", label: "Musician", hint: "Pick up fill-ins or look for a band." },
 ];
 
 type DateDraft = {
   date: string;
   showTime: string;
+  daypart: Daypart;
   slot: OpenDate["slot"];
   age: OpenDate["age"];
   notes: string;
@@ -49,8 +53,8 @@ type Draft = {
   feeMax: string;
   touring: boolean;
   availability: string;
-  originalsOnly: boolean;
-  coversNote: string;
+  pieces: string;
+  music: MusicKind | null;
   capacity: string;
   backline: string;
   terms: Terms;
@@ -80,8 +84,8 @@ function blankDraft(): Draft {
     feeMax: "",
     touring: true,
     availability: "",
-    originalsOnly: false,
-    coversNote: "",
+    pieces: "",
+    music: null,
     capacity: "",
     backline: "",
     terms: defaultTerms(),
@@ -96,7 +100,7 @@ function blankDraft(): Draft {
   };
 }
 
-function draftFrom(profile: OwnedProfile, snapshotDates: OpenDate[], originals: { originalsOnly: boolean; coversNote: string }): Draft {
+function draftFrom(profile: OwnedProfile, snapshotDates: OpenDate[], music: MusicKind): Draft {
   const base = blankDraft();
   base.id = profile.id;
   base.role = profile.role;
@@ -115,8 +119,8 @@ function draftFrom(profile: OwnedProfile, snapshotDates: OpenDate[], originals: 
     base.feeMax = String(band.feeMax);
     base.touring = band.touring;
     base.availability = band.availability;
-    base.originalsOnly = originals.originalsOnly;
-    base.coversNote = originals.coversNote;
+    base.pieces = String(bandSize(band));
+    base.music = music;
   }
   if (profile.venue) {
     const venue = profile.venue;
@@ -135,7 +139,15 @@ function draftFrom(profile: OwnedProfile, snapshotDates: OpenDate[], originals: 
     base.bookerPhone = venue.bookerPhone;
     base.dates = snapshotDates
       .filter((date) => date.venueId === venue.id)
-      .map((date) => ({ date: date.date, showTime: date.showTime, slot: date.slot, age: date.age, notes: date.notes, saved: true }));
+      .map((date) => ({
+        date: date.date,
+        showTime: date.showTime,
+        daypart: date.daypart,
+        slot: date.slot,
+        age: date.age,
+        notes: date.notes,
+        saved: true,
+      }));
   }
   if (profile.musician) {
     const musician = profile.musician;
@@ -188,6 +200,7 @@ function toProfile(draft: Draft): OwnedProfile | null {
         touring: draft.touring,
         feeMin: Number(draft.feeMin),
         feeMax: Number(draft.feeMax),
+        size: Number(draft.pieces) >= 1 ? Math.round(Number(draft.pieces)) : 1,
         members: draft.members
           .map((member) => ({ name: member.name.trim(), role: member.role.trim() || "Member" }))
           .filter((member) => member.name.length > 1),
@@ -306,8 +319,8 @@ export function ProfileWizard({
   }, [profileId, welcome, snapshot.account.profiles, snapshot.account.activeId]);
   const [draft, setDraft] = useState<Draft>(() => {
     if (!existing) return blankDraft();
-    const originals = repertoireFor(existing.id, snapshot.repertoires);
-    return draftFrom(existing, snapshot.openDates, originals);
+    const music = repertoireFor(existing.id, snapshot.repertoires).music;
+    return draftFrom(existing, snapshot.openDates, music);
   });
   const [stepIndex, setStepIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -343,6 +356,11 @@ export function ProfileWizard({
     }
     if (key === "people") {
       if (!draft.members.some((member) => member.name.trim().length > 1)) return "Add at least one member.";
+      if (!(Number(draft.pieces) >= 1)) return "Enter how many pieces are in the band.";
+      return null;
+    }
+    if (key === "originals") {
+      if (!draft.music) return "Pick covers, originals, or a mix.";
       return null;
     }
     if (key === "work" && draft.role === "band") {
@@ -373,7 +391,7 @@ export function ProfileWizard({
     }
     if (key === "dates") {
       const open = draft.dates.find((date) => !date.saved && date.date && !/^\d{4}-\d{2}-\d{2}$/.test(date.date));
-      if (open) return "Use a real date for each night.";
+      if (open) return "Use a real date for each listing.";
       return null;
     }
     return null;
@@ -387,14 +405,14 @@ export function ProfileWizard({
     }
     const result = saveProfile(profile, {
       finish,
-      originalsOnly: draft.originalsOnly,
-      coversNote: draft.coversNote,
+      music: draft.music ?? undefined,
       openDates: finish
         ? draft.dates
             .filter((date) => !date.saved && date.date)
             .map((date) => ({
               date: date.date,
               showTime: date.showTime || "8:00pm",
+              daypart: date.daypart,
               slot: date.slot,
               age: date.age,
               genres: draft.genres,
@@ -456,7 +474,7 @@ export function ProfileWizard({
             : step === "work" && draft.role === "band"
               ? "Fees and the road"
               : step === "originals"
-                ? "Originals"
+                ? "Covers, originals, or a mix"
                 : step === "vehicles"
                   ? "The rig"
                   : step === "samples"
@@ -466,7 +484,7 @@ export function ProfileWizard({
                       : step === "deal"
                         ? "The usual deal"
                         : step === "dates"
-                          ? "Nights you can offer"
+                          ? "Dates you can offer"
                           : step === "place"
                             ? "Where you play"
                             : step === "work"
@@ -565,6 +583,15 @@ export function ProfileWizard({
           <Button type="button" variant="outline" className="h-11" onClick={() => patch({ members: [...draft.members, { name: "", role: "" }] })}>
             Add a member
           </Button>
+          <Field label="How many pieces">
+            <Input
+              className="h-11"
+              inputMode="numeric"
+              value={draft.pieces}
+              onChange={(event) => patch({ pieces: event.target.value })}
+              placeholder="4"
+            />
+          </Field>
         </div>
       ) : null}
       {step === "work" && draft.role === "band" ? (
@@ -591,13 +618,7 @@ export function ProfileWizard({
       ) : null}
       {step === "originals" ? (
         <div className="grid gap-3 rounded-2xl border bg-card p-4">
-          <button type="button" aria-pressed={draft.originalsOnly} onClick={() => patch({ originalsOnly: !draft.originalsOnly })} className="text-left">
-            <span className="block font-semibold">{draft.originalsOnly ? "Originals only" : "Originals and other songs"}</span>
-            <span className="text-sm text-muted-foreground">Venues can filter for bands who play their own music. This is not legal advice about PROs.</span>
-          </button>
-          <Field label="Covers or other songs, if any">
-            <Textarea value={draft.coversNote} onChange={(event) => patch({ coversNote: event.target.value })} />
-          </Field>
+          <MusicChoice value={draft.music} onChange={(music) => patch({ music })} />
         </div>
       ) : null}
       {step === "vehicles" ? <VehiclePanel bandId={draft.id} /> : null}
@@ -634,15 +655,18 @@ export function ProfileWizard({
       ) : null}
       {step === "dates" ? (
         <div className="grid gap-3">
-          <p className="text-sm text-muted-foreground">Add the nights you want bands to request. You can post more later.</p>
+          <p className="text-sm text-muted-foreground">Add the dates you want bands to request. You can post more later.</p>
           {draft.dates.map((date, index) => (
             <div key={index} className="grid gap-2 rounded-2xl border bg-card p-3">
               <Field label="Date">
                 <Input className="h-11" type="date" value={date.date} disabled={date.saved} onChange={(event) => patch({ dates: replaceAt(draft.dates, index, { ...date, date: event.target.value }) })} />
               </Field>
-              <Field label="Show time">
-                <Input className="h-11" value={date.showTime} disabled={date.saved} onChange={(event) => patch({ dates: replaceAt(draft.dates, index, { ...date, showTime: event.target.value }) })} />
-              </Field>
+              <DaypartField
+                daypart={date.daypart}
+                showTime={date.showTime}
+                disabled={date.saved}
+                onChange={(next) => patch({ dates: replaceAt(draft.dates, index, { ...date, ...next }) })}
+              />
             </div>
           ))}
           <Button
@@ -651,7 +675,10 @@ export function ProfileWizard({
             className="h-11"
             onClick={() =>
               patch({
-                dates: [...draft.dates, { date: "", showTime: "8:00pm", slot: "Headline", age: "21+", notes: "", saved: false }],
+                dates: [
+                  ...draft.dates,
+                  { date: "", showTime: "8:00pm", daypart: "evening", slot: "Headline", age: "21+", notes: "", saved: false },
+                ],
               })
             }
           >

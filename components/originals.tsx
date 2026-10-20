@@ -2,10 +2,16 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { ORIGINALS_INFO, repertoireFor } from "@/lib/repertoire";
+import { ownsProfile } from "@/lib/account";
+import { getBand } from "@/lib/catalog";
+import { MUSIC_LABEL, ORIGINALS_INFO, repertoireFor } from "@/lib/repertoire";
+import { bandSize, SIZE_PRESETS, sizeLabel } from "@/lib/size";
 import { useApp } from "@/lib/store";
+import type { MusicKind } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+
+const MUSIC: MusicKind[] = ["covers", "originals", "mix"];
 
 export function OriginalsInfo() {
   const [open, setOpen] = useState(false);
@@ -32,50 +38,195 @@ export function OriginalsInfo() {
   );
 }
 
-export function OriginalsBadge({ bandId, withInfo = false }: { bandId: string; withInfo?: boolean }) {
+export function MusicBadge({ bandId, withInfo = false }: { bandId: string; withInfo?: boolean }) {
   const { snapshot } = useApp();
-  const repertoire = repertoireFor(bandId, snapshot.repertoires);
-  if (!repertoire.originalsOnly) return null;
+  const music = repertoireFor(bandId, snapshot.repertoires).music;
   return (
     <span className="inline-flex flex-wrap items-center gap-1.5">
       <span className="rounded-full bg-pine px-2 py-1 text-[11px] font-semibold tracking-wide text-cream uppercase">
-        All original
+        {MUSIC_LABEL[music]}
       </span>
-      {repertoire.rightsAttested ? (
-        <span className="text-[11px] font-medium text-muted-foreground">Rights attested</span>
-      ) : null}
-      {withInfo ? <OriginalsInfo /> : null}
+      {withInfo && music === "originals" ? <OriginalsInfo /> : null}
     </span>
   );
 }
 
-export function OriginalsFilter({
-  checked,
+export function SizeBadge({ bandId }: { bandId: string }) {
+  const { snapshot } = useApp();
+  const band = getBand(bandId);
+  if (!band) return null;
+  return (
+    <span className="rounded-full bg-sand px-2 py-1 text-[11px] font-semibold tracking-wide uppercase">
+      {sizeLabel(bandSize(band, snapshot.sizes))}
+    </span>
+  );
+}
+
+export function BandMarks({ bandId, withInfo = false }: { bandId: string; withInfo?: boolean }) {
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1.5">
+      <SizeBadge bandId={bandId} />
+      <MusicBadge bandId={bandId} withInfo={withInfo} />
+    </span>
+  );
+}
+
+export function MusicFilter({
+  value,
   onChange,
 }: {
-  checked: boolean;
-  onChange: (checked: boolean) => void;
+  value: "any" | MusicKind;
+  onChange: (value: "any" | MusicKind) => void;
+}) {
+  const options: { id: "any" | MusicKind; label: string }[] = [
+    { id: "any", label: "Any" },
+    { id: "covers", label: "Covers" },
+    { id: "originals", label: "Originals" },
+    { id: "mix", label: "Mix" },
+  ];
+  return (
+    <div className="grid gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-medium">Music</span>
+        {options.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            aria-pressed={value === option.id}
+            onClick={() => onChange(option.id)}
+            className={cn(
+              "rounded-full px-3 py-1 text-xs font-semibold",
+              value === option.id ? "bg-ink text-cream" : "bg-sand",
+            )}
+          >
+            {option.label}
+          </button>
+        ))}
+        {value === "originals" ? <OriginalsInfo /> : null}
+      </div>
+      {value === "originals" ? <p className="text-xs leading-relaxed text-muted-foreground">{ORIGINALS_INFO}</p> : null}
+    </div>
+  );
+}
+
+export function SizeFilter({
+  min,
+  max,
+  onChange,
+}: {
+  min: number | null;
+  max: number | null;
+  onChange: (min: number | null, max: number | null) => void;
+}) {
+  const active = SIZE_PRESETS.find((preset) => preset.min === min && preset.max === max)?.id ?? "";
+  return (
+    <div className="grid gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-medium">Size</span>
+        <button
+          type="button"
+          aria-pressed={min == null && max == null}
+          onClick={() => onChange(null, null)}
+          className={cn("rounded-full px-3 py-1 text-xs font-semibold", min == null && max == null ? "bg-ink text-cream" : "bg-sand")}
+        >
+          Any
+        </button>
+        {SIZE_PRESETS.map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            aria-pressed={active === preset.id}
+            onClick={() => onChange(preset.min, preset.max)}
+            className={cn("rounded-full px-3 py-1 text-xs font-semibold", active === preset.id ? "bg-ink text-cream" : "bg-sand")}
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <label className="grid gap-1 text-sm">
+          <span className="font-medium">Min pieces</span>
+          <Input
+            inputMode="numeric"
+            value={min ?? ""}
+            placeholder="Any"
+            className="h-10"
+            onChange={(event) => onChange(numberOrNull(event.target.value), max)}
+          />
+        </label>
+        <label className="grid gap-1 text-sm">
+          <span className="font-medium">Max pieces</span>
+          <Input
+            inputMode="numeric"
+            value={max ?? ""}
+            placeholder="Any"
+            className="h-10"
+            onChange={(event) => onChange(min, numberOrNull(event.target.value))}
+          />
+        </label>
+      </div>
+    </div>
+  );
+}
+
+function numberOrNull(value: string) {
+  if (!value.trim()) return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 1) return null;
+  return Math.round(parsed);
+}
+
+export function MusicChoice({
+  value,
+  onChange,
+}: {
+  value: MusicKind | null;
+  onChange: (value: MusicKind) => void;
 }) {
   return (
-    <label className="flex items-center gap-2 text-sm font-medium">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(event) => onChange(event.target.checked)}
-      />
-      Originals only
-      <OriginalsInfo />
-    </label>
+    <div className="grid gap-3">
+      <div className="flex flex-wrap gap-2">
+        {MUSIC.map((music) => (
+          <button
+            key={music}
+            type="button"
+            aria-pressed={value === music}
+            onClick={() => onChange(music)}
+            className={cn(
+              "rounded-full px-4 py-2 text-sm font-semibold",
+              value === music ? "bg-ink text-cream" : "bg-sand",
+            )}
+          >
+            {MUSIC_LABEL[music]}
+          </button>
+        ))}
+      </div>
+      {value === "originals" ? (
+        <p className="flex items-start gap-2 text-sm leading-relaxed text-muted-foreground">
+          <OriginalsInfo />
+          <span>{ORIGINALS_INFO}</span>
+        </p>
+      ) : (
+        <p className="text-sm text-muted-foreground">Pick one. Venues filter the board by this label.</p>
+      )}
+    </div>
   );
 }
 
 export function RepertoirePanel({ bandId }: { bandId: string }) {
-  const { snapshot, setRepertoire } = useApp();
+  const { snapshot, setRepertoire, setBandSize } = useApp();
   const repertoire = repertoireFor(bandId, snapshot.repertoires);
-  const editable = snapshot.role === "band" && snapshot.bandId === bandId;
+  const band = getBand(bandId);
+  const editable = ownsProfile(snapshot, bandId) && snapshot.role === "band";
+  const size = band ? bandSize(band, snapshot.sizes) : 1;
 
-  function save(patch: { originalsOnly?: boolean; coversNote?: string; rightsAttested?: boolean }) {
-    const result = setRepertoire(bandId, patch);
+  function saveMusic(music: MusicKind) {
+    const result = setRepertoire(bandId, { music });
+    if (!result.ok) toast.error(result.error);
+  }
+
+  function saveSize(next: number) {
+    const result = setBandSize(bandId, next);
     if (!result.ok) toast.error(result.error);
   }
 
@@ -83,65 +234,33 @@ export function RepertoirePanel({ bandId }: { bandId: string }) {
     <section className="rounded-2xl border bg-card p-4">
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="font-display text-2xl">Setlist</h2>
-        <OriginalsBadge bandId={bandId} withInfo />
+        <BandMarks bandId={bandId} withInfo />
       </div>
-      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{ORIGINALS_INFO}</p>
       {editable ? (
-        <div className="mt-4 grid gap-3">
-          <label className="flex items-center gap-2 text-sm font-medium">
-            <input
-              type="checkbox"
-              checked={repertoire.originalsOnly}
-              onChange={(event) =>
-                save({
-                  originalsOnly: event.target.checked,
-                  rightsAttested: event.target.checked ? repertoire.rightsAttested : false,
-                })
-              }
+        <div className="mt-4 grid gap-4">
+          <MusicChoice value={repertoire.music} onChange={saveMusic} />
+          <label className="grid max-w-xs gap-1 text-sm font-medium">
+            How many pieces
+            <Input
+              className="h-11 font-normal"
+              inputMode="numeric"
+              value={String(size)}
+              onChange={(event) => {
+                const next = Number(event.target.value);
+                if (next >= 1) saveSize(Math.round(next));
+              }}
             />
-            All original music, no covers
           </label>
-          {repertoire.originalsOnly ? (
-            <label className="flex items-start gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="mt-1"
-                checked={repertoire.rightsAttested}
-                onChange={(event) => save({ rightsAttested: event.target.checked })}
-              />
-              <span>
-                We own or control the rights to this setlist.
-                <span className="mt-1 block text-muted-foreground">
-                  A sample attestation stored in this browser. It is not a license, a registration, or legal advice.
-                </span>
-              </span>
-            </label>
-          ) : (
-            <label className="grid gap-1 text-sm font-medium">
-              Covers we play
-              <Textarea
-                value={repertoire.coversNote}
-                onChange={(event) => save({ coversNote: event.target.value })}
-                placeholder="Name the covers, or leave this blank."
-                className="min-h-20 font-normal"
-              />
-            </label>
-          )}
         </div>
-      ) : repertoire.originalsOnly ? (
-        <p className="mt-3 text-sm">
-          {repertoire.rightsAttested
-            ? "This band says the set is all original and that they own or control the rights."
-            : "This band says the set is all original. They have not attested the rights."}
-        </p>
-      ) : repertoire.coversNote ? (
-        <p className={cn("mt-3 text-sm")}>
-          <span className="font-medium">Covers we play. </span>
-          {repertoire.coversNote}
-        </p>
       ) : (
-        <p className="mt-3 text-sm text-muted-foreground">No originals flag and no covers note on this profile.</p>
+        <p className="mt-3 text-sm text-muted-foreground">
+          {sizeLabel(size)} · {MUSIC_LABEL[repertoire.music]}
+          {repertoire.music === "originals" ? `. ${ORIGINALS_INFO}` : ""}
+        </p>
       )}
     </section>
   );
 }
+
+/** @deprecated Use MusicBadge. Kept so older call sites keep compiling during the rename. */
+export const OriginalsBadge = MusicBadge;

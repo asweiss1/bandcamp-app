@@ -1,4 +1,5 @@
 import { getBand, getVenue } from "@/lib/catalog";
+import { minutesOf } from "@/lib/conflicts";
 import { isYourMove } from "@/lib/queries";
 import type { Booking, OpenDate, Snapshot } from "@/lib/types";
 
@@ -38,7 +39,7 @@ export function viewerStops(snapshot: Snapshot): Stop[] {
     .sort(
       (a, b) =>
         a.openDate.date.localeCompare(b.openDate.date) ||
-        a.openDate.showTime.localeCompare(b.openDate.showTime),
+        (minutesOf(a.openDate.showTime) ?? 0) - (minutesOf(b.openDate.showTime) ?? 0),
     );
 }
 

@@ -43,7 +43,7 @@ export function TourView() {
         title={`${band.name}'s route`}
         lede={
           snapshot.role === "band"
-            ? `${band.availability} The map, the nights, and the rooms in between, including days with no gig.`
+            ? `${band.availability} The map, the dates, and the rooms in between, including days with no gig.`
             : `Showing ${band.name} because that band is selected. Switch to a band role to mark lodging.`
         }
         actions={
@@ -63,7 +63,7 @@ export function TourView() {
           <h2 className="font-display text-3xl">Other rooms in this window</h2>
           <p className="mt-1 mb-4 max-w-2xl text-sm text-muted-foreground">
             Open or in-talks dates between the first hold and a week after the last one. Useful
-            when a city falls out and the van still needs a night.
+            when a city falls out and the van still needs a room.
           </p>
           <div className="grid gap-2">
             {alternates.map((openDate) => {

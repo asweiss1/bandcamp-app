@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { cities, getVenue } from "@/lib/catalog";
+import { slotLine } from "@/lib/daypart";
 import { dealHeadline, formatDay } from "@/lib/deal";
 import { dateFill } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import { StatusPill } from "@/components/status-pill";
+import { TurnaroundNote } from "@/components/turnaround-note";
 import { TourOverview } from "@/components/tour-overview";
 import { counterpart, liveStops, viewerStops } from "@/components/phone/stops";
 
@@ -29,7 +31,7 @@ export function PhoneRoute() {
           <p className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">Route</p>
           <h1 className="mt-1 font-display text-4xl leading-none tracking-tight">The run</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Pins, drive legs, and a night-by-night list. Same bookings as the desk.
+            Pins, drive legs, and a date-by-date list. Same bookings as the desk.
           </p>
         </div>
         <TourOverview surface="phone" />
@@ -83,9 +85,10 @@ export function PhoneRoute() {
                       <StatusPill status={stop.booking.status} />
                     </span>
                     <span className="mt-1 block text-sm text-muted-foreground">
-                      {formatDay(stop.openDate.date)} · {stop.openDate.showTime} · {stop.city}
+                      {formatDay(stop.openDate.date)} · {slotLine(stop.openDate.showTime, stop.openDate.daypart)} · {stop.city}
                     </span>
                     <span className="mt-1 block text-sm">{dealHeadline(stop.booking.terms)}</span>
+                    <TurnaroundNote bookingId={stop.booking.id} className="mt-1" />
                   </span>
                 </Link>
               </li>
@@ -110,7 +113,7 @@ export function PhoneRoute() {
                   {formatDay(date.date)} · {date.slot}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {venue?.city} · {date.showTime} · {date.genres.slice(0, 2).join(", ")}
+                  {venue?.city} · {slotLine(date.showTime, date.daypart)} · {date.genres.slice(0, 2).join(", ")}
                 </p>
               </Link>
             );

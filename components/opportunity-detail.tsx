@@ -108,7 +108,7 @@ function OpportunityBody({
       toast.error(result.error);
       return;
     }
-    toast("Hold confirmed. Other talks on that night are closed.");
+    toast("Hold confirmed. Other talks on that date are closed.");
   }
 
   function withdraw() {

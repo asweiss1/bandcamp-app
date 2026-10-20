@@ -66,6 +66,7 @@ test("blocks a bill when an opener already has that night confirmed", () => {
         genres: ["Desert rock"],
         slot: "Headline" as const,
         age: "21+" as const,
+        daypart: "evening" as const,
         notes: "",
       },
     ],

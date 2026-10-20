@@ -1,3 +1,4 @@
+import { daypartFor } from "@/lib/daypart";
 import { seedApplications, seedOpportunities } from "@/lib/opportunities";
 import type {
   BandLink,
@@ -22,7 +23,7 @@ function terms(partial: Partial<Terms> & Pick<Terms, "dealType">): Terms {
   };
 }
 
-export const seedOpenDates: OpenDate[] = [
+const listedDates: Omit<OpenDate, "daypart">[] = [
   {
     id: "od-yucca-1106",
     venueId: "yucca-room",
@@ -32,6 +33,16 @@ export const seedOpenDates: OpenDate[] = [
     slot: "Headline",
     age: "21+",
     notes: "Friday headline. Patio open. Amina wants a 75-minute set and one local opener she already booked.",
+  },
+  {
+    id: "od-verde-1106",
+    venueId: "verde-taproom",
+    date: "2026-11-06",
+    showTime: "4:00pm",
+    genres: ["Americana", "Desert rock"],
+    slot: "Headline",
+    age: "All ages",
+    notes: "Afternoon patio before a Phoenix headline the same date. Sample hold for a tight turnaround.",
   },
   {
     id: "od-cinder-1107",
@@ -201,7 +212,7 @@ export const seedOpenDates: OpenDate[] = [
     genres: ["Americana", "Desert rock"],
     slot: "Headline",
     age: "21+",
-    notes: "Sample open Monday in Phoenix so a week-long loop has a first night. Not a real hold.",
+    notes: "Sample open Monday in Phoenix so a week-long loop has a first date. Not a real hold.",
   },
   {
     id: "od-congress-1117",
@@ -211,7 +222,7 @@ export const seedOpenDates: OpenDate[] = [
     genres: ["Americana", "Desert rock"],
     slot: "Headline",
     age: "21+",
-    notes: "Sample Tucson night, one drive south of Phoenix.",
+    notes: "Sample Tucson date, one drive south of Phoenix.",
   },
   {
     id: "od-listen-1117",
@@ -221,7 +232,7 @@ export const seedOpenDates: OpenDate[] = [
     genres: ["Americana"],
     slot: "Headline",
     age: "All ages",
-    notes: "Sample quieter Tucson alternate the same night as Congress Yard.",
+    notes: "Sample quieter Tucson alternate the same date as Congress Yard.",
   },
   {
     id: "od-prescott-1117",
@@ -241,7 +252,7 @@ export const seedOpenDates: OpenDate[] = [
     genres: ["Americana", "Alt-country"],
     slot: "Headline",
     age: "21+",
-    notes: "Sample Las Cruces night between Tucson and Albuquerque.",
+    notes: "Sample Las Cruces date between Tucson and Albuquerque.",
   },
   {
     id: "od-barelas-1119",
@@ -251,7 +262,7 @@ export const seedOpenDates: OpenDate[] = [
     genres: ["Americana", "Desert rock"],
     slot: "Headline",
     age: "21+",
-    notes: "Sample Albuquerque night. Open in this dataset, unlike the earlier Rail Yard hold.",
+    notes: "Sample Albuquerque date. Open in this dataset, unlike the earlier Rail Yard hold.",
   },
   {
     id: "od-canyon-1119",
@@ -261,7 +272,7 @@ export const seedOpenDates: OpenDate[] = [
     genres: ["Americana", "Indie folk"],
     slot: "Headline",
     age: "21+",
-    notes: "Sample Santa Fe alternate on the Albuquerque night.",
+    notes: "Sample Santa Fe alternate on the Albuquerque date.",
   },
   {
     id: "od-route66-1120",
@@ -281,7 +292,7 @@ export const seedOpenDates: OpenDate[] = [
     genres: ["Americana", "Indie folk"],
     slot: "Headline",
     age: "21+",
-    notes: "Sample Flagstaff night before the van drops back into Phoenix.",
+    notes: "Sample Flagstaff date before the van drops back into Phoenix.",
   },
   {
     id: "od-papago-1122",
@@ -301,9 +312,14 @@ export const seedOpenDates: OpenDate[] = [
     genres: ["Americana"],
     slot: "Headline",
     age: "21+",
-    notes: "Sample Kingman night if the route runs toward Las Vegas instead of New Mexico.",
+    notes: "Sample Kingman date if the route runs toward Las Vegas instead of New Mexico.",
   },
 ];
+
+export const seedOpenDates: OpenDate[] = listedDates.map((date) => ({
+  ...date,
+  daypart: daypartFor(date.showTime),
+}));
 
 const yuccaTerms = terms({
   dealType: "guarantee",
@@ -348,7 +364,7 @@ const verdeCounter = terms({
   ticketPrice: 12,
   backline: false,
   loadIn: "17:30",
-  note: "Weeknight-style Sunday. 75% of the door after the sound tech, $12 tickets, no backline — a guitar amp and a partial kit are here.",
+  note: "Weekday-style Sunday. 75% of the door after the sound tech, $12 tickets, no backline — a guitar amp and a partial kit are here.",
 });
 
 const neonAsk = terms({
@@ -425,6 +441,41 @@ export const seedBookings: Booking[] = [
         kind: "accept",
         terms: yuccaTerms,
         note: "We can do $1,100. Load-in 3:30. See you on the 6th.",
+      },
+    ],
+  },
+  {
+    id: "bk-verde-1106",
+    openDateId: "od-verde-1106",
+    bandId: "mesa-dust",
+    venueId: "verde-taproom",
+    status: "accepted",
+    awaiting: null,
+    terms: terms({
+      dealType: "guarantee",
+      guarantee: 400,
+      ticketPrice: 12,
+      backline: true,
+      loadIn: "14:30",
+      note: "Afternoon patio, then the van runs to Phoenix for the Yucca headline.",
+    }),
+    createdAt: "2026-10-03T16:00:00.000Z",
+    events: [
+      {
+        id: "ev-verde-1106",
+        at: "2026-10-03T16:00:00.000Z",
+        actor: "venue",
+        actorName: "Sasha Nguyen · Verde Taproom",
+        kind: "accept",
+        terms: terms({
+          dealType: "guarantee",
+          guarantee: 400,
+          ticketPrice: 12,
+          backline: true,
+          loadIn: "14:30",
+          note: "Afternoon patio, then the van runs to Phoenix for the Yucca headline.",
+        }),
+        note: "4:00pm patio. You'll still make an 8:30pm load in Phoenix if you leave on time.",
       },
     ],
   },
@@ -862,7 +913,7 @@ export const seedListings: Listing[] = [
     posterRole: "band",
     posterId: "mesa-dust",
     description:
-      "Want to jam before doors at The Yucca Room. Bring a guitar, a voice, or just sit in. Two hours, then we load in for the night.",
+      "Want to jam before doors at The Yucca Room. Bring a guitar, a voice, or just sit in. Two hours, then we load in for the show.",
     contact: "june@mesadust.example",
     createdAt: "2026-10-17T15:00:00.000Z",
   },
@@ -894,48 +945,14 @@ export const seedInterests: Interest[] = [
 ];
 
 export const seedRepertoires: Snapshot["repertoires"] = [
-  {
-    bandId: "mesa-dust",
-    originalsOnly: true,
-    coversNote: "",
-    rightsAttested: true,
-  },
-  {
-    bandId: "salt-choir",
-    originalsOnly: true,
-    coversNote: "",
-    rightsAttested: true,
-  },
-  {
-    bandId: "rio-ghosts",
-    originalsOnly: true,
-    coversNote: "",
-    rightsAttested: false,
-  },
-  {
-    bandId: "canyon-line",
-    originalsOnly: true,
-    coversNote: "",
-    rightsAttested: true,
-  },
-  {
-    bandId: "night-market",
-    originalsOnly: false,
-    coversNote: "We close with a short Motown medley. Sample note, not a real setlist.",
-    rightsAttested: false,
-  },
-  {
-    bandId: "neon-parish",
-    originalsOnly: false,
-    coversNote: "Two 1980s singles in the encore. Sample note, not a real setlist.",
-    rightsAttested: false,
-  },
-  {
-    bandId: "verde-line",
-    originalsOnly: false,
-    coversNote: "",
-    rightsAttested: false,
-  },
+  { bandId: "mesa-dust", music: "originals" },
+  { bandId: "salt-choir", music: "originals" },
+  { bandId: "rio-ghosts", music: "originals" },
+  { bandId: "canyon-line", music: "originals" },
+  { bandId: "night-market", music: "mix" },
+  { bandId: "neon-parish", music: "mix" },
+  { bandId: "verde-line", music: "mix" },
+  { bandId: "lamp-quarter", music: "covers" },
 ];
 
 export const seedStreamLinks: Snapshot["streamLinks"] = [
@@ -1026,6 +1043,7 @@ export const initialSnapshot: Snapshot = {
   fuelOverrides: [],
   bandLinks: seedBandLinks,
   bills: seedBills,
+  sizes: [],
   account: {
     phase: "welcome",
     demo: false,

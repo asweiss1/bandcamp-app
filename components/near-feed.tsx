@@ -7,7 +7,8 @@ import { useState } from "react";
 import { usePlace } from "@/lib/place";
 import { repertoireFor } from "@/lib/repertoire";
 import { useApp } from "@/lib/store";
-import { OriginalsBadge, OriginalsFilter } from "@/components/originals";
+import type { MusicKind } from "@/lib/types";
+import { BandMarks, MusicFilter } from "@/components/originals";
 import { BandSamples } from "@/components/samples";
 import { PlacePicker } from "@/components/place-picker";
 
@@ -20,7 +21,7 @@ const sections = [
 
 export function NearFeed({ surface }: { surface: "desk" | "phone" }) {
   const { snapshot } = useApp();
-  const [originalsOnly, setOriginalsOnly] = useState(false);
+  const [music, setMusic] = useState<"any" | MusicKind>("any");
   const { place, radiusMiles, setPlace, setRadius } = usePlace();
   const feed = nearFeed(snapshot, place, radiusMiles, surface);
   const links = searchLinksFor(place.label);
@@ -68,8 +69,8 @@ export function NearFeed({ surface }: { surface: "desk" | "phone" }) {
         const items = feed[section.key].filter(
           (item) =>
             section.key !== "bands" ||
-            !originalsOnly ||
-            repertoireFor(item.id, snapshot.repertoires).originalsOnly,
+            music === "any" ||
+            repertoireFor(item.id, snapshot.repertoires).music === music,
         );
         return (
           <section key={section.key} className="grid gap-2">
@@ -77,9 +78,7 @@ export function NearFeed({ surface }: { surface: "desk" | "phone" }) {
               <h2 className="text-xs font-semibold tracking-[0.16em] text-muted-foreground uppercase">
                 {section.title}
               </h2>
-              {section.key === "bands" ? (
-                <OriginalsFilter checked={originalsOnly} onChange={setOriginalsOnly} />
-              ) : null}
+              {section.key === "bands" ? <MusicFilter value={music} onChange={setMusic} /> : null}
             </div>
             {items.length === 0 ? (
               <p className="rounded-2xl border bg-card px-4 py-3 text-sm text-muted-foreground">{section.empty}</p>
@@ -92,7 +91,7 @@ export function NearFeed({ surface }: { surface: "desk" | "phone" }) {
                         {item.title}
                         {section.key === "bands" ? (
                           <span className="mt-1 block">
-                            <OriginalsBadge bandId={item.id} />
+                            <BandMarks bandId={item.id} />
                           </span>
                         ) : null}
                       </span>

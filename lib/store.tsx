@@ -16,7 +16,9 @@ import {
 import { pairLinks } from "@/lib/links";
 import { getBand, getMusician, getVenue } from "@/lib/catalog";
 import { clearAudioTracks } from "@/lib/audio-db";
+import { daypartFor } from "@/lib/daypart";
 import { termsError, uid } from "@/lib/deal";
+import { normalizeRepertoires } from "@/lib/repertoire";
 import { localRepository } from "@/lib/repository";
 import { dateFill } from "@/lib/queries";
 import { initialSnapshot } from "@/lib/seed";
@@ -40,6 +42,7 @@ import type {
   FuelOverride,
   OwnedProfile,
   BillMember,
+  MusicKind,
 } from "@/lib/types";
 
 const SYNC_EVENT = "bandcamp-sync";
@@ -72,11 +75,19 @@ function readMemory() {
       fuelOverrides: Array.isArray(memory.fuelOverrides) ? memory.fuelOverrides : initialSnapshot.fuelOverrides,
     };
   }
-  if (!Array.isArray(memory.bandLinks) || !Array.isArray(memory.bills)) {
+  if (!Array.isArray(memory.bandLinks) || !Array.isArray(memory.bills) || !Array.isArray(memory.sizes)) {
     memory = {
       ...memory,
       bandLinks: Array.isArray(memory.bandLinks) ? memory.bandLinks : initialSnapshot.bandLinks,
       bills: Array.isArray(memory.bills) ? memory.bills : initialSnapshot.bills,
+      sizes: Array.isArray(memory.sizes) ? memory.sizes : [],
+    };
+  }
+  if (memory.openDates.some((date) => !date.daypart) || memory.repertoires.some((item) => !item.music)) {
+    memory = {
+      ...memory,
+      openDates: memory.openDates.map((date) => (date.daypart ? date : { ...date, daypart: daypartFor(date.showTime) })),
+      repertoires: normalizeRepertoires(memory.repertoires),
     };
   }
   if (!isAccount(memory.account)) {
@@ -138,6 +149,7 @@ type AppContextValue = {
   withdrawApplication: (applicationId: string) => Result<string>;
   confirmInterest: (interestId: string) => Result<string>;
   setRepertoire: (bandId: string, patch: Partial<Omit<Repertoire, "bandId">>) => Result<string>;
+  setBandSize: (bandId: string, size: number) => Result<string>;
   addStreamLink: (bandId: string, service: StreamService, url: string) => Result<string>;
   removeStreamLink: (id: string) => Result<string>;
   setNightStay: (stay: Omit<NightStay, "id"> & { id?: string }) => Result<string>;
@@ -148,8 +160,7 @@ type AppContextValue = {
     profile: OwnedProfile,
     extras?: {
       finish?: boolean;
-      originalsOnly?: boolean;
-      coversNote?: string;
+      music?: MusicKind;
       openDates?: Omit<OpenDate, "id" | "venueId">[];
     },
   ) => Result<string>;
@@ -642,7 +653,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (!interest?.listingId) return { ok: false, error: "That note is gone." };
         const listing = current.listings.find((item) => item.id === interest.listingId);
         if (!listing) return { ok: false, error: "That listing is gone." };
-        if (listing.kind !== "fill-in") return { ok: false, error: "Only a fill-in night can be confirmed." };
+        if (listing.kind !== "fill-in") return { ok: false, error: "Only a fill-in date can be confirmed." };
         const owner = posterIdentity(current);
         if (listing.posterId !== owner.id || listing.posterRole !== current.role) {
           return { ok: false, error: "Only the listing owner can confirm a player." };
@@ -670,23 +681,36 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           return { ok: false, error: "Switch to this band to update the setlist." };
         }
         if (!getBand(bandId)) return { ok: false, error: "Save the band profile first." };
-        const existing =
-          current.repertoires.find((item) => item.bandId === bandId) ?? {
-            bandId,
-            originalsOnly: false,
-            coversNote: "",
-            rightsAttested: false,
-          };
-        const next = {
-          ...existing,
-          ...patch,
+        const existing = current.repertoires.find((item) => item.bandId === bandId) ?? {
           bandId,
-          coversNote: (patch.coversNote ?? existing.coversNote).slice(0, 240),
+          music: "mix" as const,
         };
+        const music = patch.music ?? existing.music;
+        if (music !== "covers" && music !== "originals" && music !== "mix") {
+          return { ok: false, error: "Pick covers, originals, or a mix." };
+        }
+        const next = { bandId, music };
         const repertoires = current.repertoires.some((item) => item.bandId === bandId)
           ? current.repertoires.map((item) => (item.bandId === bandId ? next : item))
           : [...current.repertoires, next];
         update({ ...current, repertoires });
+        return { ok: true, data: bandId };
+      },
+      setBandSize: (bandId, size) => {
+        const current = readMemory();
+        if (current.role !== "band" || current.bandId !== bandId) {
+          return { ok: false, error: "Switch to this band to update the lineup size." };
+        }
+        if (!getBand(bandId)) return { ok: false, error: "Save the band profile first." };
+        if (!(size >= 1) || size > 30) return { ok: false, error: "Enter a lineup of 1 to 30 pieces." };
+        const count = Math.round(size);
+        const sizes = current.sizes.some((item) => item.bandId === bandId)
+          ? current.sizes.map((item) => (item.bandId === bandId ? { ...item, size: count } : item))
+          : [...current.sizes, { bandId, size: count }];
+        const profiles = current.account.profiles.map((profile) =>
+          profile.band?.id === bandId ? { ...profile, band: { ...profile.band, size: count } } : profile,
+        );
+        update({ ...current, sizes, account: { ...current.account, profiles } });
         return { ok: true, data: bandId };
       },
       addStreamLink: (bandId, service, url) => {
@@ -836,12 +860,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           ? current.account.profiles.map((item) => (item.id === nextProfile.id ? nextProfile : item))
           : [...current.account.profiles, nextProfile];
         let repertoires = current.repertoires;
-        if (profile.role === "band" && extras && extras.originalsOnly != null) {
+        if (profile.role === "band" && extras?.music) {
           const repertoire: Repertoire = {
             bandId: profile.id,
-            originalsOnly: extras.originalsOnly,
-            coversNote: (extras.coversNote ?? "").slice(0, 240),
-            rightsAttested: extras.originalsOnly,
+            music: extras.music,
           };
           repertoires = repertoires.some((item) => item.bandId === profile.id)
             ? repertoires.map((item) => (item.bandId === profile.id ? repertoire : item))

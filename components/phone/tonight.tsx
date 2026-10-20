@@ -7,6 +7,8 @@ import { listingOwner } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import { roleLabel } from "@/components/role-switcher";
 import { StatusPill } from "@/components/status-pill";
+import { slotLine } from "@/lib/daypart";
+import { TurnaroundNote } from "@/components/turnaround-note";
 import { counterpart, liveStops, nextStop, viewerStops, yourMoves } from "@/components/phone/stops";
 import type { Stop } from "@/components/phone/stops";
 
@@ -28,7 +30,7 @@ export function Tonight() {
         <p className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">Next up</p>
         <h1 className="mt-1 font-display text-4xl leading-none tracking-tight">{name}</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          {confirmed} confirmed {confirmed === 1 ? "night" : "nights"} on this route.
+          {confirmed} confirmed {confirmed === 1 ? "date" : "dates"} on this route.
           {moves.length > 0
             ? ` ${moves.length} ${moves.length === 1 ? "conversation is" : "conversations are"} waiting on you.`
             : " Nothing is waiting on you."}
@@ -37,7 +39,7 @@ export function Tonight() {
           href="/phone/book"
           className="mt-4 grid h-11 place-items-center rounded-lg bg-ink text-sm font-semibold text-cream"
         >
-          {snapshot.role === "venue" ? "Post a night or send an offer" : "Book another night"}
+          {snapshot.role === "venue" ? "Post a date or send an offer" : "Book another date"}
         </Link>
       </div>
 
@@ -53,7 +55,7 @@ export function Tonight() {
       {upcoming ? (
         <section className="grid gap-2">
           <h2 className="text-xs font-semibold tracking-[0.16em] text-muted-foreground uppercase">
-            The next night
+            The next date
           </h2>
           <NextCard stop={upcoming} who={counterpart(upcoming, snapshot)} />
         </section>
@@ -220,7 +222,7 @@ function NextCard({ stop, who }: { stop: Stop; who: string }) {
       <div className="flex items-start justify-between gap-3 px-4 pt-4">
         <div>
           <p className="text-xs font-semibold tracking-[0.16em] text-amber uppercase">
-            {parts.weekday} · {stop.openDate.showTime}
+            {parts.weekday} · {slotLine(stop.openDate.showTime, stop.openDate.daypart)}
           </p>
           <h3 className="mt-1 font-display text-3xl leading-none">{who}</h3>
           <p className="mt-2 text-sm text-cream/70">
@@ -234,6 +236,7 @@ function NextCard({ stop, who }: { stop: Stop; who: string }) {
       </div>
       <div className="mt-4 border-t border-cream/15 px-4 py-4">
         <p className="font-display text-2xl">{dealHeadline(stop.booking.terms)}</p>
+        <TurnaroundNote bookingId={stop.booking.id} className="mt-2 text-amber" />
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <StatusPill status={stop.booking.status} />
           <span className="text-sm text-cream/70">{stop.venueName}</span>
@@ -292,12 +295,12 @@ function CompactStop({ stop, who }: { stop: Stop; who: string }) {
 function EmptyRoute() {
   return (
     <div className="rounded-2xl border bg-card px-4 py-4">
-      <p className="font-medium">No nights on this route yet.</p>
+      <p className="font-medium">No dates on this route yet.</p>
       <p className="mt-1 text-sm text-muted-foreground">
         Find an open date and send a request, or switch who you are on the You tab.
       </p>
       <Link href="/phone/book" className="mt-3 inline-block text-sm font-semibold text-rust">
-        Book a night
+        Book a date
       </Link>
     </div>
   );

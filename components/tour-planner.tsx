@@ -24,7 +24,7 @@ import { usePlace } from "@/lib/place";
 import { useApp } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { PriceField } from "@/components/fuel-price";
-import { OriginalsBadge } from "@/components/originals";
+import { BandMarks } from "@/components/originals";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -120,7 +120,7 @@ export function TourPlanner({ surface }: { surface: "desk" | "phone" }) {
     setSending(false);
     savePlan(current);
     if (sent === 0) {
-      toast.error(skipped ? "Those rooms already have a conversation." : "No venue nights to request.");
+      toast.error(skipped ? "Those rooms already have a conversation." : "No venue dates to request.");
       return;
     }
     toast.success(
@@ -138,7 +138,7 @@ export function TourPlanner({ surface }: { surface: "desk" | "phone" }) {
         <p className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">Tour planner · sample</p>
         <h1 className="mt-1 font-display text-4xl leading-none tracking-tight sm:text-5xl">Days away</h1>
         <div className="mt-3">
-          <OriginalsBadge bandId={snapshot.bandId} withInfo />
+          <BandMarks bandId={snapshot.bandId} withInfo />
         </div>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           A start town and a number of days. The builder lines up open rooms, permits, and fairs along a

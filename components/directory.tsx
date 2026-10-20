@@ -12,7 +12,9 @@ import { cn } from "@/lib/utils";
 import { BandSearch } from "@/components/band-search";
 import { BandLinks } from "@/components/band-links";
 import { OfferDialog } from "@/components/offer-dialog";
-import { RepertoirePanel } from "@/components/originals";
+import { slotLine } from "@/lib/daypart";
+import { BandMarks, RepertoirePanel } from "@/components/originals";
+import { TurnaroundNote } from "@/components/turnaround-note";
 import { VehiclePanel } from "@/components/vehicles";
 import { BandSamples } from "@/components/samples";
 import { PageFrame, PageIntro } from "@/components/shell";
@@ -32,7 +34,7 @@ export function BandIndex() {
       <PageIntro
         eyebrow="For venues"
         title="Find a band"
-        lede="Search by the band, a member, or a song title. Narrow by style, city, the nights they're routing, fee, originals, and whether you can hear a sample."
+        lede="Search by the band, a member, or a song title. Narrow by style, city, the dates they're routing, fee, music, size, and whether you can hear a sample."
       />
       <BandSearch surface="desk" />
     </PageFrame>
@@ -94,6 +96,9 @@ export function BandProfile({ id }: { id: string }) {
       </div>
       {band.photo ? <img src={band.photo} alt="" className="mt-4 size-24 rounded-2xl object-cover" /> : null}
       <h1 className="mt-3 font-display text-5xl tracking-tight">{band.name}</h1>
+      <div className="mt-3">
+        <BandMarks bandId={band.id} withInfo />
+      </div>
       <div className="mt-3 flex flex-wrap gap-1.5">
         {band.styles.map((style) => (
           <span key={style} className="rounded-full border px-2.5 py-1 text-xs font-medium">
@@ -151,7 +156,7 @@ export function BandProfile({ id }: { id: string }) {
                 <p className="font-medium">{bill.name}</p>
                 <p className="text-sm text-muted-foreground">
                   {bill.members.find((member) => member.bandId === band.id)?.role} ·{" "}
-                  {bill.members.find((member) => member.bandId === band.id)?.splitPercent}% of the night
+                  {bill.members.find((member) => member.bandId === band.id)?.splitPercent}% of the date
                 </p>
               </Link>
             ))}
@@ -179,12 +184,15 @@ export function BandProfile({ id }: { id: string }) {
               const openDate = snapshot.openDates.find((item) => item.id === booking.openDateId);
               const venue = getVenue(booking.venueId);
               return (
-                <Link key={booking.id} href={`/bookings/${booking.id}`} className="flex items-center justify-between rounded-xl border bg-card px-4 py-3">
-                  <span>
-                    {openDate?.date} · {venue?.name}
-                  </span>
-                  <StatusPill status={booking.status} />
-                </Link>
+                <div key={booking.id} className="rounded-xl border bg-card px-4 py-3">
+                  <Link href={`/bookings/${booking.id}`} className="flex items-center justify-between gap-3">
+                    <span>
+                      {openDate ? `${openDate.date} · ${slotLine(openDate.showTime, openDate.daypart)}` : "Date"} · {venue?.name}
+                    </span>
+                    <StatusPill status={booking.status} />
+                  </Link>
+                  <TurnaroundNote bookingId={booking.id} className="mt-2" />
+                </div>
               );
             })}
           </div>
@@ -245,7 +253,7 @@ export function VenueProfile({ id }: { id: string }) {
             <Link key={openDate.id} href={`/dates/${openDate.id}`} className="flex items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3">
               <span>
                 <span className="block font-medium">
-                  {openDate.date} · {openDate.showTime} · {openDate.slot}
+                  {openDate.date} · {slotLine(openDate.showTime, openDate.daypart)} · {openDate.slot}
                 </span>
                 <span className="text-sm text-muted-foreground">{openDate.genres.join(", ")}</span>
               </span>

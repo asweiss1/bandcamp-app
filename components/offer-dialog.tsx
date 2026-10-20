@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { getVenue } from "@/lib/catalog";
+import { slotLine } from "@/lib/daypart";
 import { defaultTerms } from "@/lib/deal";
 import { dateFill, sortByDate } from "@/lib/queries";
 import { useApp } from "@/lib/store";
@@ -102,7 +103,7 @@ export function OfferDialog({
                 <SelectContent>
                   {dates.map((item) => (
                     <SelectItem key={item.id} value={item.id}>
-                      {item.date} · {item.showTime}
+                      {item.date} · {slotLine(item.showTime, item.daypart)}
                     </SelectItem>
                   ))}
                 </SelectContent>

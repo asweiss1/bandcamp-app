@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { GENRES, cities, getVenue } from "@/lib/catalog";
+import { slotLine } from "@/lib/daypart";
 import { monthParts } from "@/lib/deal";
 import { activeApplication, dateFill, sortByDate } from "@/lib/queries";
 import { useApp } from "@/lib/store";
@@ -66,7 +67,7 @@ export function DatesBrowser() {
       <PageIntro
         eyebrow="Booking marketplace"
         title="Booking opportunities"
-        lede="Club nights, street-performance permits, and fairs or festivals on a sample Southwest run. Filter, then request a room or apply for a permit or a stage."
+        lede="Club dates, street-performance permits, and fairs or festivals on a sample Southwest run. Filter, then request a room or apply for a permit or a stage."
         actions={
           snapshot.role === "venue" ? (
             <Button asChild className="h-10">
@@ -155,7 +156,7 @@ export function DatesBrowser() {
         <div className="rounded-2xl border border-dashed bg-card px-4 py-10 text-center">
           <p className="font-display text-2xl">Nothing matches.</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Widen the city or the dates. Filled nights are hidden until you uncheck that box.
+            Widen the city or the dates. Filled dates are hidden until you uncheck that box.
           </p>
         </div>
       ) : (
@@ -202,7 +203,7 @@ export function DatesBrowser() {
                 <div className="min-w-0">
                   <p className="truncate font-semibold">{row.venue.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {row.venue.city} · {row.venue.capacity} cap · {row.openDate.showTime} · {row.openDate.slot}
+                    {row.venue.city} · {row.venue.capacity} cap · {slotLine(row.openDate.showTime, row.openDate.daypart)} · {row.openDate.slot}
                   </p>
                   <p className="mt-1 line-clamp-1 text-sm">{row.venue.typicalDeal}</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">

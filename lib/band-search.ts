@@ -1,8 +1,9 @@
 import { getVenue } from "@/lib/catalog";
 import { milesBetween, placeForSlug } from "@/lib/geo";
 import { repertoireFor } from "@/lib/repertoire";
+import { bandSize } from "@/lib/size";
 import { SEED_TRACKS } from "@/lib/seed-tracks";
-import type { Band, Snapshot } from "@/lib/types";
+import type { Band, MusicKind, Snapshot } from "@/lib/types";
 
 export type TrackTitle = { bandId: string; title: string };
 
@@ -16,7 +17,9 @@ export type BandQuery = {
   to: string;
   feeMin: number | null;
   feeMax: number | null;
-  originalsOnly: boolean;
+  music: "any" | MusicKind;
+  sizeMin: number | null;
+  sizeMax: number | null;
   hasSamples: boolean;
 };
 
@@ -42,7 +45,10 @@ function matches(band: Band, snapshot: Snapshot, titles: TrackTitle[], query: Ba
     if (!query.styles.some((style) => tags.has(style))) return false;
   }
   if (query.substyles.length > 0 && !query.substyles.some((style) => band.styles.includes(style))) return false;
-  if (query.originalsOnly && !repertoireFor(band.id, snapshot.repertoires).originalsOnly) return false;
+  if (query.music !== "any" && repertoireFor(band.id, snapshot.repertoires).music !== query.music) return false;
+  const pieces = bandSize(band, snapshot.sizes);
+  if (query.sizeMin != null && pieces < query.sizeMin) return false;
+  if (query.sizeMax != null && pieces > query.sizeMax) return false;
   if (query.hasSamples && !hasSamples(band.id, snapshot, titles)) return false;
   if (query.feeMin != null && band.feeMax < query.feeMin) return false;
   if (query.feeMax != null && band.feeMin > query.feeMax) return false;

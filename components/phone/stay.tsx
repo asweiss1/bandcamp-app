@@ -67,7 +67,7 @@ export function PhoneStay() {
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {dated
-            ? `Gig night ${formatDay(dated.openDate.date)} at ${dated.venueName}.`
+            ? `Gig date ${formatDay(dated.openDate.date)} at ${dated.venueName}.`
             : city?.blurb}
         </p>
       </div>

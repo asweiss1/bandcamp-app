@@ -13,7 +13,7 @@ const route = [
 const features = [
   {
     title: "Book gigs",
-    copy: "Bands and venues meet on open nights, street permits, and fair calls. A band requests the date. A venue sends the offer. One confirmed hold per band, player, and room.",
+    copy: "Bands and venues meet on open dates, street permits, and fair calls. A band requests the date. A venue sends the offer. Two shows the same date are fine when the times do not overlap and the drive fits.",
   },
   {
     title: "Negotiate deals",
@@ -21,7 +21,7 @@ const features = [
   },
   {
     title: "Plan tours",
-    copy: "A start city and a number of days lines up rooms you can drive between. The route prices miles, nights, and fuel from the van.",
+    copy: "A start city and a number of days lines up rooms you can drive between. The route prices miles, lodging, and fuel from the van.",
   },
   {
     title: "Lodging",
@@ -29,7 +29,7 @@ const features = [
   },
   {
     title: "Find musicians",
-    copy: "Fill-in nights and open chairs, with the instrument, the city, the pay, and the date. Confirming a player closes the other notes for that night.",
+    copy: "Fill-in dates and open chairs, with the instrument, the city, the pay, and the date. Confirming a player closes the other notes for that date.",
   },
 ];
 
@@ -121,7 +121,7 @@ export default function HomePage() {
           <div>
             <h2 className="font-display text-4xl">How a date becomes a gig</h2>
             <ol className="mt-4 grid gap-3 text-sm leading-relaxed">
-              <li><span className="font-semibold">1. A venue posts a night.</span> City, slot, genres, and what they usually pay.</li>
+              <li><span className="font-semibold">1. A venue posts a date.</span> City, daypart, start time, and what they usually pay.</li>
               <li><span className="font-semibold">2. A band requests it, or the room sends an offer.</span> Guarantee, door split, or both.</li>
               <li><span className="font-semibold">3. Either side counters.</span> Ticket price, backline, and load-in stay attached.</li>
               <li><span className="font-semibold">4. Accept prints a confirmation.</span> The other talks on that date close, and lodging for the city is one link away.</li>

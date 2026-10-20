@@ -11,7 +11,9 @@ import { useApp } from "@/lib/store";
 import type { Terms } from "@/lib/types";
 import { BillLineup } from "@/components/bills";
 import { DealFields } from "@/components/deal-fields";
-import { OriginalsBadge } from "@/components/originals";
+import { slotLine } from "@/lib/daypart";
+import { BandMarks } from "@/components/originals";
+import { TurnaroundNote } from "@/components/turnaround-note";
 import { BandSamples } from "@/components/samples";
 import { StatusPill, statusLabel } from "@/components/status-pill";
 import { Button } from "@/components/ui/button";
@@ -106,11 +108,12 @@ export function PhoneGig({ id }: { id: string }) {
           {band.name} at {venue.name}
         </h1>
         <div className="mt-2">
-          <OriginalsBadge bandId={band.id} withInfo />
+          <BandMarks bandId={band.id} withInfo />
         </div>
         <p className="mt-2 text-sm text-muted-foreground">
-          {formatDayLong(openDate.date)} · {openDate.showTime} · {venue.city}
+          {formatDayLong(openDate.date)} · {slotLine(openDate.showTime, openDate.daypart)} · {venue.city}
         </p>
+        <TurnaroundNote bookingId={booking.id} className="mt-2" />
         <BillLineup billId={booking.billId} surface="phone" />
       </div>
 
@@ -215,7 +218,7 @@ export function PhoneGig({ id }: { id: string }) {
           <DialogHeader>
             <DialogTitle className="font-display text-2xl">Confirm this gig</DialogTitle>
             <DialogDescription>
-              Accepting locks {formatDayLong(openDate.date)} and declines other open talks for this night.
+              Accepting locks {formatDayLong(openDate.date)} and declines other open talks for this time.
             </DialogDescription>
           </DialogHeader>
           <p className="font-display text-2xl">{dealHeadline(booking.terms)}</p>

@@ -6,11 +6,12 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { billProblem } from "@/lib/bills";
 import { getBand, getVenue, listBands } from "@/lib/catalog";
+import { slotLine } from "@/lib/daypart";
 import { defaultTerms, formatDayLong } from "@/lib/deal";
 import { linkedBandIds } from "@/lib/links";
 import { dateFill, sortByDate } from "@/lib/queries";
 import { useApp } from "@/lib/store";
-import type { BillMember, BillRole, Terms } from "@/lib/types";
+import type { BillMember, BillRole, OpenDate, Terms } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { DealFields } from "@/components/deal-fields";
 import { PageFrame, PageIntro } from "@/components/shell";
@@ -71,7 +72,7 @@ export function BillIndex({ surface }: { surface: "desk" | "phone" }) {
     <>
       <PageIntro
         eyebrow="Shared bills"
-        title="Play the night as a package"
+        title="Play the date as a package"
         lede="Two to four linked bands, one headliner, set times, and a pay split. A venue sends one offer for the whole bill."
         actions={
           snapshot.role === "band" ? (
@@ -196,7 +197,7 @@ export function BillDetail({ id, surface }: { id: string; surface: "desk" | "pho
       <h1 className="mt-3 font-display text-5xl tracking-tight">{bill.name}</h1>
       <p className="mt-2 text-lg text-muted-foreground">
         {venue && openDate
-          ? `${venue.name} · ${formatDayLong(openDate.date)} · ${openDate.showTime}`
+          ? `${venue.name} · ${formatDayLong(openDate.date)} · ${slotLine(openDate.showTime, openDate.daypart)}`
           : "Package only. Pitch it to an open date, or wait for a venue offer."}
       </p>
       <ul className="mt-6 grid gap-2">
@@ -262,7 +263,7 @@ function DateSelect({
   value,
   onChange,
 }: {
-  dates: { id: string; date: string; showTime: string; venueId: string }[];
+  dates: { id: string; date: string; showTime: string; daypart: OpenDate["daypart"]; venueId: string }[];
   value: string;
   onChange: (id: string) => void;
 }) {
@@ -275,12 +276,12 @@ function DateSelect({
         className="h-10 rounded-md border bg-card px-3"
         required
       >
-        <option value="">Pick a night</option>
+        <option value="">Pick a date</option>
         {dates.map((item) => {
           const venue = getVenue(item.venueId);
           return (
             <option key={item.id} value={item.id}>
-              {formatDayLong(item.date)} · {item.showTime} · {venue?.name ?? "Room"}
+              {formatDayLong(item.date)} · {slotLine(item.showTime, item.daypart)} · {venue?.name ?? "Room"}
             </option>
           );
         })}

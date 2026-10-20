@@ -3,6 +3,7 @@
 import { Children } from "react";
 import Link from "next/link";
 import { getMusician } from "@/lib/catalog";
+import { slotLine } from "@/lib/daypart";
 import { isYourMove, profileId } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import { roleLabel } from "@/components/role-switcher";
@@ -55,7 +56,7 @@ export function Dashboard() {
         lede={
           snapshot.role === "musician"
             ? "Listings you posted and notes exchanged on the board. Gigs are booked from a band or venue role."
-            : "Requests, offers, counters, and nights that are actually on the calendar."
+            : "Requests, offers, counters, and dates that are actually on the calendar."
         }
         actions={
           <>
@@ -147,7 +148,7 @@ export function Dashboard() {
                       >
                         <span>
                           <span className="block font-medium">
-                            {openDate.date} · {openDate.showTime}
+                            {openDate.date} · {slotLine(openDate.showTime, openDate.daypart)}
                           </span>
                           <span className="text-sm text-muted-foreground">
                             {talks.length} active conversation{talks.length === 1 ? "" : "s"}

@@ -216,7 +216,7 @@ export function ListingDetail({ id }: { id: string }) {
                     onConfirm={() => {
                       const result = confirmInterest(interest.id);
                       if (!result.ok) toast.error(result.error);
-                      else toast("Player confirmed. Other talks on that night are closed.");
+                      else toast("Player confirmed. Other talks on that date are closed.");
                     }}
                   />
                 </li>
@@ -256,7 +256,7 @@ export function InterestConfirm({
 }) {
   if (listingKind !== "fill-in" || interest.fromRole !== "musician") return null;
   if (interest.status === "confirmed") {
-    return <p className="mt-2 text-sm font-medium">Confirmed for this night.</p>;
+    return <p className="mt-2 text-sm font-medium">Confirmed for this date.</p>;
   }
   if (interest.status === "declined") {
     return <p className="mt-2 text-sm text-muted-foreground">Closed.</p>;
@@ -317,7 +317,7 @@ export function ListingForm() {
       <PageIntro
         eyebrow="Musician board"
         title="Post a listing"
-        lede="A fill-in is one night. A member post is a chair. A jam is a place, a time, and a style."
+        lede="A fill-in is one date. A member post is a chair. A jam is a place, a time, and a style."
       />
       <form onSubmit={submit} className="grid max-w-2xl gap-4">
         <div className="grid gap-2 sm:grid-cols-3">

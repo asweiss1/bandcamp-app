@@ -72,11 +72,14 @@ export type Bill = {
   createdAt: string;
 };
 
+export type Daypart = "brunch" | "afternoon" | "evening" | "late";
+
 export type OpenDate = {
   id: string;
   venueId: string;
   date: string;
   showTime: string;
+  daypart: Daypart;
   genres: string[];
   slot: "Headline" | "Support" | "Local support";
   age: "All ages" | "21+";
@@ -97,6 +100,7 @@ export type Band = {
   touring: boolean;
   feeMin: number;
   feeMax: number;
+  size: number;
   members: Member[];
   links: SampleLink[];
   availability: string;
@@ -236,11 +240,16 @@ export type Application = {
   createdAt: string;
 };
 
+export type MusicKind = "covers" | "originals" | "mix";
+
 export type Repertoire = {
   bandId: string;
-  originalsOnly: boolean;
-  coversNote: string;
-  rightsAttested: boolean;
+  music: MusicKind;
+};
+
+export type BandSize = {
+  bandId: string;
+  size: number;
 };
 
 export type StreamService = "bandcamp" | "soundcloud" | "youtube" | "spotify";
@@ -333,6 +342,7 @@ export type Snapshot = {
   fuelOverrides: FuelOverride[];
   bandLinks: BandLink[];
   bills: Bill[];
+  sizes: BandSize[];
   account: Account;
 };
 
