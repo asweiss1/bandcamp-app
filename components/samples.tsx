@@ -139,7 +139,14 @@ export function BandSamples({
   );
 }
 
-function TrackRow({ track, showNotes = false }: { track: Playable; showNotes?: boolean }) {
+export function SamplePlay({ bandId }: { bandId: string }) {
+  const tracks = usePlayableTracks(bandId);
+  const track = tracks[0];
+  if (!track) return <p className="text-sm text-muted-foreground">No sample yet</p>;
+  return <TrackRow track={track} compact />;
+}
+
+function TrackRow({ track, showNotes = false, compact = false }: { track: Playable; showNotes?: boolean; compact?: boolean }) {
   const audio = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(0);
@@ -182,10 +189,12 @@ function TrackRow({ track, showNotes = false }: { track: Playable; showNotes?: b
         </button>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium">{track.title}</p>
-          <p className="text-[11px] text-muted-foreground">
-            {track.placeholder ? "Generated placeholder" : "Uploaded in this browser"}
-            {duration > 0 ? ` · ${clock(time)} / ${clock(duration)}` : ""}
-          </p>
+          {compact ? null : (
+            <p className="text-[11px] text-muted-foreground">
+              {track.placeholder ? "Generated placeholder" : "Uploaded in this browser"}
+              {duration > 0 ? ` · ${clock(time)} / ${clock(duration)}` : ""}
+            </p>
+          )}
           {showNotes && track.notes ? <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{track.notes}</p> : null}
         </div>
       </div>

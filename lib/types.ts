@@ -72,6 +72,44 @@ export type Bill = {
   createdAt: string;
 };
 
+export type PitchMemberStatus = "accepted" | "invited";
+
+export type PitchMember = BillMember & {
+  status: PitchMemberStatus;
+};
+
+export type PitchMessage = {
+  id: string;
+  fromBandId: string;
+  body: string;
+  createdAt: string;
+};
+
+export type Pitch = {
+  id: string;
+  leadBandId: string;
+  openDateId: string;
+  venueId: string;
+  members: PitchMember[];
+  terms: Terms;
+  messages: PitchMessage[];
+  bookingId: string | null;
+  createdAt: string;
+};
+
+export type PeerReview = {
+  id: string;
+  bookingId: string;
+  fromBandId: string;
+  toBandId: string;
+  onTime: boolean;
+  sharedGear: boolean;
+  broughtCrowd: boolean;
+  easyToWorkWith: boolean;
+  note: string;
+  createdAt: string;
+};
+
 export type Daypart = "brunch" | "afternoon" | "evening" | "late";
 
 export type OpenDate = {
@@ -429,6 +467,8 @@ export type Snapshot = {
   alerts: FanAlert[];
   reviews: Review[];
   verifications: Verification[];
+  pitches: Pitch[];
+  peerReviews: PeerReview[];
   account: Account;
 };
 

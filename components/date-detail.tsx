@@ -13,7 +13,8 @@ import type { Terms } from "@/lib/types";
 import { DealFields } from "@/components/deal-fields";
 import { slotLine } from "@/lib/daypart";
 import { FitFacts } from "@/components/fit-facts";
-import { FullBillMark, PitchTogether } from "@/components/full-night";
+import { FullBillMark } from "@/components/full-night";
+import { PitchTeaser } from "@/components/pitch-room";
 import { BandMarks } from "@/components/originals";
 import { TurnaroundNote } from "@/components/turnaround-note";
 import { BandSamples } from "@/components/samples";
@@ -96,12 +97,7 @@ export function DateDetail({ id }: { id: string }) {
           </div>
           <p className="mt-5 max-w-xl text-base leading-relaxed">{openDate.notes}</p>
           {fill !== "filled" ? (
-            <PitchTogether
-              openDateId={openDate.id}
-              venueId={venue.id}
-              showTime={openDate.showTime}
-              surface="desk"
-            />
+            <PitchTeaser openDateId={openDate.id} venueName={venue.name} surface="desk" />
           ) : null}
           <dl className="mt-6 grid gap-3 sm:grid-cols-2">
             <Fact label="Typical deal" value={venue.typicalDeal} />

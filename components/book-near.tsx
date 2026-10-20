@@ -12,8 +12,10 @@ import { MUSIC_LABEL, repertoireFor } from "@/lib/repertoire";
 import { bandSize } from "@/lib/size";
 import { useApp } from "@/lib/store";
 import { sizeFit } from "@/lib/trust";
+import { openInvites } from "@/lib/pitch";
 import { PlacePicker } from "@/components/place-picker";
 import { FullBillMark } from "@/components/full-night";
+import { pitchHref } from "@/components/pitch-room";
 import { PageFrame, PageIntro } from "@/components/shell";
 import { StatusPill } from "@/components/status-pill";
 import { getBand, getVenue } from "@/lib/catalog";
@@ -25,6 +27,7 @@ export function BookNear({ surface }: { surface: "desk" | "phone" }) {
   const band = snapshot.role === "band" ? getBand(snapshot.bandId) : getBand(snapshot.bandId);
   const rows = datesNear(snapshot, place, radiusMiles, todayIso()).filter((row) => !hideFilled || row.fill !== "filled");
   const moves = snapshot.bookings.filter((booking) => isYourMove(booking, snapshot));
+  const invites = snapshot.role === "band" ? openInvites(snapshot, snapshot.bandId) : [];
   const gigHref = (id: string) => (surface === "phone" ? `/phone/gig/${id}` : `/bookings/${id}`);
   const dateHref = (id: string) => (surface === "phone" ? `/phone/book/${id}` : `/dates/${id}`);
   const callsHref = surface === "phone" ? "/phone/book/calls" : "/dates?kind=calls";
@@ -33,6 +36,30 @@ export function BookNear({ surface }: { surface: "desk" | "phone" }) {
 
   const body = (
     <div id="book-near" className="grid gap-4">
+      {invites.length > 0 ? (
+        <section className="grid gap-2">
+          <h2 className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">Invites</h2>
+          <ul className="grid gap-2">
+            {invites.map((pitch) => {
+              const room = getVenue(pitch.venueId);
+              const lead = getBand(pitch.leadBandId);
+              const mine = pitch.members.find((member) => member.bandId === snapshot.bandId);
+              return (
+                <li key={pitch.id}>
+                  <Link href={pitchHref(pitch.id, surface)} className="block rounded-2xl border bg-card px-4 py-3">
+                    <span className="block font-medium">
+                      {lead?.name} invited you to {room?.name}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      {mine?.role} · {mine?.setTime} · {mine?.splitPercent}%. The venue has not been told.
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
       {moves.length > 0 ? (
         <section className="grid gap-2">
           <h2 className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">Your move</h2>

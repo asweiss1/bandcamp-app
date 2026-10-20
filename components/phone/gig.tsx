@@ -10,6 +10,7 @@ import { canWithdraw, isYourMove } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import type { Terms } from "@/lib/types";
 import { BillLineup } from "@/components/bills";
+import { PeerReviews } from "@/components/peer-review";
 import { DealFields } from "@/components/deal-fields";
 import { slotLine } from "@/lib/daypart";
 import { BandMarks } from "@/components/originals";
@@ -127,6 +128,7 @@ export function PhoneGig({ id }: { id: string }) {
           confirmed={booking.status === "accepted"}
         />
         <BillLineup billId={booking.billId} surface="phone" />
+        <PeerReviews bookingId={booking.id} />
       </div>
 
       {booking.status === "accepted" ? (

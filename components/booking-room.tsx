@@ -17,6 +17,7 @@ import { canWithdraw, isYourMove } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import type { Terms } from "@/lib/types";
 import { BillLineup } from "@/components/bills";
+import { PeerReviews } from "@/components/peer-review";
 import { DealFields } from "@/components/deal-fields";
 import { slotLine } from "@/lib/daypart";
 import { BandMarks } from "@/components/originals";
@@ -139,6 +140,7 @@ export function BookingRoom({ id }: { id: string }) {
         </Button>
       ) : null}
       <BillLineup billId={booking.billId} surface="desk" />
+      <PeerReviews bookingId={booking.id} />
 
       {booking.status === "accepted" ? (
         <>

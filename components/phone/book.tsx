@@ -17,7 +17,8 @@ import { cn } from "@/lib/utils";
 import { DaypartField } from "@/components/daypart-field";
 import { CapacityFilter } from "@/components/capacity-filter";
 import { FitFacts } from "@/components/fit-facts";
-import { FullBillField, FullBillMark, PitchTogether } from "@/components/full-night";
+import { FullBillField, FullBillMark } from "@/components/full-night";
+import { PitchTeaser } from "@/components/pitch-room";
 import { BandMarks, MusicFilter, SizeFilter } from "@/components/originals";
 import { TurnaroundNote } from "@/components/turnaround-note";
 import { BandSamples } from "@/components/samples";
@@ -396,9 +397,7 @@ export function PhoneDate({ id }: { id: string }) {
         </div>
       </div>
       <p className="text-sm leading-relaxed">{openDate.notes}</p>
-      {fill !== "filled" ? (
-        <PitchTogether openDateId={openDate.id} venueId={venue.id} showTime={openDate.showTime} surface="phone" />
-      ) : null}
+      {fill !== "filled" ? <PitchTeaser openDateId={openDate.id} venueName={venue.name} surface="phone" /> : null}
       <dl className="grid gap-2 text-sm">
         <Fact label="Typical deal" value={venue.typicalDeal} />
         <Fact label="Backline" value={venue.backline} />

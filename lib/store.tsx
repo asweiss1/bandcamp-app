@@ -18,9 +18,11 @@ import { getBand, getFan, getMusician, getVenue } from "@/lib/catalog";
 import { clearAudioTracks } from "@/lib/audio-db";
 import { alertsForConfirmation, isFollowing, nextRsvp, publicShow } from "@/lib/fans";
 import { reviewDraft } from "@/lib/trust";
+import { applyMemberChange, peerReviewDraft, pitchGuarantee, buildPitchMembers, sendBlock } from "@/lib/pitch";
+import type { SplitKind } from "@/lib/full-night";
 import { canEditMedia, cleanLogo, cleanPhotos, cleanVideos } from "@/lib/media";
 import { daypartFor } from "@/lib/daypart";
-import { termsError, uid } from "@/lib/deal";
+import { defaultTerms, formatDayLong, termsError, uid } from "@/lib/deal";
 import { normalizeRepertoires } from "@/lib/repertoire";
 import { localRepository } from "@/lib/repository";
 import { dateFill } from "@/lib/queries";
@@ -90,7 +92,9 @@ function readMemory() {
     !Array.isArray(memory.rsvps) ||
     !Array.isArray(memory.alerts) ||
     !Array.isArray(memory.reviews) ||
-    !Array.isArray(memory.verifications)
+    !Array.isArray(memory.verifications) ||
+    !Array.isArray(memory.pitches) ||
+    !Array.isArray(memory.peerReviews)
   ) {
     memory = {
       ...memory,
@@ -104,6 +108,8 @@ function readMemory() {
       alerts: Array.isArray(memory.alerts) ? memory.alerts : initialSnapshot.alerts,
       reviews: Array.isArray(memory.reviews) ? memory.reviews : initialSnapshot.reviews,
       verifications: Array.isArray(memory.verifications) ? memory.verifications : initialSnapshot.verifications,
+      pitches: Array.isArray(memory.pitches) ? memory.pitches : initialSnapshot.pitches,
+      peerReviews: Array.isArray(memory.peerReviews) ? memory.peerReviews : initialSnapshot.peerReviews,
     };
   }
   if (!memory.fanId) {
@@ -206,6 +212,17 @@ type AppContextValue = {
   markAlertsRead: () => Result<string>;
   addReview: (bookingId: string, rating: number, note: string) => Result<string>;
   setVerification: (profileId: string, field: "email" | "phone" | "address", checked: boolean) => Result<string>;
+  startPitch: (openDateId: string, partnerIds: string[], preset: SplitKind) => Result<string>;
+  acceptPitch: (pitchId: string) => Result<string>;
+  suggestPitchChange: (pitchId: string, input: { setTime: string; splitPercent: number; note: string }) => Result<string>;
+  addPitchMessage: (pitchId: string, body: string) => Result<string>;
+  sendPitchToVenue: (pitchId: string) => Result<string>;
+  addPeerReview: (
+    bookingId: string,
+    toBandId: string,
+    checks: { onTime: boolean; sharedGear: boolean; broughtCrowd: boolean; easyToWorkWith: boolean },
+    note: string,
+  ) => Result<string>;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -1294,6 +1311,205 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           verifications: [...current.verifications.filter((item) => item.profileId !== profileId), next],
         });
         return { ok: true, data: profileId };
+      },
+      startPitch: (openDateId, partnerIds, preset) => {
+        const current = readMemory();
+        if (current.role !== "band") return { ok: false, error: "Switch to a band to invite someone." };
+        const openDate = current.openDates.find((item) => item.id === openDateId);
+        if (!openDate) return { ok: false, error: "That date is no longer listed." };
+        if (dateFill(openDate.id, current.bookings) === "filled") {
+          return { ok: false, error: "That date is already confirmed." };
+        }
+        const existing = current.pitches.find(
+          (pitch) => pitch.leadBandId === current.bandId && pitch.openDateId === openDate.id && !pitch.bookingId,
+        );
+        if (existing) return { ok: true, data: existing.id };
+        const members = buildPitchMembers(current.bandId, partnerIds, openDate.showTime, preset);
+        if (!members) return { ok: false, error: "Pick one to three other bands." };
+        if (members.some((member) => !getBand(member.bandId))) return { ok: false, error: "One of those bands is missing." };
+        const venue = getVenue(openDate.venueId);
+        if (!venue) return { ok: false, error: "That room is missing." };
+        const bands = members.flatMap((member) => {
+          const band = getBand(member.bandId);
+          return band ? [band] : [];
+        });
+        const guarantee = pitchGuarantee(bands);
+        const head = members[0];
+        const openers = members.slice(1);
+        const body = `${formatDayLong(openDate.date)} at ${venue.name}. ${openers
+          .map((member) => `${getBand(member.bandId)?.name ?? "Band"} would open at ${member.setTime} for ${member.splitPercent}%`)
+          .join(". ")}. I headline at ${head?.setTime} for ${head?.splitPercent}%. ${venue.name} is not in this conversation yet.`;
+        const pitch = {
+          id: uid("pitch"),
+          leadBandId: current.bandId,
+          openDateId: openDate.id,
+          venueId: venue.id,
+          members,
+          terms: defaultTerms({
+            guarantee,
+            note: "One offer for the whole night, after every band accepts.",
+          }),
+          messages: [{ id: uid("pm"), fromBandId: current.bandId, body, createdAt: new Date().toISOString() }],
+          bookingId: null,
+          createdAt: new Date().toISOString(),
+        };
+        update({ ...current, pitches: [pitch, ...current.pitches] });
+        return { ok: true, data: pitch.id };
+      },
+      acceptPitch: (pitchId) => {
+        const current = readMemory();
+        if (current.role !== "band") return { ok: false, error: "Switch to a band to accept." };
+        const pitch = current.pitches.find((item) => item.id === pitchId);
+        if (!pitch || pitch.bookingId) return { ok: false, error: "That invite is no longer open." };
+        const mine = pitch.members.find((member) => member.bandId === current.bandId);
+        if (!mine) return { ok: false, error: "This invite is for the bands on the pitch." };
+        if (mine.status === "accepted") return { ok: true, data: pitch.id };
+        update({
+          ...current,
+          pitches: current.pitches.map((item) =>
+            item.id === pitch.id
+              ? {
+                  ...item,
+                  members: item.members.map((member) =>
+                    member.bandId === current.bandId ? { ...member, status: "accepted" as const } : member,
+                  ),
+                }
+              : item,
+          ),
+        });
+        return { ok: true, data: pitch.id };
+      },
+      suggestPitchChange: (pitchId, input) => {
+        const current = readMemory();
+        if (current.role !== "band") return { ok: false, error: "Switch to a band to suggest a change." };
+        const pitch = current.pitches.find((item) => item.id === pitchId);
+        if (!pitch || pitch.bookingId) return { ok: false, error: "That pitch was already sent." };
+        if (!pitch.members.some((member) => member.bandId === current.bandId)) {
+          return { ok: false, error: "This pitch is between the invited bands." };
+        }
+        const changed = applyMemberChange(pitch.members, current.bandId, input.setTime, input.splitPercent);
+        if (!changed.ok) return changed;
+        const note = input.note.trim();
+        if (note.length < 4) return { ok: false, error: "Say what you want to change." };
+        const mine = changed.members.find((member) => member.bandId === current.bandId);
+        const name = getBand(current.bandId)?.name ?? "Band";
+        const body = `${name} suggested ${mine?.setTime} and ${mine?.splitPercent}%. ${note}`;
+        update({
+          ...current,
+          pitches: current.pitches.map((item) =>
+            item.id === pitch.id
+              ? {
+                  ...item,
+                  members: changed.members,
+                  messages: [
+                    ...item.messages,
+                    { id: uid("pm"), fromBandId: current.bandId, body, createdAt: new Date().toISOString() },
+                  ],
+                }
+              : item,
+          ),
+        });
+        return { ok: true, data: pitch.id };
+      },
+      addPitchMessage: (pitchId, body) => {
+        const current = readMemory();
+        if (current.role !== "band") return { ok: false, error: "Switch to a band to write in this thread." };
+        const pitch = current.pitches.find((item) => item.id === pitchId);
+        if (!pitch) return { ok: false, error: "That pitch is gone." };
+        if (pitch.bookingId) return { ok: false, error: "This thread closed when the offer went to the venue." };
+        if (!pitch.members.some((member) => member.bandId === current.bandId)) {
+          return { ok: false, error: "Only the bands on this pitch can read it." };
+        }
+        const clean = body.trim();
+        if (clean.length < 2) return { ok: false, error: "Write a message." };
+        if (clean.length > 280) return { ok: false, error: "Keep it to a few sentences." };
+        update({
+          ...current,
+          pitches: current.pitches.map((item) =>
+            item.id === pitch.id
+              ? {
+                  ...item,
+                  messages: [
+                    ...item.messages,
+                    { id: uid("pm"), fromBandId: current.bandId, body: clean, createdAt: new Date().toISOString() },
+                  ],
+                }
+              : item,
+          ),
+        });
+        return { ok: true, data: pitch.id };
+      },
+      sendPitchToVenue: (pitchId) => {
+        const current = readMemory();
+        if (current.role !== "band") return { ok: false, error: "Switch to a band to send this." };
+        const pitch = current.pitches.find((item) => item.id === pitchId);
+        if (!pitch) return { ok: false, error: "That pitch is gone." };
+        if (pitch.leadBandId !== current.bandId) {
+          return { ok: false, error: "The headlining band sends the offer." };
+        }
+        const block = sendBlock(pitch);
+        if (block) return { ok: false, error: block };
+        const invalid = termsError(pitch.terms);
+        if (invalid) return { ok: false, error: invalid };
+        const openDate = current.openDates.find((item) => item.id === pitch.openDateId);
+        if (!openDate) return { ok: false, error: "That date is no longer listed." };
+        if (dateFill(openDate.id, current.bookings) === "filled") {
+          return { ok: false, error: "That date is already confirmed." };
+        }
+        if (duplicateBooking(current, openDate.id, current.bandId)) {
+          return { ok: false, error: "You already have a conversation on this date." };
+        }
+        const venue = getVenue(openDate.venueId);
+        const members = pitch.members.map(({ bandId, role, setTime, splitPercent }) => ({
+          bandId,
+          role,
+          setTime,
+          splitPercent,
+        }));
+        const problem = billProblem(members);
+        if (problem) return { ok: false, error: problem };
+        const note = pitch.terms.note.trim() || "Every band on this bill accepted. One offer for the night.";
+        const bill = {
+          id: uid("bill"),
+          name: `${venue?.name ?? "Room"} full night`,
+          leadBandId: current.bandId,
+          members,
+          openDateId: openDate.id,
+          venueId: openDate.venueId,
+          bookingId: null as string | null,
+          createdAt: new Date().toISOString(),
+        };
+        const booking: Booking = {
+          id: uid("bk"),
+          openDateId: openDate.id,
+          bandId: current.bandId,
+          venueId: openDate.venueId,
+          billId: bill.id,
+          status: "requested",
+          awaiting: "venue",
+          terms: { ...pitch.terms, note },
+          events: [eventFor(current, "band", "request", pitch.terms, note)],
+          createdAt: new Date().toISOString(),
+        };
+        bill.bookingId = booking.id;
+        const clash = billConfirmedClash(current, memberBandIds(members), booking);
+        if (clash) return { ok: false, error: clash };
+        const warning = billPendingWarning(current, memberBandIds(members), booking) ?? undefined;
+        update({
+          ...current,
+          bookings: [booking, ...current.bookings],
+          bills: [{ ...bill, bookingId: booking.id }, ...current.bills],
+          pitches: current.pitches.map((item) => (item.id === pitch.id ? { ...item, bookingId: booking.id } : item)),
+        });
+        return { ok: true, data: booking.id, warning };
+      },
+      addPeerReview: (bookingId, toBandId, checks, note) => {
+        const current = readMemory();
+        const draft = peerReviewDraft(current, bookingId, toBandId, checks, note);
+        if (!draft.ok) return draft;
+        const review = { ...draft.data, id: uid("pr"), createdAt: new Date().toISOString() };
+        update({ ...current, peerReviews: [...current.peerReviews, review] });
+        return { ok: true, data: review.id };
       },
       exploreDemo: (role = "band") => {
         const current = readMemory();

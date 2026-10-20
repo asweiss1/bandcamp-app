@@ -68,6 +68,8 @@ function snapshot(partial: Partial<Snapshot>): Snapshot {
     alerts: [],
     reviews: [],
     verifications: [],
+    pitches: [],
+    peerReviews: [],
     account: { phase: "ready", demo: true, activeId: null, profiles: [] },
     ...partial,
   };

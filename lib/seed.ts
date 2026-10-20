@@ -1,6 +1,6 @@
 import { daypartFor } from "@/lib/daypart";
 import { seedAlerts, seedFollows, seedRsvps } from "@/lib/seed-fans";
-import { seedReviews, seedVerifications } from "@/lib/seed-trust";
+import { seedPeerReviews, seedReviews, seedVerifications } from "@/lib/seed-trust";
 import { seedMedia } from "@/lib/seed-media";
 import { seedApplications, seedOpportunities } from "@/lib/opportunities";
 import type {
@@ -729,6 +729,7 @@ export const seedBookings: Booking[] = [
     openDateId: "od-yucca-0918",
     bandId: "mesa-dust",
     venueId: "yucca-room",
+    billId: "bill-yucca-0918",
     status: "accepted",
     awaiting: null,
     terms: terms({
@@ -804,6 +805,19 @@ export const seedBills: Bill[] = [
     venueId: null,
     bookingId: null,
     createdAt: "2026-10-19T18:00:00.000Z",
+  },
+  {
+    id: "bill-yucca-0918",
+    name: "September at The Yucca Room",
+    leadBandId: "mesa-dust",
+    members: [
+      { bandId: "mesa-dust", role: "Headliner", setTime: "9:00pm", splitPercent: 70 },
+      { bandId: "salt-choir", role: "Opener", setTime: "8:00pm", splitPercent: 30 },
+    ],
+    openDateId: "od-yucca-0918",
+    venueId: "yucca-room",
+    bookingId: "bk-yucca-0918",
+    createdAt: "2026-09-01T18:00:00.000Z",
   },
 ];
 
@@ -1116,6 +1130,8 @@ export const initialSnapshot: Snapshot = {
   alerts: seedAlerts,
   reviews: seedReviews,
   verifications: seedVerifications,
+  pitches: [],
+  peerReviews: seedPeerReviews,
   account: {
     phase: "welcome",
     demo: false,
