@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
 import { CalendarDays, Mail, Map, Menu, MoonStar, Smartphone, UserRound } from "lucide-react";
+import { DataSettings } from "@/components/data-settings";
+import { OfflineBanner } from "@/components/offline-banner";
 import { Onboarding } from "@/components/onboarding";
 import { unreadTotal } from "@/lib/inbox";
 import { isYourMove } from "@/lib/queries";
@@ -35,7 +37,7 @@ function areaActive(pathname: string, match: string[]) {
   return match.some((href) => active(pathname, href));
 }
 
-export function Shell({ children }: { children: React.ReactNode }) {
+export function Shell({ children, known }: { children: React.ReactNode; known: boolean }) {
   const pathname = usePathname();
   const { snapshot } = useApp();
   const ready = useSyncExternalStore(
@@ -46,8 +48,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const moves = snapshot.bookings.filter((booking) => isYourMove(booking, snapshot)).length;
   const mail = unreadTotal(snapshot);
   const phone = pathname === "/phone" || pathname.startsWith("/phone/");
+  const welcome = snapshot.account.phase === "welcome";
 
-  if (ready && snapshot.account.phase === "welcome") {
+  if ((ready && welcome) || (!ready && phone && !known)) {
     return <Onboarding surface={phone ? "phone" : "desk"} />;
   }
   if (phone) return <>{children}</>;
@@ -60,6 +63,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       >
         Skip to content
       </a>
+      <OfflineBanner />
       <header className="sticky top-0 z-40 border-b bg-paper/90 backdrop-blur print:hidden">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-2 px-4 sm:gap-3 sm:px-6">
           <Link href="/" className="flex min-w-0 items-center gap-2">
@@ -227,7 +231,7 @@ function MoreMenu({ pathname, trigger = "tab" }: { pathname: string; trigger?: "
         <SheetHeader>
           <SheetTitle className="font-display text-2xl">More</SheetTitle>
         </SheetHeader>
-        <div className="grid gap-2 px-4 pb-6">
+        <div className="grid max-h-[70dvh] gap-2 overflow-y-auto px-4 pb-6">
           {extra.map((link) => (
             <SheetClose key={link.href} asChild>
               <Link
@@ -245,6 +249,7 @@ function MoreMenu({ pathname, trigger = "tab" }: { pathname: string; trigger?: "
             <MoonStar className="size-3.5" />
             Switch role from the chip at the top of the screen.
           </p>
+          <DataSettings />
         </div>
       </SheetContent>
     </Sheet>

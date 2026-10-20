@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bell, CalendarDays, Mail, Map, MapPin, Menu, Sparkles, UserRound } from "lucide-react";
+import { DataSettings } from "@/components/data-settings";
+import { OfflineBanner } from "@/components/offline-banner";
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { unreadAlerts } from "@/components/fan-alerts";
 import { unreadTotal } from "@/lib/inbox";
@@ -55,6 +57,7 @@ export function PhoneShell({ children }: { children: React.ReactNode }) {
         >
           Skip to content
         </a>
+        <OfflineBanner />
         <header className="flex items-center justify-between gap-3 px-4 pt-[max(0.7rem,env(safe-area-inset-top))] pb-2">
           <Link href="/phone" className="flex items-center gap-2">
             <span className="grid size-8 place-items-center rounded-full bg-ink font-display text-lg text-amber">
@@ -165,7 +168,7 @@ function PhoneMore({ pathname }: { pathname: string }) {
         <SheetHeader>
           <SheetTitle className="font-display text-2xl">More</SheetTitle>
         </SheetHeader>
-        <div className="grid gap-2 px-4 pb-6">
+        <div className="grid max-h-[70dvh] gap-2 overflow-y-auto px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           {links.map((link) => (
             <SheetClose key={link.href} asChild>
               <Link
@@ -179,6 +182,7 @@ function PhoneMore({ pathname }: { pathname: string }) {
               </Link>
             </SheetClose>
           ))}
+          <DataSettings />
         </div>
       </SheetContent>
     </Sheet>

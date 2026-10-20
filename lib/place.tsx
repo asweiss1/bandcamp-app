@@ -62,6 +62,19 @@ function write(next: PlaceState) {
   window.dispatchEvent(new Event("bandcamp-place"));
 }
 
+export function resetPlaceMemory() {
+  memory = {
+    place: SAMPLE_PLACE,
+    radiusMiles: 150,
+    lodging: "cheap",
+    plan: null,
+  };
+  loaded = true;
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(KEY);
+  window.dispatchEvent(new Event("bandcamp-place"));
+}
+
 function subscribe(onChange: () => void) {
   window.addEventListener("bandcamp-place", onChange);
   return () => window.removeEventListener("bandcamp-place", onChange);
@@ -73,6 +86,7 @@ type PlaceApi = PlaceState & {
   setLodging: (lodging: LodgingPref) => void;
   savePlan: (plan: TourPlan | null) => void;
   setNight: (index: number, night: PlanNight) => void;
+  hydrate: (next: PlaceState) => void;
 };
 
 const PlaceContext = createContext<PlaceApi | null>(null);
@@ -93,6 +107,7 @@ export function PlaceProvider({ children }: { children: React.ReactNode }) {
         const nights = current.nights.map((item, itemIndex) => (itemIndex === index ? night : item));
         update({ plan: summarize(nights) });
       },
+      hydrate: (next) => write(next),
     };
   }, [state]);
   return <PlaceContext.Provider value={api}>{children}</PlaceContext.Provider>;

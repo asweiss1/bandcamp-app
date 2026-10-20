@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { cities, getVenue } from "@/lib/catalog";
 import { slotLine } from "@/lib/daypart";
@@ -8,8 +9,11 @@ import { dateFill } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import { StatusPill } from "@/components/status-pill";
 import { TurnaroundNote } from "@/components/turnaround-note";
-import { TourOverview } from "@/components/tour-overview";
 import { counterpart, liveStops, viewerStops } from "@/components/phone/stops";
+
+const TourOverview = dynamic(() => import("@/components/tour-overview").then((mod) => mod.TourOverview), {
+  loading: () => <p className="text-sm text-muted-foreground">Loading the route…</p>,
+});
 
 export function PhoneRoute() {
   const { snapshot } = useApp();

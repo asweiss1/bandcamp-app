@@ -8,6 +8,7 @@ import { bands, fans, getMusician, musicians, venues } from "@/lib/catalog";
 import { useApp } from "@/lib/store";
 import type { Role } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { DataSettings } from "@/components/data-settings";
 import { ProfileWizard } from "@/components/onboarding";
 import { RepertoirePanel } from "@/components/originals";
 import { VehiclePanel } from "@/components/vehicles";
@@ -24,7 +25,7 @@ import {
 } from "@/components/ui/select";
 
 export function PhoneYou() {
-  const { snapshot, setRole, setBandId, setVenueId, setMusicianId, setFanId, reset, activateProfile, exploreDemo } = useApp();
+  const { snapshot, setRole, setBandId, setVenueId, setMusicianId, setFanId, activateProfile, exploreDemo } = useApp();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState(false);
   const [samplesOpen, setSamplesOpen] = useState(false);
@@ -112,16 +113,6 @@ export function PhoneYou() {
         <Button asChild variant="ghost" className="h-11">
           <Link href="/dashboard">Open the full desk</Link>
         </Button>
-        <Button
-          variant="ghost"
-          className="h-11"
-          onClick={() => {
-            reset();
-            toast("Demo data reset");
-          }}
-        >
-          Reset demo data
-        </Button>
       </div>
 
       {demo && samplesOpen ? (
@@ -153,6 +144,7 @@ export function PhoneYou() {
         </div>
       ) : null}
 
+      <DataSettings />
       <TrustPanel />
       <section className="rounded-2xl border bg-card px-4 py-4">
         <h2 className="font-display text-2xl">Add it to the home screen</h2>

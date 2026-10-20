@@ -24,7 +24,7 @@ Open [http://127.0.0.1:4317](http://127.0.0.1:4317). The phone companion is [htt
 - **Board** is fill-ins and permanent chairs, with the same interest note as the desk.
 - **You** is your profile. Edit it, add another, or open Explore demo data for the seeded Southwest book.
 
-On a phone, Add to Home Screen opens `/phone` standalone. The web app manifest sets that start URL. It is not an App Store or Play binary.
+On a phone, Add to Home Screen opens `/phone` standalone. The web app manifest and service worker install it on the home screen. After one visit on Wi-Fi, the phone shell, saved dates, and the tour stay readable offline. Changes made on bad venue Wi-Fi wait on the phone and sync when the connection returns. It is not an App Store or Play binary. A step-by-step pass for a real iPhone is in `docs/iphone-qa-checklist.md`.
 
 Production build, still with no database:
 
@@ -50,7 +50,7 @@ Deploy the Next.js app (for example on Vercel or any Node host). New bookings us
 - **Fans.** A fourth sign-up is a fan: name, hometown, and favorite styles. Fans follow bands and venues. What's happening lists upcoming confirmed shows from those follows. Near you filters public shows by radius and date, as a list or a map. A show page has the lineup, times, room, price, the flyer, I'm going / interested, and add to calendar. In-app alerts fire when a followed band books near the fan, or a followed room posts a lineup. Bands and venues see follower counts and expected draw (followers within 50 miles, plus RSVPs) on offers and bills. A confirmed show can be shared with fans. Pending talks stay off the public pages. On the phone, a fan gets Happening, Near, Alerts, and You instead of the six road tabs. The mail icon opens their notes to bands.
 - **Phone companion.** `/phone` leads with Book a gig, Book a whole tour, and Build a full night. Bands, venues, and musicians use four areas: Book, Tour, Profile, and More. The board, permits, and fairs live under More. Fans keep Happening, Near, Alerts, and You. A mail icon in the header opens the inbox for every role.
 
-Switch roles with **View as** in the header. **Reset demo data** there puts the seeded conversations back.
+Switch roles with **View as** in the header. **Reset demo data** is in that dialog, in More, and on the phone profile. It puts the seeded conversations back and keeps profiles you created. **Export JSON** and **Import JSON** in the same settings block save or restore the browser data, including dates, messages, and the tour plan.
 
 ## Where a backend would plug in
 

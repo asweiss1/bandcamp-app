@@ -16,6 +16,9 @@ import {
 import { pairLinks, tuneOutLink } from "@/lib/links";
 import { getBand, getFan, getMusician, getVenue } from "@/lib/catalog";
 import { clearAudioTracks } from "@/lib/audio-db";
+import { demoReset } from "@/lib/backup";
+import { rememberOfflineChange, writeOutbox } from "@/lib/outbox";
+import { resetPlaceMemory } from "@/lib/place";
 import { alertsForConfirmation, isFollowing, nextRsvp, publicShow, todayIso } from "@/lib/fans";
 import {
   blockFanAccount,
@@ -158,6 +161,10 @@ function writeMemory(next: Snapshot) {
   loaded = true;
   syncCatalog(next);
   localRepository.save(next);
+  if (typeof document !== "undefined") {
+    document.cookie = `bandcamp-phase=${next.account.phase}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  }
+  rememberOfflineChange("Saved a change on this phone", uid("out"), new Date().toISOString());
   window.dispatchEvent(new Event(SYNC_EVENT));
 }
 
@@ -181,6 +188,7 @@ type AppContextValue = {
   setMusicianId: (id: string) => void;
   setFanId: (id: string) => void;
   reset: () => void;
+  importBackup: (snapshot: Snapshot) => void;
   requestDate: (openDateId: string, terms: Terms) => Result<string>;
   sendOffer: (openDateId: string, bandId: string, terms: Terms) => Result<string>;
   counter: (bookingId: string, terms: Terms) => Result<string>;
@@ -364,43 +372,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setMusicianId: (musicianId) => update({ ...readMemory(), musicianId }),
       reset: () => {
         const current = readMemory();
-        const ownedIds = new Set(current.account.profiles.map((profile) => profile.id));
-        if (ownedIds.size === 0) {
-          localRepository.clear();
-          void clearAudioTracks();
-          update(initialSnapshot);
-          return;
-        }
-        const demo = current.account.demo;
-        update({
-          ...initialSnapshot,
-          account: { ...current.account, phase: "ready" },
-          role: demo ? "band" : current.role,
-          bandId: demo ? "mesa-dust" : current.bandId,
-          venueId: demo ? "high-country" : current.venueId,
-          musicianId: demo ? "lena-ortiz" : current.musicianId,
-          vehicles: [
-            ...initialSnapshot.vehicles,
-            ...current.vehicles.filter((vehicle) => ownedIds.has(vehicle.bandId)),
-          ],
-          streamLinks: [
-            ...initialSnapshot.streamLinks,
-            ...current.streamLinks.filter((link) => ownedIds.has(link.bandId)),
-          ],
-          repertoires: [
-            ...initialSnapshot.repertoires,
-            ...current.repertoires.filter((item) => ownedIds.has(item.bandId)),
-          ],
-          openDates: [
-            ...initialSnapshot.openDates,
-            ...current.openDates.filter((date) => ownedIds.has(date.venueId)),
-          ],
-          nightStays: [
-            ...initialSnapshot.nightStays,
-            ...current.nightStays.filter((stay) => ownedIds.has(stay.bandId)),
-          ],
-          fuelOverrides: current.fuelOverrides.filter((item) => ownedIds.has(item.bandId)),
-        });
+        if (current.account.profiles.length === 0) void clearAudioTracks();
+        writeOutbox([]);
+        resetPlaceMemory();
+        update(demoReset(current, initialSnapshot));
+      },
+      importBackup: (snapshot) => {
+        writeOutbox([]);
+        update(snapshot);
       },
       requestDate: (openDateId, terms) => {
         const current = readMemory();

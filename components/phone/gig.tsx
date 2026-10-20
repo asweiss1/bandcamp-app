@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { toast } from "sonner";
 import { BedDouble, Clock3, Guitar, Ticket } from "lucide-react";
@@ -18,7 +19,6 @@ import { slotLine } from "@/lib/daypart";
 import { BandMarks } from "@/components/originals";
 import { TurnaroundNote } from "@/components/turnaround-note";
 import { DrawNote } from "@/components/draw-note";
-import { PromoStudio } from "@/components/promo-studio";
 import { BandSamples } from "@/components/samples";
 import { StatusPill, statusLabel } from "@/components/status-pill";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+
+const PromoStudio = dynamic(() => import("@/components/promo-studio").then((mod) => mod.PromoStudio), {
+  ssr: false,
+  loading: () => <p className="text-sm text-muted-foreground">Loading the flyer studio…</p>,
+});
 
 export function PhoneGig({ id }: { id: string }) {
   const { snapshot, counter, accept, decline } = useApp();

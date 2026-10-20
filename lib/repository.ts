@@ -36,54 +36,57 @@ function isSnapshot(value: unknown): value is Snapshot {
   );
 }
 
+export function coerceSnapshot(value: unknown, fallback: Snapshot): Snapshot | null {
+  if (!isSnapshot(value)) return null;
+  const account = isAccount(value.account)
+    ? value.account
+    : { phase: "ready" as const, demo: true, activeId: null, profiles: [] };
+  return {
+    ...value,
+    opportunities: Array.isArray(value.opportunities) ? value.opportunities : fallback.opportunities,
+    applications: Array.isArray(value.applications) ? value.applications : fallback.applications,
+    repertoires: normalizeRepertoires(Array.isArray(value.repertoires) ? value.repertoires : fallback.repertoires),
+    streamLinks: Array.isArray(value.streamLinks) ? value.streamLinks : fallback.streamLinks,
+    nightStays: Array.isArray(value.nightStays) ? value.nightStays : fallback.nightStays,
+    vehicles: Array.isArray(value.vehicles) ? value.vehicles : fallback.vehicles,
+    fuelOverrides: Array.isArray(value.fuelOverrides) ? value.fuelOverrides : fallback.fuelOverrides,
+    bandLinks: Array.isArray(value.bandLinks) ? value.bandLinks : fallback.bandLinks,
+    bills: Array.isArray(value.bills) ? value.bills : fallback.bills,
+    sizes: Array.isArray(value.sizes) ? value.sizes : [],
+    capacities: Array.isArray(value.capacities) ? value.capacities : [],
+    media: Array.isArray(value.media) ? value.media : fallback.media,
+    follows: Array.isArray(value.follows) ? value.follows : fallback.follows,
+    rsvps: Array.isArray(value.rsvps) ? value.rsvps : fallback.rsvps,
+    alerts: Array.isArray(value.alerts) ? value.alerts : fallback.alerts,
+    reviews: Array.isArray(value.reviews) ? value.reviews : fallback.reviews,
+    verifications: Array.isArray(value.verifications) ? value.verifications : fallback.verifications,
+    pitches: Array.isArray(value.pitches) ? value.pitches : fallback.pitches,
+    peerReviews: Array.isArray(value.peerReviews) ? value.peerReviews : fallback.peerReviews,
+    threads: Array.isArray(value.threads) ? value.threads : fallback.threads,
+    messages: Array.isArray(value.messages) ? value.messages : fallback.messages,
+    reads: Array.isArray(value.reads) ? value.reads : fallback.reads,
+    fanMail: Array.isArray(value.fanMail) ? value.fanMail : fallback.fanMail,
+    fanBlocks: Array.isArray(value.fanBlocks) ? value.fanBlocks : fallback.fanBlocks,
+    fanId: typeof value.fanId === "string" && value.fanId ? value.fanId : fallback.fanId,
+    openDates: value.openDates.map((date) => (date.daypart ? date : { ...date, daypart: daypartFor(date.showTime) })),
+    account: {
+      ...account,
+      profiles: account.profiles.map((profile) => {
+        if (!profile.band || (typeof profile.band.size === "number" && profile.band.size >= 1)) return profile;
+        const count = profile.band.members.length > 0 ? profile.band.members.length : 1;
+        return { ...profile, band: { ...profile.band, size: count } };
+      }),
+    },
+  };
+}
+
 export const localRepository: Repository = {
   load(fallback) {
     if (typeof window === "undefined") return fallback;
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (!raw) return fallback;
-      const parsed: unknown = JSON.parse(raw);
-      if (!isSnapshot(parsed)) return fallback;
-      const account = isAccount(parsed.account)
-        ? parsed.account
-        : { phase: "ready" as const, demo: true, activeId: null, profiles: [] };
-      return {
-        ...parsed,
-        opportunities: Array.isArray(parsed.opportunities) ? parsed.opportunities : fallback.opportunities,
-        applications: Array.isArray(parsed.applications) ? parsed.applications : fallback.applications,
-        repertoires: normalizeRepertoires(Array.isArray(parsed.repertoires) ? parsed.repertoires : fallback.repertoires),
-        streamLinks: Array.isArray(parsed.streamLinks) ? parsed.streamLinks : fallback.streamLinks,
-        nightStays: Array.isArray(parsed.nightStays) ? parsed.nightStays : fallback.nightStays,
-        vehicles: Array.isArray(parsed.vehicles) ? parsed.vehicles : fallback.vehicles,
-        fuelOverrides: Array.isArray(parsed.fuelOverrides) ? parsed.fuelOverrides : fallback.fuelOverrides,
-        bandLinks: Array.isArray(parsed.bandLinks) ? parsed.bandLinks : fallback.bandLinks,
-        bills: Array.isArray(parsed.bills) ? parsed.bills : fallback.bills,
-        sizes: Array.isArray(parsed.sizes) ? parsed.sizes : [],
-        capacities: Array.isArray(parsed.capacities) ? parsed.capacities : [],
-        media: Array.isArray(parsed.media) ? parsed.media : fallback.media,
-        follows: Array.isArray(parsed.follows) ? parsed.follows : fallback.follows,
-        rsvps: Array.isArray(parsed.rsvps) ? parsed.rsvps : fallback.rsvps,
-        alerts: Array.isArray(parsed.alerts) ? parsed.alerts : fallback.alerts,
-        reviews: Array.isArray(parsed.reviews) ? parsed.reviews : fallback.reviews,
-        verifications: Array.isArray(parsed.verifications) ? parsed.verifications : fallback.verifications,
-        pitches: Array.isArray(parsed.pitches) ? parsed.pitches : fallback.pitches,
-        peerReviews: Array.isArray(parsed.peerReviews) ? parsed.peerReviews : fallback.peerReviews,
-        threads: Array.isArray(parsed.threads) ? parsed.threads : fallback.threads,
-        messages: Array.isArray(parsed.messages) ? parsed.messages : fallback.messages,
-        reads: Array.isArray(parsed.reads) ? parsed.reads : fallback.reads,
-        fanMail: Array.isArray(parsed.fanMail) ? parsed.fanMail : fallback.fanMail,
-        fanBlocks: Array.isArray(parsed.fanBlocks) ? parsed.fanBlocks : fallback.fanBlocks,
-        fanId: typeof parsed.fanId === "string" && parsed.fanId ? parsed.fanId : fallback.fanId,
-        openDates: parsed.openDates.map((date) => (date.daypart ? date : { ...date, daypart: daypartFor(date.showTime) })),
-        account: {
-          ...account,
-          profiles: account.profiles.map((profile) => {
-            if (!profile.band || (typeof profile.band.size === "number" && profile.band.size >= 1)) return profile;
-            const count = profile.band.members.length > 0 ? profile.band.members.length : 1;
-            return { ...profile, band: { ...profile.band, size: count } };
-          }),
-        },
-      };
+      return coerceSnapshot(JSON.parse(raw) as unknown, fallback) ?? fallback;
     } catch {
       return fallback;
     }

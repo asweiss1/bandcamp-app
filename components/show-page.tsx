@@ -1,14 +1,19 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { toast } from "sonner";
 import { calendarIcs, publicShow, rsvpCounts, rsvpFor } from "@/lib/fans";
 import { useApp } from "@/lib/store";
 import type { RsvpStatus } from "@/lib/types";
 import { FanMailCompose } from "@/components/fan-mail";
-import { PromoStudio } from "@/components/promo-studio";
 import { PageFrame } from "@/components/shell";
 import { Button } from "@/components/ui/button";
+
+const PromoStudio = dynamic(() => import("@/components/promo-studio").then((mod) => mod.PromoStudio), {
+  ssr: false,
+  loading: () => <p className="text-sm text-muted-foreground">Loading the flyer studio…</p>,
+});
 
 export function ShowPage({ id, surface }: { id: string; surface: "desk" | "phone" }) {
   const { snapshot, setRsvp } = useApp();
