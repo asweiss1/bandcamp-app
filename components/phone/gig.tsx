@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { BedDouble, Clock3, Guitar, Ticket } from "lucide-react";
 import { getBand, getVenue } from "@/lib/catalog";
 import { dealDetails, dealHeadline, formatDayLong, formatTime } from "@/lib/deal";
+import { closesOnConfirm } from "@/lib/conflicts";
 import { canWithdraw, isYourMove } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import type { Terms } from "@/lib/types";
@@ -70,7 +71,7 @@ export function PhoneGig({ id }: { id: string }) {
     setError(null);
     setTerms(null);
     setCounterOpen(false);
-    toast("Counter sent");
+    toast(result.warning ?? "Counter sent");
   }
 
   function confirmAccept() {
@@ -238,7 +239,7 @@ export function PhoneGig({ id }: { id: string }) {
           <DialogHeader>
             <DialogTitle className="font-display text-2xl">Confirm this gig</DialogTitle>
             <DialogDescription>
-              Accepting locks {formatDayLong(openDate.date)} and declines other open talks for this time.
+              Accepting locks {formatDayLong(openDate.date)}. {closingSentence(closesOnConfirm(snapshot, booking))}
             </DialogDescription>
           </DialogHeader>
           <p className="font-display text-2xl">{dealHeadline(booking.terms)}</p>
@@ -327,4 +328,9 @@ function TicketCard({
       </div>
     </section>
   );
+}
+
+function closingSentence(labels: string[]) {
+  if (labels.length === 0) return "No other open talk overlaps this date.";
+  return `This also closes ${labels.join("; ")}.`;
 }

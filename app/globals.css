@@ -13,7 +13,7 @@
   --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
   --color-ink: #1b1612;
   --color-paper: #f7f1e6;
-  --color-rust: #c4492c;
+  --color-rust: #b03d24;
   --color-pine: #1f3d34;
   --color-amber: #e2a322;
   --color-sand: #efe3d0;
@@ -64,7 +64,7 @@
   --card-foreground: #1b1612;
   --popover: #fffaf3;
   --popover-foreground: #1b1612;
-  --primary: #c4492c;
+  --primary: #b03d24;
   --primary-foreground: #fffaf3;
   --secondary: #efe3d0;
   --secondary-foreground: #1b1612;
@@ -75,7 +75,7 @@
   --destructive: #9d2c2c;
   --border: #e2d4c2;
   --input: #d9cbb8;
-  --ring: #c4492c;
+  --ring: #b03d24;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);

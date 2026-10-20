@@ -61,8 +61,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
         Skip to content
       </a>
       <header className="sticky top-0 z-40 border-b bg-paper/90 backdrop-blur print:hidden">
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4 sm:px-6">
-          <Link href="/" className="flex items-center gap-2">
+        <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-2 px-4 sm:gap-3 sm:px-6">
+          <Link href="/" className="flex min-w-0 items-center gap-2">
             <span className="grid size-8 place-items-center rounded-full bg-ink font-display text-lg text-amber">
               B
             </span>
@@ -73,7 +73,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               </span>
             </span>
           </Link>
-          <nav aria-label="Primary" className="ml-4 hidden items-center gap-1 md:flex">
+          <nav aria-label="Primary" className="ml-2 hidden min-w-0 items-center gap-1 lg:flex">
             {links.map((link) => (
               <Link
                 key={link.href}
@@ -132,10 +132,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       ) : null}
-      <main id="content" className="flex-1 pb-24 md:pb-10">
+      <main id="content" className="flex-1 pb-24 lg:pb-10">
         {children}
       </main>
-      <footer className="hidden border-t md:block print:hidden">
+      <footer className="hidden border-t lg:block print:hidden">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-6 py-4 text-xs text-muted-foreground">
           <p>BandCamp is a working prototype. Lodging laws and room rates are example data.</p>
           <p>Profiles stay in this browser until accounts exist. No payment, no contract — yet.</p>
@@ -143,7 +143,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       </footer>
       <nav
         aria-label="Mobile"
-        className="fixed inset-x-0 bottom-0 z-40 border-t bg-paper/95 backdrop-blur print:hidden md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t bg-paper/95 backdrop-blur print:hidden lg:hidden"
       >
         <div className="grid grid-cols-4 px-1 pt-1 pb-[max(0.4rem,env(safe-area-inset-bottom))]">
           <MobileLink href="/book" label="Book" pathname={pathname} icon={<CalendarDays />} badge={moves} match={["/book", "/dates", "/bookings"]} />

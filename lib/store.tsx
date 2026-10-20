@@ -497,7 +497,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           ...current,
           bookings: current.bookings.map((item) => (item.id === booking.id ? next : item)),
         });
-        return { ok: true, data: booking.id };
+        const candidate = candidateForBooking(current, next, "pending");
+        return {
+          ok: true,
+          data: booking.id,
+          warning: candidate ? pendingOverlap(current, candidate) ?? undefined : undefined,
+        };
       },
       accept: (bookingId) => {
         const current = readMemory();

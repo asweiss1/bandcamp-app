@@ -328,7 +328,7 @@ function toProfile(draft: Draft): OwnedProfile | null {
 export function Onboarding({ surface }: { surface: "desk" | "phone" }) {
   const phone = surface === "phone";
   return (
-    <div className={phone ? "min-h-dvh bg-ink md:grid md:place-items-center md:py-6" : "min-h-dvh bg-paper"}>
+    <main className={phone ? "min-h-dvh bg-ink md:grid md:place-items-center md:py-6" : "min-h-dvh bg-paper"}>
       <div
         className={
           phone
@@ -340,7 +340,7 @@ export function Onboarding({ surface }: { surface: "desk" | "phone" }) {
           <ProfileWizard surface={surface} welcome />
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -380,7 +380,7 @@ export function ProfileWizard({
   }
 
   function problem(key: string) {
-    if (key === "role") return draft.role ? null : "Choose band, venue, or musician.";
+    if (key === "role") return draft.role ? null : "Choose band, venue, musician, or fan.";
     if (key === "identity" && draft.role === "band") {
       if (draft.name.trim().length < 2) return "Enter the band name.";
       if (!draft.place) return "Search for a home town.";

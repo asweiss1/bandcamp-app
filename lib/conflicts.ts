@@ -379,6 +379,32 @@ export function pendingOverlap(snapshot: Pick<Snapshot, "bookings" | "openDates"
   return clashWith(commitmentsFrom(snapshot), { ...candidate, status: "pending" }, "pending", limit);
 }
 
+export function closesOnConfirm(
+  snapshot: Pick<Snapshot, "bookings" | "openDates" | "applications" | "opportunities" | "interests" | "listings">,
+  booking: Booking,
+) {
+  const candidate = candidateForBooking(snapshot, booking, "confirmed");
+  if (!candidate) return [];
+  const ids = competingIds(snapshot, candidate);
+  const labels: string[] = [];
+  for (const id of ids.bookingIds) {
+    const item = snapshot.bookings.find((entry) => entry.id === id);
+    if (item) labels.push(gigLabel(snapshot, item));
+  }
+  for (const id of ids.applicationIds) {
+    const application = snapshot.applications.find((entry) => entry.id === id);
+    const opportunity = application
+      ? snapshot.opportunities.find((entry) => entry.id === application.opportunityId)
+      : undefined;
+    if (opportunity) labels.push(`${opportunity.title} in ${opportunity.city}`);
+  }
+  for (const id of ids.interestIds) {
+    const interest = snapshot.interests.find((entry) => entry.id === id);
+    if (interest) labels.push(`Fill-in note from ${interest.fromName}`);
+  }
+  return labels;
+}
+
 export function competingIds(
   snapshot: Pick<Snapshot, "bookings" | "openDates" | "applications" | "opportunities" | "interests" | "listings">,
   winner: Commitment,

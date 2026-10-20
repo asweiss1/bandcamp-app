@@ -53,9 +53,9 @@ export function RoleSwitcher({ className }: { className?: string }) {
       <DialogTrigger asChild>
         <button
           type="button"
-          className={`max-w-[46vw] rounded-full border bg-card px-3 py-1.5 text-left focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none sm:max-w-none ${className ?? ""}`}
+          className={`min-w-0 max-w-[38vw] shrink rounded-full border bg-card px-3 py-1.5 text-left focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none sm:max-w-52 ${className ?? ""}`}
         >
-          <span className="block text-[10px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+          <span className="block truncate text-[10px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
             {demo ? "Sample profile" : snapshot.role}
           </span>
           <span className="block truncate text-sm font-semibold">{name}</span>

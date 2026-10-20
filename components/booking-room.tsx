@@ -13,6 +13,7 @@ import {
   formatWhen,
   money,
 } from "@/lib/deal";
+import { closesOnConfirm } from "@/lib/conflicts";
 import { canWithdraw, isYourMove } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import type { Terms } from "@/lib/types";
@@ -76,7 +77,7 @@ export function BookingRoom({ id }: { id: string }) {
     }
     setError(null);
     setTerms(null);
-    toast("Counter sent");
+    toast(result.warning ?? "Counter sent");
   }
 
   function confirmAccept() {
@@ -276,7 +277,8 @@ export function BookingRoom({ id }: { id: string }) {
             <DialogDescription>
               {band.name} plays {venue.name} on {formatDayLong(openDate.date)} for{" "}
               {dealHeadline(booking.terms)}. Tickets {money(booking.terms.ticketPrice)}, load-in{" "}
-              {formatTime(booking.terms.loadIn)}, {booking.terms.backline ? "backline in house" : "no backline"}.
+              {formatTime(booking.terms.loadIn)}, {booking.terms.backline ? "backline in house" : "no backline"}.{" "}
+              {closingSentence(closesOnConfirm(snapshot, booking))}
             </DialogDescription>
           </DialogHeader>
           <Button className="h-11" onClick={confirmAccept}>
@@ -373,6 +375,11 @@ function Confirmation({
       </div>
     </section>
   );
+}
+
+function closingSentence(labels: string[]) {
+  if (labels.length === 0) return "No other open talk overlaps this date.";
+  return `This also closes ${labels.join("; ")}.`;
 }
 
 async function shareShow(id: string, title: string) {

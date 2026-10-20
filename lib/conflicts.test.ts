@@ -8,12 +8,14 @@ import {
   datesMentioned,
   DRIVE_LIMIT_HOURS,
   lodgingClash,
+  closesOnConfirm,
   competingIds,
   pendingOverlap,
   planBatchClash,
 } from "@/lib/conflicts";
 import { daypartFor } from "@/lib/daypart";
 import { defaultTerms } from "@/lib/deal";
+import { initialSnapshot } from "@/lib/seed";
 import type { Application, Booking, Interest, Listing, NightStay, OpenDate, Opportunity, Snapshot } from "@/lib/types";
 
 function night(id: string, venueId: string, date: string, showTime: string): OpenDate {
@@ -330,4 +332,13 @@ test("a planner batch stops when a night is already confirmed", () => {
   ]);
   assert.ok(message);
   assert.match(message, /Yucca Room/);
+});
+
+test("confirming Mesa Dust at Verde names the fair that would close", () => {
+  const booking = initialSnapshot.bookings.find((item) => item.id === "bk-verde-mesa");
+  assert.ok(booking);
+  assert.deepEqual(closesOnConfirm(initialSnapshot, booking), ["Verde Valley Harvest Fair in Cottonwood, AZ"]);
+  const clear = initialSnapshot.bookings.find((item) => item.id === "bk-high-mesa");
+  assert.ok(clear);
+  assert.deepEqual(closesOnConfirm(initialSnapshot, clear), []);
 });

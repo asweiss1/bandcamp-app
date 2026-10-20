@@ -296,13 +296,17 @@ function SampleEditor({ bandId }: { bandId: string }) {
             <p className="text-xs text-muted-foreground">mp3, wav, or m4a. Up to {Math.round(MAX_AUDIO_BYTES / (1024 * 1024))} MB. Stored only in this browser.</p>
             <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Title" className="h-10" />
             <Input value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Optional note" className="h-10" />
-            <input
-              key={fileKey}
-              type="file"
-              accept=".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/mp4"
-              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-              className="text-sm"
-            />
+            <label className="grid gap-1 text-sm font-medium">
+              Audio file
+              <input
+                key={fileKey}
+                type="file"
+                aria-label="Audio file"
+                accept=".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/mp4"
+                onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                className="text-sm"
+              />
+            </label>
             <Button type="submit" className="h-10" disabled={busy}>
               {busy ? "Saving…" : "Save track"}
             </Button>
