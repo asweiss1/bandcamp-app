@@ -14,8 +14,9 @@ import {
   type Commitment,
 } from "@/lib/conflicts";
 import { pairLinks } from "@/lib/links";
-import { getBand, getMusician, getVenue } from "@/lib/catalog";
+import { getBand, getFan, getMusician, getVenue } from "@/lib/catalog";
 import { clearAudioTracks } from "@/lib/audio-db";
+import { alertsForConfirmation, isFollowing, nextRsvp, publicShow } from "@/lib/fans";
 import { canEditMedia, cleanLogo, cleanPhotos, cleanVideos } from "@/lib/media";
 import { daypartFor } from "@/lib/daypart";
 import { termsError, uid } from "@/lib/deal";
@@ -45,6 +46,7 @@ import type {
   BillMember,
   MusicKind,
   ProfileMedia,
+  RsvpStatus,
 } from "@/lib/types";
 
 const SYNC_EVENT = "bandcamp-sync";
@@ -82,7 +84,10 @@ function readMemory() {
     !Array.isArray(memory.bills) ||
     !Array.isArray(memory.sizes) ||
     !Array.isArray(memory.capacities) ||
-    !Array.isArray(memory.media)
+    !Array.isArray(memory.media) ||
+    !Array.isArray(memory.follows) ||
+    !Array.isArray(memory.rsvps) ||
+    !Array.isArray(memory.alerts)
   ) {
     memory = {
       ...memory,
@@ -91,7 +96,13 @@ function readMemory() {
       sizes: Array.isArray(memory.sizes) ? memory.sizes : [],
       capacities: Array.isArray(memory.capacities) ? memory.capacities : [],
       media: Array.isArray(memory.media) ? memory.media : initialSnapshot.media,
+      follows: Array.isArray(memory.follows) ? memory.follows : initialSnapshot.follows,
+      rsvps: Array.isArray(memory.rsvps) ? memory.rsvps : initialSnapshot.rsvps,
+      alerts: Array.isArray(memory.alerts) ? memory.alerts : initialSnapshot.alerts,
     };
+  }
+  if (!memory.fanId) {
+    memory = { ...memory, fanId: initialSnapshot.fanId };
   }
   if (memory.openDates.some((date) => !date.daypart) || memory.repertoires.some((item) => !item.music)) {
     memory = {
@@ -136,6 +147,7 @@ type AppContextValue = {
   setBandId: (id: string) => void;
   setVenueId: (id: string) => void;
   setMusicianId: (id: string) => void;
+  setFanId: (id: string) => void;
   reset: () => void;
   requestDate: (openDateId: string, terms: Terms) => Result<string>;
   sendOffer: (openDateId: string, bandId: string, terms: Terms) => Result<string>;
@@ -183,6 +195,10 @@ type AppContextValue = {
   pitchBill: (billId: string, openDateId: string, terms: Terms) => Result<string>;
   offerBill: (billId: string, openDateId: string, terms: Terms) => Result<string>;
   exploreDemo: (role?: Role) => void;
+  follow: (targetId: string, targetRole: "band" | "venue") => Result<string>;
+  unfollow: (targetId: string) => Result<string>;
+  setRsvp: (bookingId: string, status: RsvpStatus) => Result<string>;
+  markAlertsRead: () => Result<string>;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -280,7 +296,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return {
       ready: true,
       snapshot,
-      setRole: (role) => update({ ...readMemory(), role }),
+      setRole: (role) => {
+        const current = readMemory();
+        update({ ...current, role, fanId: current.fanId || initialSnapshot.fanId });
+      },
+      setFanId: (id) => {
+        const current = readMemory();
+        if (!getFan(id)) return;
+        update({ ...current, fanId: id, role: "fan" });
+      },
       setBandId: (bandId) => update({ ...readMemory(), bandId }),
       setVenueId: (venueId) => update({ ...readMemory(), venueId }),
       setMusicianId: (musicianId) => update({ ...readMemory(), musicianId }),
@@ -474,7 +498,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             settled = settleConfirmed(current, member, settled);
           }
         }
-        update({ ...current, ...settled });
+        const nextSnapshot = { ...current, ...settled };
+        const alerts = [...current.alerts, ...alertsForConfirmation(nextSnapshot, booking.id)];
+        update({ ...nextSnapshot, alerts });
         return { ok: true, data: booking.id };
       },
       decline: (bookingId, note) => {
@@ -924,7 +950,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             ? profile.band?.name
             : profile.role === "venue"
               ? profile.venue?.name
-              : profile.musician?.name;
+              : profile.role === "fan"
+                ? profile.fan?.name
+                : profile.musician?.name;
         if (!name || name.trim().length < 2) return { ok: false, error: "Give this profile a name." };
         const now = new Date().toISOString();
         const existing = current.account.profiles.find((item) => item.id === profile.id);
@@ -986,6 +1014,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           bandId: profile.role === "band" ? profile.id : current.bandId,
           venueId: profile.role === "venue" ? profile.id : current.venueId,
           musicianId: profile.role === "musician" ? profile.id : current.musicianId,
+          fanId: profile.role === "fan" ? profile.id : current.fanId,
           repertoires,
           openDates,
         });
@@ -1002,6 +1031,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           bandId: profile.role === "band" ? profile.id : current.bandId,
           venueId: profile.role === "venue" ? profile.id : current.venueId,
           musicianId: profile.role === "musician" ? profile.id : current.musicianId,
+          fanId: profile.role === "fan" ? profile.id : current.fanId,
         });
         return { ok: true, data: id };
       },
@@ -1178,6 +1208,63 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         });
         return { ok: true, data: booking.id, warning };
       },
+      follow: (targetId, targetRole) => {
+        const current = readMemory();
+        if (current.role !== "fan") return { ok: false, error: "Switch to a fan profile to follow." };
+        if (!getFan(current.fanId)) return { ok: false, error: "Save a fan profile first." };
+        const exists = targetRole === "band" ? getBand(targetId) : getVenue(targetId);
+        if (!exists) return { ok: false, error: "That profile is not listed." };
+        if (isFollowing(current.follows, current.fanId, targetId)) return { ok: true, data: targetId };
+        update({
+          ...current,
+          follows: [
+            ...current.follows,
+            {
+              id: uid("fl"),
+              fanId: current.fanId,
+              targetId,
+              targetRole,
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        });
+        return { ok: true, data: targetId };
+      },
+      unfollow: (targetId) => {
+        const current = readMemory();
+        if (current.role !== "fan") return { ok: false, error: "Switch to a fan profile to follow." };
+        update({
+          ...current,
+          follows: current.follows.filter((item) => !(item.fanId === current.fanId && item.targetId === targetId)),
+        });
+        return { ok: true, data: targetId };
+      },
+      setRsvp: (bookingId, status) => {
+        const current = readMemory();
+        if (current.role !== "fan") return { ok: false, error: "Switch to a fan profile to RSVP." };
+        if (!publicShow(current, bookingId)) {
+          return { ok: false, error: "Only a confirmed show can take an RSVP." };
+        }
+        const currentStatus = current.rsvps.find((item) => item.fanId === current.fanId && item.bookingId === bookingId)?.status ?? null;
+        const next = nextRsvp(currentStatus, status);
+        const rest = current.rsvps.filter((item) => !(item.fanId === current.fanId && item.bookingId === bookingId));
+        update({
+          ...current,
+          rsvps: next
+            ? [...rest, { id: uid("rsvp"), fanId: current.fanId, bookingId, status: next, createdAt: new Date().toISOString() }]
+            : rest,
+        });
+        return { ok: true, data: bookingId };
+      },
+      markAlertsRead: () => {
+        const current = readMemory();
+        if (current.role !== "fan") return { ok: false, error: "Switch to a fan profile to read alerts." };
+        update({
+          ...current,
+          alerts: current.alerts.map((alert) => (alert.fanId === current.fanId ? { ...alert, read: true } : alert)),
+        });
+        return { ok: true, data: current.fanId };
+      },
       exploreDemo: (role = "band") => {
         const current = readMemory();
         update({
@@ -1187,6 +1274,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           bandId: "mesa-dust",
           venueId: "high-country",
           musicianId: "lena-ortiz",
+          fanId: "avery-quinn",
         });
       },
     };

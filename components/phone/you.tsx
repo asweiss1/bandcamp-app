@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { profileDetail, profileName } from "@/lib/account";
-import { bands, getMusician, musicians, venues } from "@/lib/catalog";
+import { bands, fans, getMusician, musicians, venues } from "@/lib/catalog";
 import { useApp } from "@/lib/store";
 import type { Role } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -23,11 +23,11 @@ import {
 } from "@/components/ui/select";
 
 export function PhoneYou() {
-  const { snapshot, setRole, setBandId, setVenueId, setMusicianId, reset, activateProfile, exploreDemo } = useApp();
+  const { snapshot, setRole, setBandId, setVenueId, setMusicianId, setFanId, reset, activateProfile, exploreDemo } = useApp();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState(false);
   const [samplesOpen, setSamplesOpen] = useState(false);
-  const name = roleLabel(snapshot.role, snapshot.bandId, snapshot.venueId, snapshot.musicianId);
+  const name = roleLabel(snapshot.role, snapshot.bandId, snapshot.venueId, snapshot.musicianId, snapshot.fanId);
   const musician = getMusician(snapshot.musicianId);
   const demo = snapshot.account.demo;
 
@@ -123,7 +123,7 @@ export function PhoneYou() {
       {demo && samplesOpen ? (
         <div className="grid gap-3 rounded-2xl border bg-card p-3">
           <p className="text-sm text-muted-foreground">Seeded profiles for trying booking, the route, and the board.</p>
-          {(["band", "venue", "musician"] as Role[]).map((role) => (
+          {(["band", "venue", "musician", "fan"] as Role[]).map((role) => (
             <button
               key={role}
               type="button"
@@ -131,7 +131,7 @@ export function PhoneYou() {
               onClick={() => setRole(role)}
               className={cn("rounded-xl border px-3 py-2 text-left text-sm", snapshot.role === role ? "border-rust bg-accent" : "bg-sand")}
             >
-              {role === "band" ? "Band" : role === "venue" ? "Venue" : "Musician"}
+              {role === "band" ? "Band" : role === "venue" ? "Venue" : role === "fan" ? "Fan" : "Musician"}
             </button>
           ))}
           {snapshot.role === "band" ? (
@@ -142,6 +142,9 @@ export function PhoneYou() {
           ) : null}
           {snapshot.role === "musician" ? (
             <SampleSelect label="Sample musician" value={snapshot.musicianId} onChange={setMusicianId} options={musicians.map((player) => ({ id: player.id, label: player.name }))} />
+          ) : null}
+          {snapshot.role === "fan" ? (
+            <SampleSelect label="Sample fan" value={snapshot.fanId} onChange={setFanId} options={fans.map((fan) => ({ id: fan.id, label: fan.name }))} />
           ) : null}
         </div>
       ) : null}

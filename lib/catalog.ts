@@ -1,4 +1,5 @@
-import type { Band, City, Musician, Venue } from "@/lib/types";
+import { seedFans } from "@/lib/seed-fans";
+import type { Band, City, Fan, Musician, Venue } from "@/lib/types";
 
 export const GENRES = [
   "Americana",
@@ -709,22 +710,27 @@ export const musicians: Musician[] = [
   },
 ];
 
+export const fans: Fan[] = seedFans;
+
 type ExtraPlace = { id: string; label: string; city: string; state: string; lat: number; lng: number };
 
 let ownedBands: Band[] = [];
 let ownedVenues: Venue[] = [];
 let ownedMusicians: Musician[] = [];
+let ownedFans: Fan[] = [];
 let extraPlaces: ExtraPlace[] = [];
 
 export function publishOwnedCatalog(next: {
   bands: Band[];
   venues: Venue[];
   musicians: Musician[];
+  fans?: Fan[];
   places: ExtraPlace[];
 }) {
   ownedBands = next.bands;
   ownedVenues = next.venues;
   ownedMusicians = next.musicians;
+  ownedFans = next.fans ?? [];
   extraPlaces = next.places;
 }
 
@@ -747,6 +753,10 @@ export function listMusicians() {
   ];
 }
 
+export function listFans() {
+  return [...ownedFans, ...fans.filter((fan) => !ownedFans.some((owned) => owned.id === fan.id))];
+}
+
 export function getCity(slug: string) {
   return cities.find((city) => city.slug === slug);
 }
@@ -761,4 +771,8 @@ export function getVenue(id: string) {
 
 export function getMusician(id: string) {
   return ownedMusicians.find((musician) => musician.id === id) ?? musicians.find((musician) => musician.id === id);
+}
+
+export function getFan(id: string) {
+  return ownedFans.find((fan) => fan.id === id) ?? fans.find((fan) => fan.id === id);
 }

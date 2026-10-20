@@ -25,7 +25,7 @@ function isSnapshot(value: unknown): value is Snapshot {
   if (!value || typeof value !== "object") return false;
   const snapshot = value as Snapshot;
   return (
-    (snapshot.role === "band" || snapshot.role === "venue" || snapshot.role === "musician") &&
+    (snapshot.role === "band" || snapshot.role === "venue" || snapshot.role === "musician" || snapshot.role === "fan") &&
     typeof snapshot.bandId === "string" &&
     typeof snapshot.venueId === "string" &&
     typeof snapshot.musicianId === "string" &&
@@ -61,6 +61,10 @@ export const localRepository: Repository = {
         sizes: Array.isArray(parsed.sizes) ? parsed.sizes : [],
         capacities: Array.isArray(parsed.capacities) ? parsed.capacities : [],
         media: Array.isArray(parsed.media) ? parsed.media : fallback.media,
+        follows: Array.isArray(parsed.follows) ? parsed.follows : fallback.follows,
+        rsvps: Array.isArray(parsed.rsvps) ? parsed.rsvps : fallback.rsvps,
+        alerts: Array.isArray(parsed.alerts) ? parsed.alerts : fallback.alerts,
+        fanId: typeof parsed.fanId === "string" && parsed.fanId ? parsed.fanId : fallback.fanId,
         openDates: parsed.openDates.map((date) => (date.daypart ? date : { ...date, daypart: daypartFor(date.showTime) })),
         account: {
           ...account,

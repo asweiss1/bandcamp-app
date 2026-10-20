@@ -1,4 +1,4 @@
-export type Role = "band" | "venue" | "musician";
+export type Role = "band" | "venue" | "musician" | "fan";
 
 export type DealType = "guarantee" | "door" | "guarantee_plus";
 
@@ -154,6 +154,46 @@ export type Musician = {
   lng?: number;
 };
 
+export type Fan = {
+  id: string;
+  name: string;
+  city: string;
+  citySlug: string;
+  lat: number;
+  lng: number;
+  styles: string[];
+  radiusMiles: number;
+};
+
+export type Follow = {
+  id: string;
+  fanId: string;
+  targetId: string;
+  targetRole: "band" | "venue";
+  createdAt: string;
+};
+
+export type RsvpStatus = "going" | "interested";
+
+export type Rsvp = {
+  id: string;
+  fanId: string;
+  bookingId: string;
+  status: RsvpStatus;
+  createdAt: string;
+};
+
+export type FanAlert = {
+  id: string;
+  fanId: string;
+  bookingId: string;
+  kind: "band-near" | "venue-lineup";
+  title: string;
+  body: string;
+  createdAt: string;
+  read: boolean;
+};
+
 export type OwnedProfile = {
   id: string;
   role: Role;
@@ -162,6 +202,7 @@ export type OwnedProfile = {
   band: Band | null;
   venue: Venue | null;
   musician: Musician | null;
+  fan?: Fan | null;
 };
 
 export type Account = {
@@ -346,6 +387,7 @@ export type Snapshot = {
   bandId: string;
   venueId: string;
   musicianId: string;
+  fanId: string;
   openDates: OpenDate[];
   bookings: Booking[];
   listings: Listing[];
@@ -362,6 +404,9 @@ export type Snapshot = {
   sizes: BandSize[];
   capacities: VenueCapacity[];
   media: ProfileMedia[];
+  follows: Follow[];
+  rsvps: Rsvp[];
+  alerts: FanAlert[];
   account: Account;
 };
 

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/sheet";
 
 const links = [
+  { href: "/shows", label: "Shows" },
   { href: "/dates", label: "Dates" },
   { href: "/bands", label: "Bands" },
   { href: "/venues", label: "Venues" },
@@ -177,6 +178,8 @@ function MobileLink({
 
 function MoreMenu({ pathname }: { pathname: string }) {
   const extra = [
+    { href: "/shows", label: "Shows" },
+    { href: "/alerts", label: "Alerts" },
     { href: "/bands", label: "Bands" },
     { href: "/bills", label: "Bills" },
     { href: "/venues", label: "Venues" },

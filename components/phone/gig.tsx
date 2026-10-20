@@ -14,6 +14,7 @@ import { DealFields } from "@/components/deal-fields";
 import { slotLine } from "@/lib/daypart";
 import { BandMarks } from "@/components/originals";
 import { TurnaroundNote } from "@/components/turnaround-note";
+import { DrawNote } from "@/components/draw-note";
 import { PromoStudio } from "@/components/promo-studio";
 import { BandSamples } from "@/components/samples";
 import { StatusPill, statusLabel } from "@/components/status-pill";
@@ -115,6 +116,16 @@ export function PhoneGig({ id }: { id: string }) {
           {formatDayLong(openDate.date)} · {slotLine(openDate.showTime, openDate.daypart)} · {venue.city}
         </p>
         <TurnaroundNote bookingId={booking.id} className="mt-2" />
+        <DrawNote
+          bandIds={
+            booking.billId
+              ? snapshot.bills.find((item) => item.id === booking.billId)?.members.map((member) => member.bandId) ?? [band.id]
+              : [band.id]
+          }
+          venueId={venue.id}
+          bookingId={booking.id}
+          confirmed={booking.status === "accepted"}
+        />
         <BillLineup billId={booking.billId} surface="phone" />
       </div>
 

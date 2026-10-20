@@ -28,6 +28,7 @@ const ROLES: { id: Role; label: string; hint: string }[] = [
   { id: "band", label: "Band", hint: "Request dates, answer offers, and price the drive." },
   { id: "venue", label: "Venue", hint: "Post dates and send offers to bands." },
   { id: "musician", label: "Musician", hint: "Pick up fill-ins or look for a band." },
+  { id: "fan", label: "Fan", hint: "Follow bands and rooms, and see confirmed shows near home." },
 ];
 
 type DateDraft = {
@@ -194,6 +195,7 @@ function stepsFor(role: Role | null, editing: boolean) {
   const roleStep = editing ? [] : ["role"];
   if (role === "venue") return [...roleStep, "identity", "room", "deal", "dates", "look", "review"];
   if (role === "musician") return [...roleStep, "identity", "place", "work", "review"];
+  if (role === "fan") return [...roleStep, "identity", "styles", "review"];
   if (role === "band") return [...roleStep, "identity", "sound", "people", "work", "originals", "look", "vehicles", "samples", "review"];
   return ["role"];
 }
@@ -265,6 +267,27 @@ function toProfile(draft: Draft): OwnedProfile | null {
         loadInNotes: draft.terms.loadIn ? `Load-in ${draft.terms.loadIn}` : "Load-in arranged with the booker.",
         address: draft.address.trim(),
         photo,
+      },
+    };
+  }
+  if (draft.role === "fan") {
+    return {
+      id: draft.id,
+      role: "fan",
+      createdAt: now,
+      updatedAt: now,
+      band: null,
+      venue: null,
+      musician: null,
+      fan: {
+        id: draft.id,
+        name: draft.name.trim(),
+        city: place.label,
+        citySlug: place.id,
+        lat: place.lat,
+        lng: place.lng,
+        styles: draft.styles,
+        radiusMiles: draft.radiusMiles > 0 ? draft.radiusMiles : 50,
       },
     };
   }
@@ -366,6 +389,15 @@ export function ProfileWizard({
       if (draft.name.trim().length < 2) return "Enter the venue name.";
       if (draft.address.trim().length < 4) return "Enter the street address.";
       if (!draft.place) return "Search for the city.";
+      return null;
+    }
+    if (key === "identity" && draft.role === "fan") {
+      if (draft.name.trim().length < 2) return "Enter your name.";
+      if (!draft.place) return "Search for a home town.";
+      return null;
+    }
+    if (key === "styles") {
+      if (draft.styles.length === 0) return "Pick at least one style.";
       return null;
     }
     if (key === "identity" && draft.role === "musician") {
@@ -482,7 +514,7 @@ export function ProfileWizard({
       if (!persist(true)) return;
       toast.success("Profile saved on this device.");
       if (onDone) onDone();
-      else router.push(surface === "phone" ? "/phone" : "/dashboard");
+      else router.push(surface === "phone" ? "/phone" : draft.role === "fan" ? "/shows" : "/dashboard");
       return;
     }
     setStepIndex((index) => Math.min(index + 1, steps.length - 1));
@@ -499,7 +531,7 @@ export function ProfileWizard({
       : step === "identity"
         ? draft.role === "venue"
           ? "The room"
-          : draft.role === "musician"
+          : draft.role === "musician" || draft.role === "fan"
             ? "Your name"
             : "The band"
         : step === "sound"
@@ -522,8 +554,10 @@ export function ProfileWizard({
                         ? "The usual deal"
                         : step === "dates"
                           ? "Dates you can offer"
-                          : step === "place"
-                            ? "Where you play"
+                : step === "styles"
+                  ? "Favorite styles"
+                  : step === "place"
+                    ? "Where you play"
                             : step === "work"
                               ? "What you are looking for"
                               : "This is you";
@@ -582,6 +616,33 @@ export function ProfileWizard({
             <Input className="h-11" value={draft.address} onChange={(event) => patch({ address: event.target.value })} />
           </Field>
           <HometownField label="City" place={draft.place} onPlace={(place) => patch({ place })} />
+        </div>
+      ) : null}
+      {step === "identity" && draft.role === "fan" ? (
+        <div className="grid gap-3">
+          <Field label="Your name">
+            <Input className="h-11" value={draft.name} onChange={(event) => patch({ name: event.target.value })} />
+          </Field>
+          <HometownField label="Home town" place={draft.place} onPlace={(place) => patch({ place })} />
+        </div>
+      ) : null}
+      {step === "styles" ? (
+        <div className="grid gap-3">
+          <ChipGroup
+            label="Favorite styles"
+            options={STYLE_TAGS}
+            selected={draft.styles}
+            onToggle={(value) => patch({ styles: toggle(draft.styles, value) })}
+            onAdd={(value) => patch({ styles: addTag(draft.styles, value) })}
+          />
+          <Field label="How far you'll go for a show (miles)">
+            <Input
+              className="h-11"
+              inputMode="numeric"
+              value={String(draft.radiusMiles)}
+              onChange={(event) => patch({ radiusMiles: Number(event.target.value) || 0 })}
+            />
+          </Field>
         </div>
       ) : null}
       {step === "identity" && draft.role === "musician" ? (
@@ -800,6 +861,7 @@ function Review({ draft }: { draft: Draft }) {
       ) : null}
       {draft.role === "venue" ? <p>{draft.capacity || "0"} capacity · {draft.genres.join(", ") || "No genres yet"}</p> : null}
       {draft.role === "musician" ? <p>{draft.instruments.join(", ") || "No instruments yet"} · {draft.radiusMiles} miles</p> : null}
+      {draft.role === "fan" ? <p>{draft.styles.join(", ") || "No styles yet"} · {draft.radiusMiles} miles</p> : null}
       {draft.bio ? <p>{draft.bio}</p> : null}
     </div>
   );

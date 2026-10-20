@@ -14,7 +14,23 @@ import { Button } from "@/components/ui/button";
 
 export function Dashboard() {
   const { snapshot } = useApp();
-  const name = roleLabel(snapshot.role, snapshot.bandId, snapshot.venueId, snapshot.musicianId);
+  const name = roleLabel(snapshot.role, snapshot.bandId, snapshot.venueId, snapshot.musicianId, snapshot.fanId);
+  if (snapshot.role === "fan") {
+    return (
+      <PageFrame>
+        <PageIntro
+          eyebrow="Fan"
+          title={`${name}'s shows`}
+          lede="Confirmed shows from bands and rooms you follow, plus what's near home. Offers stay on the band and venue desks."
+          actions={
+            <Button asChild className="h-10">
+              <Link href="/shows">What&apos;s happening</Link>
+            </Button>
+          }
+        />
+      </PageFrame>
+    );
+  }
   const mine = snapshot.bookings.filter((booking) => {
     if (snapshot.role === "band") {
       if (booking.bandId === snapshot.bandId) return true;

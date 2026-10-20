@@ -16,7 +16,7 @@ export function Tonight() {
   const { snapshot } = useApp();
   if (snapshot.role === "musician") return <MusicianNight />;
 
-  const name = roleLabel(snapshot.role, snapshot.bandId, snapshot.venueId, snapshot.musicianId);
+  const name = roleLabel(snapshot.role, snapshot.bandId, snapshot.venueId, snapshot.musicianId, snapshot.fanId);
   const stops = viewerStops(snapshot);
   const live = liveStops(stops);
   const moves = yourMoves(stops, snapshot);

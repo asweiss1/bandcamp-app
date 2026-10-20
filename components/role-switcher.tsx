@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { profileDetail, profileName } from "@/lib/account";
-import { bands, getBand, getMusician, getVenue, musicians, venues } from "@/lib/catalog";
+import { bands, fans, getBand, getFan, getMusician, getVenue, musicians, venues } from "@/lib/catalog";
 import { useApp } from "@/lib/store";
 import type { Role } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -26,18 +26,26 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export function roleLabel(role: Role, bandId: string, venueId: string, musicianId: string) {
+export function roleLabel(role: Role, bandId: string, venueId: string, musicianId: string, fanId = "") {
   if (role === "band") return getBand(bandId)?.name ?? "Band";
   if (role === "venue") return getVenue(venueId)?.name ?? "Venue";
+  if (role === "fan") return getFan(fanId)?.name ?? "Fan";
   return getMusician(musicianId)?.name ?? "Musician";
+}
+
+function roleName(role: Role) {
+  if (role === "band") return "Band";
+  if (role === "venue") return "Venue";
+  if (role === "fan") return "Fan";
+  return "Musician";
 }
 
 export function RoleSwitcher({ className }: { className?: string }) {
   const router = useRouter();
-  const { snapshot, setRole, setBandId, setVenueId, setMusicianId, reset, activateProfile, exploreDemo } = useApp();
+  const { snapshot, setRole, setBandId, setVenueId, setMusicianId, setFanId, reset, activateProfile, exploreDemo } = useApp();
   const [open, setOpen] = useState(false);
   const [samplesOpen, setSamplesOpen] = useState(false);
-  const name = roleLabel(snapshot.role, snapshot.bandId, snapshot.venueId, snapshot.musicianId);
+  const name = roleLabel(snapshot.role, snapshot.bandId, snapshot.venueId, snapshot.musicianId, snapshot.fanId);
   const demo = snapshot.account.demo;
 
   return (
@@ -112,7 +120,7 @@ export function RoleSwitcher({ className }: { className?: string }) {
             {samplesOpen ? (
               <div className="grid gap-3">
                 <div className="grid gap-2">
-                  {(["band", "venue", "musician"] as Role[]).map((role) => (
+                  {(["band", "venue", "musician", "fan"] as Role[]).map((role) => (
                     <button
                       key={role}
                       type="button"
@@ -120,7 +128,7 @@ export function RoleSwitcher({ className }: { className?: string }) {
                       onClick={() => setRole(role)}
                       className={cn("rounded-xl border px-3 py-2 text-left text-sm", snapshot.role === role ? "border-rust bg-accent" : "bg-card")}
                     >
-                      {role === "band" ? "Band" : role === "venue" ? "Venue" : "Musician"}
+                      {roleName(role)}
                     </button>
                   ))}
                 </div>
@@ -132,6 +140,9 @@ export function RoleSwitcher({ className }: { className?: string }) {
                 ) : null}
                 {snapshot.role === "musician" ? (
                   <ProfileSelect label="Sample musician" value={snapshot.musicianId} onChange={setMusicianId} options={musicians.map((musician) => ({ id: musician.id, label: `${musician.name} · ${musician.instruments.join(", ")}` }))} />
+                ) : null}
+                {snapshot.role === "fan" ? (
+                  <ProfileSelect label="Sample fan" value={snapshot.fanId} onChange={setFanId} options={fans.map((fan) => ({ id: fan.id, label: `${fan.name} · ${fan.city}` }))} />
                 ) : null}
               </div>
             ) : null}

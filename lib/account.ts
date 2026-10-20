@@ -22,13 +22,15 @@ export function isAccount(value: unknown): value is Account {
 export function profileName(profile: OwnedProfile) {
   if (profile.role === "band") return profile.band?.name ?? "Band";
   if (profile.role === "venue") return profile.venue?.name ?? "Venue";
+  if (profile.role === "fan") return profile.fan?.name ?? "Fan";
   return profile.musician?.name ?? "Musician";
 }
 
 export function profileDetail(profile: OwnedProfile) {
-  const entity = profile.band ?? profile.venue ?? profile.musician;
+  const entity = profile.band ?? profile.venue ?? profile.musician ?? profile.fan;
   const city = entity?.city ?? "City not set";
-  const role = profile.role === "band" ? "Band" : profile.role === "venue" ? "Venue" : "Musician";
+  const role =
+    profile.role === "band" ? "Band" : profile.role === "venue" ? "Venue" : profile.role === "fan" ? "Fan" : "Musician";
   return `${role} · ${city}`;
 }
 
@@ -38,8 +40,9 @@ export function syncCatalog(snapshot: Pick<Snapshot, "account">) {
     bands: profiles.flatMap((profile) => (profile.band ? [profile.band] : [])),
     venues: profiles.flatMap((profile) => (profile.venue ? [profile.venue] : [])),
     musicians: profiles.flatMap((profile) => (profile.musician ? [profile.musician] : [])),
+    fans: profiles.flatMap((profile) => (profile.fan ? [profile.fan] : [])),
     places: profiles.flatMap((profile) => {
-      const entity = profile.band ?? profile.venue ?? profile.musician;
+      const entity = profile.band ?? profile.venue ?? profile.musician ?? profile.fan;
       if (!entity || entity.lat == null || entity.lng == null) return [];
       const [city, state] = entity.city.split(",").map((part) => part.trim());
       return [

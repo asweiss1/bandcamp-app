@@ -62,13 +62,17 @@ export function interestsForListing(interests: Interest[], listingId: string) {
   return interests.filter((interest) => interest.listingId === listingId);
 }
 
-export function listingOwner(listing: Listing, snapshot: Pick<Snapshot, "role" | "bandId" | "venueId" | "musicianId">) {
+export function listingOwner(
+  listing: Listing,
+  snapshot: Pick<Snapshot, "role" | "bandId" | "venueId" | "musicianId" | "fanId">,
+) {
   return listing.posterRole === snapshot.role && listing.posterId === profileId(snapshot);
 }
 
-export function profileId(snapshot: Pick<Snapshot, "role" | "bandId" | "venueId" | "musicianId">) {
+export function profileId(snapshot: Pick<Snapshot, "role" | "bandId" | "venueId" | "musicianId" | "fanId">) {
   if (snapshot.role === "band") return snapshot.bandId;
   if (snapshot.role === "venue") return snapshot.venueId;
+  if (snapshot.role === "fan") return snapshot.fanId;
   return snapshot.musicianId;
 }
 

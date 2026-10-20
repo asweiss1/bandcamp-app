@@ -16,13 +16,21 @@ import { useApp } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-export function PromoStudio({ kind, id }: { kind: "booking" | "bill"; id: string }) {
+export function PromoStudio({
+  kind,
+  id,
+  startOpen = false,
+}: {
+  kind: "booking" | "bill";
+  id: string;
+  startOpen?: boolean;
+}) {
   const { snapshot } = useApp();
   const show = useMemo(
     () => (kind === "booking" ? promoFromBooking(snapshot, id) : promoFromBill(snapshot, id)),
     [snapshot, kind, id],
   );
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(startOpen);
   if (!show) return null;
   return (
     <section className="grid gap-3">

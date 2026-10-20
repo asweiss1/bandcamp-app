@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { DealFields } from "@/components/deal-fields";
 import { PageFrame, PageIntro } from "@/components/shell";
 import { StatusPill } from "@/components/status-pill";
+import { DrawNote } from "@/components/draw-note";
 import { PromoStudio } from "@/components/promo-studio";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -199,6 +200,14 @@ export function BillDetail({ id, surface }: { id: string; surface: "desk" | "pho
       <div className="mt-4">
         <PromoStudio kind="bill" id={bill.id} />
       </div>
+      {venue ? (
+        <DrawNote
+          bandIds={bill.members.map((member) => member.bandId)}
+          venueId={venue.id}
+          bookingId={booking?.id ?? null}
+          confirmed={booking?.status === "accepted"}
+        />
+      ) : null}
       <p className="mt-2 text-lg text-muted-foreground">
         {venue && openDate
           ? `${venue.name} · ${formatDayLong(openDate.date)} · ${slotLine(openDate.showTime, openDate.daypart)}`

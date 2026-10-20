@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BedDouble, CalendarDays, Map, MessageSquare, MoonStar, UserRound } from "lucide-react";
+import { BedDouble, Bell, CalendarDays, Map, MapPin, MessageSquare, MoonStar, Sparkles, UserRound } from "lucide-react";
+import { unreadAlerts } from "@/components/fan-alerts";
 import { usePlace } from "@/lib/place";
 import { isYourMove } from "@/lib/queries";
 import { useApp } from "@/lib/store";
@@ -17,8 +18,16 @@ const tabs = [
   { href: "/phone/you", label: "You", icon: UserRound },
 ];
 
-function tabActive(pathname: string, href: string) {
+const fanTabs = [
+  { href: "/phone", label: "Happening", icon: Sparkles },
+  { href: "/phone/near", label: "Near", icon: MapPin },
+  { href: "/phone/alerts", label: "Alerts", icon: Bell },
+  { href: "/phone/you", label: "You", icon: UserRound },
+];
+
+function tabActive(pathname: string, href: string, fan: boolean) {
   if (href === "/phone") {
+    if (fan) return pathname === "/phone" || pathname.startsWith("/phone/shows");
     return pathname === "/phone" || pathname.startsWith("/phone/gig");
   }
   if (href === "/phone/book") {
@@ -34,7 +43,10 @@ export function PhoneShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { snapshot } = useApp();
   const { place } = usePlace();
+  const fan = snapshot.role === "fan";
+  const bar = fan ? fanTabs : tabs;
   const moves = snapshot.bookings.filter((booking) => isYourMove(booking, snapshot)).length;
+  const unread = fan ? unreadAlerts(snapshot.fanId, snapshot.alerts) : 0;
 
   return (
     <div className="min-h-dvh bg-ink md:grid md:place-items-center md:py-6">
@@ -53,7 +65,7 @@ export function PhoneShell({ children }: { children: React.ReactNode }) {
             <span>
               <span className="block font-display text-lg leading-none tracking-tight">BandCamp</span>
               <span className="text-[10px] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
-                On the road
+                {fan ? "In the crowd" : "On the road"}
               </span>
             </span>
           </Link>
@@ -79,10 +91,10 @@ export function PhoneShell({ children }: { children: React.ReactNode }) {
           aria-label="Phone"
           className="border-t bg-paper/95 backdrop-blur"
         >
-          <div className="grid grid-cols-6 px-0.5 pt-1 pb-[max(0.35rem,env(safe-area-inset-bottom))]">
-            {tabs.map((tab) => {
+          <div className={cn("grid px-0.5 pt-1 pb-[max(0.35rem,env(safe-area-inset-bottom))]", fan ? "grid-cols-4" : "grid-cols-6")}>
+            {bar.map((tab) => {
               const Icon = tab.icon;
-              const selected = tabActive(pathname, tab.href);
+              const selected = tabActive(pathname, tab.href, fan);
               return (
                 <Link
                   key={tab.href}
@@ -95,9 +107,14 @@ export function PhoneShell({ children }: { children: React.ReactNode }) {
                 >
                   <Icon className="size-4" />
                   {tab.label}
-                  {tab.href === "/phone" && moves > 0 ? (
+                  {tab.href === "/phone" && !fan && moves > 0 ? (
                     <span className="absolute top-1 right-2 min-w-4 rounded-full bg-amber px-1 text-center text-[10px] font-semibold text-ink">
                       {moves}
+                    </span>
+                  ) : null}
+                  {tab.href === "/phone/alerts" && unread > 0 ? (
+                    <span className="absolute top-1 right-2 min-w-4 rounded-full bg-amber px-1 text-center text-[10px] font-semibold text-ink">
+                      {unread}
                     </span>
                   ) : null}
                 </Link>

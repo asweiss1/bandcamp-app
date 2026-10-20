@@ -46,6 +46,7 @@ function snapshot(partial: Partial<Snapshot>): Snapshot {
     bandId: "mesa-dust",
     venueId: "yucca-room",
     musicianId: "lena-ortiz",
+    fanId: "avery-quinn",
     openDates: [],
     bookings: [],
     listings: [],
@@ -62,6 +63,9 @@ function snapshot(partial: Partial<Snapshot>): Snapshot {
     sizes: [],
     capacities: [],
     media: [],
+    follows: [],
+    rsvps: [],
+    alerts: [],
     account: { phase: "ready", demo: true, activeId: null, profiles: [] },
     ...partial,
   };

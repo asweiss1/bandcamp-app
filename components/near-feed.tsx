@@ -8,6 +8,7 @@ import { usePlace } from "@/lib/place";
 import { repertoireFor } from "@/lib/repertoire";
 import { useApp } from "@/lib/store";
 import type { MusicKind } from "@/lib/types";
+import { FanHome } from "@/components/fan-home";
 import { BandMarks, MusicFilter } from "@/components/originals";
 import { BandSamples } from "@/components/samples";
 import { PlacePicker } from "@/components/place-picker";
@@ -23,6 +24,7 @@ export function NearFeed({ surface }: { surface: "desk" | "phone" }) {
   const { snapshot } = useApp();
   const [music, setMusic] = useState<"any" | MusicKind>("any");
   const { place, radiusMiles, setPlace, setRadius } = usePlace();
+  if (snapshot.role === "fan") return <FanHome surface={surface} focus="near" />;
   const feed = nearFeed(snapshot, place, radiusMiles, surface);
   const links = searchLinksFor(place.label);
   const stayHref =

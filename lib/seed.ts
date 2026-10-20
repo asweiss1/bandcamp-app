@@ -1,4 +1,5 @@
 import { daypartFor } from "@/lib/daypart";
+import { seedAlerts, seedFollows, seedRsvps } from "@/lib/seed-fans";
 import { seedMedia } from "@/lib/seed-media";
 import { seedApplications, seedOpportunities } from "@/lib/opportunities";
 import type {
@@ -1031,6 +1032,7 @@ export const initialSnapshot: Snapshot = {
   bandId: "mesa-dust",
   venueId: "high-country",
   musicianId: "lena-ortiz",
+  fanId: "avery-quinn",
   openDates: seedOpenDates,
   bookings: seedBookings,
   listings: seedListings,
@@ -1047,6 +1049,9 @@ export const initialSnapshot: Snapshot = {
   sizes: [],
   capacities: [],
   media: seedMedia,
+  follows: seedFollows,
+  rsvps: seedRsvps,
+  alerts: seedAlerts,
   account: {
     phase: "welcome",
     demo: false,

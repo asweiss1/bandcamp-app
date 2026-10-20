@@ -16,6 +16,7 @@ import { OfferDialog } from "@/components/offer-dialog";
 import { slotLine } from "@/lib/daypart";
 import { BandMarks, RepertoirePanel } from "@/components/originals";
 import { CapacityFilter } from "@/components/capacity-filter";
+import { FollowButton } from "@/components/follow-button";
 import { ProfileMediaView } from "@/components/profile-media";
 import { repertoireFor } from "@/lib/repertoire";
 import { TurnaroundNote } from "@/components/turnaround-note";
@@ -128,6 +129,7 @@ export function BandProfile({ id }: { id: string }) {
       </div>
       {band.photo ? <img src={band.photo} alt="" className="mt-4 size-24 rounded-2xl object-cover" /> : null}
       <h1 className="mt-3 font-display text-5xl tracking-tight">{band.name}</h1>
+      <FollowButton targetId={band.id} targetRole="band" />
       <div className="mt-3">
         <BandMarks bandId={band.id} withInfo />
       </div>
@@ -266,6 +268,7 @@ export function VenueProfile({ id }: { id: string }) {
       </Link>
       {venue.photo ? <img src={venue.photo} alt="" className="mt-4 size-24 rounded-2xl object-cover" /> : null}
       <h1 className="mt-3 font-display text-5xl tracking-tight">{venue.name}</h1>
+      <FollowButton targetId={venue.id} targetRole="venue" />
       {venue.address ? <p className="mt-2 text-sm text-muted-foreground">{venue.address}</p> : null}
       {canEdit ? (
         <label className="mt-3 grid max-w-xs gap-1 text-sm font-medium">

@@ -20,6 +20,7 @@ import { BillLineup } from "@/components/bills";
 import { DealFields } from "@/components/deal-fields";
 import { slotLine } from "@/lib/daypart";
 import { BandMarks } from "@/components/originals";
+import { DrawNote } from "@/components/draw-note";
 import { PromoStudio } from "@/components/promo-studio";
 import { TurnaroundNote } from "@/components/turnaround-note";
 import { BandSamples } from "@/components/samples";
@@ -122,6 +123,21 @@ export function BookingRoom({ id }: { id: string }) {
         {formatDayLong(openDate.date)} · {slotLine(openDate.showTime, openDate.daypart)} · {venue.city}
       </p>
       <TurnaroundNote bookingId={booking.id} className="mt-2" />
+      <DrawNote
+        bandIds={
+          booking.billId
+            ? snapshot.bills.find((item) => item.id === booking.billId)?.members.map((member) => member.bandId) ?? [band.id]
+            : [band.id]
+        }
+        venueId={venue.id}
+        bookingId={booking.id}
+        confirmed={booking.status === "accepted"}
+      />
+      {booking.status === "accepted" ? (
+        <Button type="button" variant="outline" className="mt-3 h-10" onClick={() => void shareShow(booking.id, `${band.name} at ${venue.name}`)}>
+          Share with fans
+        </Button>
+      ) : null}
       <BillLineup billId={booking.billId} surface="desk" />
 
       {booking.status === "accepted" ? (
@@ -343,4 +359,22 @@ function Confirmation({
       </div>
     </section>
   );
+}
+
+async function shareShow(id: string, title: string) {
+  const url = `${window.location.origin}/shows/${id}`;
+  if (typeof navigator.share === "function") {
+    try {
+      await navigator.share({ title, url });
+      return;
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    toast.success("Show link copied");
+  } catch {
+    toast.message(url);
+  }
 }
