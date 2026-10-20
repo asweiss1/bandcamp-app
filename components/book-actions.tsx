@@ -24,7 +24,7 @@ export function BookActions({ tone }: { tone: "cream" | "desk" | "phone" }) {
 
   if (tone === "cream") {
     return (
-      <div id="book-actions" className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+      <div id="book-actions" className="flex max-w-lg flex-wrap gap-3">
         <Button asChild className="h-12 bg-amber px-6 text-base text-ink hover:bg-amber/90">
           <Link href={gig}>Book a gig</Link>
         </Button>
