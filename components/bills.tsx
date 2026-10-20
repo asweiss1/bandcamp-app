@@ -8,6 +8,7 @@ import { billProblem } from "@/lib/bills";
 import { getBand, getVenue, listBands } from "@/lib/catalog";
 import { slotLine } from "@/lib/daypart";
 import { defaultTerms, formatDayLong } from "@/lib/deal";
+import { splitPreset, type SplitKind } from "@/lib/full-night";
 import { linkedBandIds } from "@/lib/links";
 import { dateFill, sortByDate } from "@/lib/queries";
 import { useApp } from "@/lib/store";
@@ -17,6 +18,7 @@ import { DealFields } from "@/components/deal-fields";
 import { PageFrame, PageIntro } from "@/components/shell";
 import { StatusPill } from "@/components/status-pill";
 import { DrawNote } from "@/components/draw-note";
+import { TypicalDraw } from "@/components/full-night";
 import { PromoStudio } from "@/components/promo-studio";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,6 +65,7 @@ export function BillLineup({
           );
         })}
       </ul>
+      <TypicalDraw bandIds={bill.members.map((member) => member.bandId)} className="mt-3" />
     </section>
   );
 }
@@ -74,12 +77,12 @@ export function BillIndex({ surface }: { surface: "desk" | "phone" }) {
     <>
       <PageIntro
         eyebrow="Shared bills"
-        title="Play the date as a package"
-        lede="Two to four linked bands, one headliner, set times, and a pay split. A venue sends one offer for the whole bill."
+        title="Build a full night"
+        lede="One offer fills a small bar's whole night. Two to four bands, one headliner, a pay split, and a combined draw. Small bands pool their crowds."
         actions={
           snapshot.role === "band" ? (
             <Button asChild className="h-10">
-              <Link href={surface === "phone" ? "/phone/book/bills/new" : "/bills/new"}>Build a bill</Link>
+              <Link href={surface === "phone" ? "/phone/book/bills/new" : "/bills/new"}>Build a full night</Link>
             </Button>
           ) : null
         }
@@ -208,6 +211,7 @@ export function BillDetail({ id, surface }: { id: string; surface: "desk" | "pho
           confirmed={booking?.status === "accepted"}
         />
       ) : null}
+      <TypicalDraw bandIds={bill.members.map((member) => member.bandId)} className="mt-3" />
       <p className="mt-2 text-lg text-muted-foreground">
         {venue && openDate
           ? `${venue.name} · ${formatDayLong(openDate.date)} · ${slotLine(openDate.showTime, openDate.daypart)}`
@@ -331,6 +335,13 @@ export function BillForm({ surface }: { surface: "desk" | "phone" }) {
   const total = members.reduce((sum, member) => sum + (Number.isFinite(member.splitPercent) ? member.splitPercent : 0), 0);
   const problem = billProblem(members);
 
+  function applyPreset(kind: SplitKind) {
+    const splits = splitPreset(1 + openers.length, kind);
+    if (!splits) return;
+    setHeadSplit(splits[0] ?? 50);
+    setOpeners(openers.map((opener, index) => ({ ...opener, splitPercent: splits[index + 1] ?? opener.splitPercent })));
+  }
+
   function submit(event: React.FormEvent) {
     event.preventDefault();
     if (snapshot.role !== "band") {
@@ -351,9 +362,9 @@ export function BillForm({ surface }: { surface: "desk" | "phone" }) {
       <Link href={indexHref(surface)} className="text-sm font-medium text-rust">
         ← Bills
       </Link>
-      <h1 className="mt-3 font-display text-4xl tracking-tight">Build a bill</h1>
+      <h1 className="mt-3 font-display text-4xl tracking-tight">Build a full night</h1>
       <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-        You headline. Add one to three openers, a downbeat for each set, and splits that total 100.
+        You headline. Add one to three openers, a downbeat for each set, and a pay split. Even split shares the night. Headliner 50/30/20 puts half with the headliner, then 30 and 20. Two bands use 70/30. Four bands use 50/20/20/10.
       </p>
       {snapshot.role !== "band" ? (
         <p className="mt-4 rounded-xl bg-sand px-4 py-3 text-sm">Switch to a band on the desk before saving.</p>
@@ -433,6 +444,14 @@ export function BillForm({ surface }: { surface: "desk" | "phone" }) {
               Add an opener
             </Button>
           ) : null}
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" className="h-10" onClick={() => applyPreset("even")}>
+              Even split
+            </Button>
+            <Button type="button" variant="outline" className="h-10" onClick={() => applyPreset("headliner")}>
+              Headliner 50/30/20
+            </Button>
+          </div>
           <p className={cn("text-sm font-medium", total === 100 ? "text-pine" : "text-destructive")}>
             Splits add up to {Number.isFinite(total) ? total : 0}%. They need to total 100.
           </p>

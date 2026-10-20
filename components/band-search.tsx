@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AUDIO_EVENT, listAllTracks } from "@/lib/audio-db";
 import { searchBands, type TrackTitle } from "@/lib/band-search";
-import { cities, listBands, STYLE_TAGS, SUBSTYLE_TAGS } from "@/lib/catalog";
+import { cities, getBand, listBands, STYLE_TAGS, SUBSTYLE_TAGS } from "@/lib/catalog";
+import { combinedDraw } from "@/lib/full-night";
 import { useApp } from "@/lib/store";
 import type { Band, MusicKind } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -85,6 +86,7 @@ export function BandSearch({ surface }: { surface: "desk" | "phone" }) {
 
   return (
     <div className="grid gap-4">
+      <ReadyBills surface={surface} />
       <label className="grid gap-1 text-sm">
         <span className="font-medium">Search</span>
         <Input
@@ -233,6 +235,48 @@ export function BandSearch({ surface }: { surface: "desk" | "phone" }) {
         postHref={surface === "phone" ? "/phone/book/new" : "/dates/new"}
       />
     </div>
+  );
+}
+
+function ReadyBills({ surface }: { surface: "desk" | "phone" }) {
+  const { snapshot } = useApp();
+  const rows = [...snapshot.bills].sort((a, b) => Number(Boolean(a.bookingId)) - Number(Boolean(b.bookingId)));
+  if (rows.length === 0) return null;
+  return (
+    <section id="ready-bills" className="grid gap-3">
+      <div>
+        <h2 className="font-display text-3xl tracking-tight">Ready-made bills</h2>
+        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+          One offer fills a small bar&apos;s whole night. These packages already have a headliner, openers, and a pay split. Typical draw adds each band&apos;s usual crowd.
+        </p>
+      </div>
+      <div className={cn("grid gap-3", surface === "desk" && "sm:grid-cols-2")}>
+        {rows.map((bill) => {
+          const booking = bill.bookingId ? snapshot.bookings.find((item) => item.id === bill.bookingId) : undefined;
+          const active = Boolean(booking && booking.status !== "declined");
+          const bands = bill.members.map((member) => getBand(member.bandId)).filter((band) => Boolean(band));
+          const total = combinedDraw(bands.map((band) => ({ draw: band?.draw ?? "" })));
+          const href = surface === "phone" ? `/phone/book/bills/${bill.id}` : `/bills/${bill.id}`;
+          return (
+            <Link key={bill.id} href={href} className="rounded-2xl border bg-card p-4 hover:border-rust/40">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="font-display text-2xl">{bill.name}</h3>
+                <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  {active ? "In talks" : "Ready to book"}
+                </span>
+              </div>
+              <p className="mt-2 text-sm">
+                {bill.members.map((member) => `${getBand(member.bandId)?.name ?? "Band"} ${member.splitPercent}%`).join(" · ")}
+              </p>
+              {total > 0 ? <p className="mt-2 text-sm font-medium">Typical draw about {total.toLocaleString()}</p> : null}
+              <p className="mt-2 text-sm text-muted-foreground">
+                {active ? "This package already has a conversation." : "Open it and send one offer for every band."}
+              </p>
+            </Link>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

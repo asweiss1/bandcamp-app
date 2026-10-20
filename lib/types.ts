@@ -84,6 +84,7 @@ export type OpenDate = {
   slot: "Headline" | "Support" | "Local support";
   age: "All ages" | "21+";
   notes: string;
+  fullBill?: boolean;
 };
 
 export type Member = { name: string; role: string };

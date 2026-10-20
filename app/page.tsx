@@ -17,6 +17,10 @@ const features = [
     copy: "Bands and venues meet on open dates, street permits, and fair calls. A band requests the date. A venue sends the offer. Two shows the same date are fine when the times do not overlap and the drive fits.",
   },
   {
+    title: "Build a full night",
+    copy: "One offer fills a small bar's whole night. Small bands in small towns pool their crowds, pick an even split or a headliner 50/30/20, and pitch the date together.",
+  },
+  {
     title: "Negotiate deals",
     copy: "Guarantee, door split, or a guarantee plus a percentage. Ticket price, backline, and load-in stay on every counter until someone accepts.",
   },
@@ -48,18 +52,19 @@ export default function HomePage() {
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-cream/75">
               Bands and venues find each other, negotiate terms, and confirm dates with no double
-              bookings. Plan the tour from there: the route, lodging, and fuel. The musician board
-              fills an empty chair.
+              bookings. One offer can fill a small bar&apos;s whole night, and small bands pool their
+              crowds. Plan the tour from there: the route, lodging, and fuel.
             </p>
             <div className="mt-8">
               <BookActions tone="cream" />
             </div>
             <p className="mt-3 max-w-xl text-sm text-cream/60">
-              Book a gig starts with open dates near you. Book a whole tour opens the planner. Venues can{" "}
+              Book a gig starts with open dates near you. Book a whole tour opens the planner. Build a full
+              night packages nearby bands into one offer for a small room. Venues can{" "}
               <Link href="/bands" className="font-semibold text-amber underline-offset-2 hover:underline">
                 find a band
-              </Link>
-              . The same two buttons are on the{" "}
+              </Link>{" "}
+              and see ready-made bills. The same three buttons are on the{" "}
               <Link href="/phone" className="font-semibold text-amber underline-offset-2 hover:underline">
                 phone
               </Link>

@@ -165,7 +165,8 @@ const listedDates: Omit<OpenDate, "daypart">[] = [
     genres: ["Indie rock", "Americana"],
     slot: "Headline",
     age: "All ages",
-    notes: "Saturday in Old Town. Local support welcome. Guarantee tops out near $450.",
+    notes: "Saturday in Old Town. Local support welcome. Guarantee tops out near $450. Looking for a full bill.",
+    fullBill: true,
   },
   {
     id: "od-rail-1204",
@@ -215,7 +216,8 @@ const listedDates: Omit<OpenDate, "daypart">[] = [
     genres: ["Americana", "Desert rock"],
     slot: "Headline",
     age: "21+",
-    notes: "Sample open Monday in Phoenix so a week-long loop has a first date. Not a real hold.",
+    notes: "Monday in Phoenix. This small room is looking for a full bill: one offer, a few bands, the whole night.",
+    fullBill: true,
   },
   {
     id: "od-congress-1117",
@@ -235,7 +237,8 @@ const listedDates: Omit<OpenDate, "daypart">[] = [
     genres: ["Americana"],
     slot: "Headline",
     age: "All ages",
-    notes: "Sample quieter Tucson alternate the same date as Congress Yard.",
+    notes: "Quieter Tucson alternate the same date as Congress Yard. Looking for a full bill so a duo and a friend can fill the night.",
+    fullBill: true,
   },
   {
     id: "od-prescott-1117",
@@ -788,6 +791,19 @@ export const seedBills: Bill[] = [
     venueId: "yucca-room",
     bookingId: "bk-bill-1120",
     createdAt: "2026-10-18T18:00:00.000Z",
+  },
+  {
+    id: "bill-verde-porch",
+    name: "Verde porch night",
+    leadBandId: "mesa-dust",
+    members: [
+      { bandId: "mesa-dust", role: "Headliner", setTime: "9:00pm", splitPercent: 70 },
+      { bandId: "verde-line", role: "Opener", setTime: "7:30pm", splitPercent: 30 },
+    ],
+    openDateId: null,
+    venueId: null,
+    bookingId: null,
+    createdAt: "2026-10-19T18:00:00.000Z",
   },
 ];
 

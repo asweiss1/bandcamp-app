@@ -13,6 +13,7 @@ import { bandSize } from "@/lib/size";
 import { useApp } from "@/lib/store";
 import { sizeFit } from "@/lib/trust";
 import { PlacePicker } from "@/components/place-picker";
+import { FullBillMark } from "@/components/full-night";
 import { PageFrame, PageIntro } from "@/components/shell";
 import { StatusPill } from "@/components/status-pill";
 import { getBand, getVenue } from "@/lib/catalog";
@@ -106,6 +107,11 @@ export function BookNear({ surface }: { surface: "desk" | "phone" }) {
                       <p className="font-medium leading-snug">{row.venue.name}</p>
                       <StatusPill status={row.fill} />
                     </div>
+                    {row.openDate.fullBill ? (
+                      <div className="mt-1">
+                        <FullBillMark />
+                      </div>
+                    ) : null}
                     <p className="mt-1 text-sm text-muted-foreground">
                       {row.venue.city} · {row.miles} mi · {slotLine(row.openDate.showTime, row.openDate.daypart)}
                     </p>
@@ -137,7 +143,7 @@ export function BookNear({ surface }: { surface: "desk" | "phone" }) {
           <p className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">Book a gig</p>
           <h1 className="mt-1 font-display text-4xl leading-none tracking-tight">Dates near you</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Open a room, check capacity, size, and originals or covers, then send an offer.
+            Open a room, check capacity, size, and originals or covers, then send an offer. A room marked looking for a full bill wants the whole night in one pitch.
           </p>
         </div>
         {body}
@@ -150,7 +156,7 @@ export function BookNear({ surface }: { surface: "desk" | "phone" }) {
       <PageIntro
         eyebrow="Book a gig"
         title="Dates near you"
-        lede="Find an open date, check the room, and send an offer. Negotiate on the next screen. Confirming writes the one-page agreement."
+        lede="Find an open date, check the room, and send an offer. A date marked looking for a full bill wants the whole night in one pitch. Confirming still writes the one-page agreement."
       />
       {body}
     </PageFrame>

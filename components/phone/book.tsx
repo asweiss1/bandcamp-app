@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { DaypartField } from "@/components/daypart-field";
 import { CapacityFilter } from "@/components/capacity-filter";
 import { FitFacts } from "@/components/fit-facts";
+import { FullBillField, FullBillMark, PitchTogether } from "@/components/full-night";
 import { BandMarks, MusicFilter, SizeFilter } from "@/components/originals";
 import { TurnaroundNote } from "@/components/turnaround-note";
 import { BandSamples } from "@/components/samples";
@@ -373,6 +374,7 @@ export function PhoneDate({ id }: { id: string }) {
       <div>
         <div className="flex flex-wrap items-center gap-2">
           <StatusPill status={fill} />
+          {openDate.fullBill ? <FullBillMark /> : null}
           <span className="text-sm text-muted-foreground">
             {openDate.age} · {openDate.slot}
           </span>
@@ -394,6 +396,9 @@ export function PhoneDate({ id }: { id: string }) {
         </div>
       </div>
       <p className="text-sm leading-relaxed">{openDate.notes}</p>
+      {fill !== "filled" ? (
+        <PitchTogether openDateId={openDate.id} venueId={venue.id} showTime={openDate.showTime} surface="phone" />
+      ) : null}
       <dl className="grid gap-2 text-sm">
         <Fact label="Typical deal" value={venue.typicalDeal} />
         <Fact label="Backline" value={venue.backline} />
@@ -560,6 +565,7 @@ export function PhonePostDate() {
   const [age, setAge] = useState<OpenDate["age"]>("21+");
   const [genres, setGenres] = useState<string[]>(["Americana"]);
   const [notes, setNotes] = useState("");
+  const [fullBill, setFullBill] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   if (snapshot.role !== "venue" || !venue) {
@@ -582,7 +588,7 @@ export function PhonePostDate() {
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
-    const result = postDate({ date, showTime, daypart, slot, age, genres, notes });
+    const result = postDate({ date, showTime, daypart, slot, age, genres, notes, fullBill });
     if (!result.ok) {
       setError(result.error);
       return;
@@ -660,6 +666,7 @@ export function PhonePostDate() {
           })}
         </div>
       </fieldset>
+      <FullBillField checked={fullBill} onChange={setFullBill} />
       <label className="grid gap-1.5 text-sm">
         <span className="font-medium">Notes for bands</span>
         <Textarea

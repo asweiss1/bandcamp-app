@@ -13,6 +13,7 @@ import type { Terms } from "@/lib/types";
 import { DealFields } from "@/components/deal-fields";
 import { slotLine } from "@/lib/daypart";
 import { FitFacts } from "@/components/fit-facts";
+import { FullBillMark, PitchTogether } from "@/components/full-night";
 import { BandMarks } from "@/components/originals";
 import { TurnaroundNote } from "@/components/turnaround-note";
 import { BandSamples } from "@/components/samples";
@@ -73,6 +74,7 @@ export function DateDetail({ id }: { id: string }) {
         <section>
           <div className="flex flex-wrap items-center gap-2">
             <StatusPill status={fill} />
+            {openDate.fullBill ? <FullBillMark /> : null}
             <span className="text-sm text-muted-foreground">
               {openDate.age} · {openDate.slot}
             </span>
@@ -93,6 +95,14 @@ export function DateDetail({ id }: { id: string }) {
             ))}
           </div>
           <p className="mt-5 max-w-xl text-base leading-relaxed">{openDate.notes}</p>
+          {fill !== "filled" ? (
+            <PitchTogether
+              openDateId={openDate.id}
+              venueId={venue.id}
+              showTime={openDate.showTime}
+              surface="desk"
+            />
+          ) : null}
           <dl className="mt-6 grid gap-3 sm:grid-cols-2">
             <Fact label="Typical deal" value={venue.typicalDeal} />
             <Fact label="Backline" value={venue.backline} />

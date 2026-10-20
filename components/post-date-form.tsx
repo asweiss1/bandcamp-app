@@ -8,6 +8,7 @@ import { GENRES, getVenue } from "@/lib/catalog";
 import { useApp } from "@/lib/store";
 import type { Daypart, OpenDate } from "@/lib/types";
 import { DaypartField } from "@/components/daypart-field";
+import { FullBillField } from "@/components/full-night";
 import { cn } from "@/lib/utils";
 import { PageFrame, PageIntro } from "@/components/shell";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ export function PostDateForm() {
   const [age, setAge] = useState<OpenDate["age"]>("21+");
   const [genres, setGenres] = useState<string[]>(["Americana"]);
   const [notes, setNotes] = useState("");
+  const [fullBill, setFullBill] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   if (snapshot.role !== "venue" || !venue) {
@@ -50,7 +52,7 @@ export function PostDateForm() {
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
-    const result = postDate({ date, showTime, daypart, slot, age, genres, notes });
+    const result = postDate({ date, showTime, daypart, slot, age, genres, notes, fullBill });
     if (!result.ok) {
       setError(result.error);
       return;
@@ -128,6 +130,7 @@ export function PostDateForm() {
             })}
           </div>
         </fieldset>
+        <FullBillField checked={fullBill} onChange={setFullBill} />
         <label className="grid gap-1.5 text-sm">
           <span className="font-medium">Notes for bands</span>
           <Textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Set length, curfew, what you will and won't pay." />
