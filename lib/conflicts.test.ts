@@ -66,6 +66,8 @@ function snapshot(partial: Partial<Snapshot>): Snapshot {
     follows: [],
     rsvps: [],
     alerts: [],
+    reviews: [],
+    verifications: [],
     account: { phase: "ready", demo: true, activeId: null, profiles: [] },
     ...partial,
   };

@@ -119,13 +119,20 @@ type PlacedStop = {
   showTime: string;
 };
 
+function todayIso() {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
 function placedDays(snapshot: Snapshot, bandId: string) {
   const byDate = new Map<string, PlacedStop[]>();
   for (const booking of snapshot.bookings) {
     if (booking.bandId !== bandId || booking.status === "declined") continue;
     const openDate = snapshot.openDates.find((item) => item.id === booking.openDateId);
     const venue = getVenue(booking.venueId);
-    if (!openDate || !venue) continue;
+    if (!openDate || !venue || openDate.date < todayIso()) continue;
     const place = placeForSlug(venue.citySlug);
     const city = getCity(venue.citySlug);
     if (!place || !city) continue;

@@ -382,6 +382,25 @@ export type City = {
   blurb: string;
 };
 
+export type Review = {
+  id: string;
+  bookingId: string;
+  fromRole: "band" | "venue";
+  fromId: string;
+  toRole: "band" | "venue";
+  toId: string;
+  rating: number;
+  note: string;
+  createdAt: string;
+};
+
+export type Verification = {
+  profileId: string;
+  email: boolean;
+  phone: boolean;
+  address: boolean;
+};
+
 export type Snapshot = {
   role: Role;
   bandId: string;
@@ -407,6 +426,8 @@ export type Snapshot = {
   follows: Follow[];
   rsvps: Rsvp[];
   alerts: FanAlert[];
+  reviews: Review[];
+  verifications: Verification[];
   account: Account;
 };
 

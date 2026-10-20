@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BedDouble, Bell, CalendarDays, Map, MapPin, MessageSquare, MoonStar, Sparkles, UserRound } from "lucide-react";
+import { Bell, CalendarDays, Map, MapPin, Menu, Sparkles, UserRound } from "lucide-react";
+import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { unreadAlerts } from "@/components/fan-alerts";
 import { usePlace } from "@/lib/place";
 import { isYourMove } from "@/lib/queries";
@@ -10,12 +11,9 @@ import { useApp } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 const tabs = [
-  { href: "/phone", label: "Next", icon: MoonStar },
   { href: "/phone/book", label: "Book", icon: CalendarDays },
-  { href: "/phone/route", label: "Route", icon: Map },
-  { href: "/phone/stay", label: "Stay", icon: BedDouble },
-  { href: "/phone/board", label: "Board", icon: MessageSquare },
-  { href: "/phone/you", label: "You", icon: UserRound },
+  { href: "/phone/plan", label: "Tour", icon: Map },
+  { href: "/phone/you", label: "Profile", icon: UserRound },
 ];
 
 const fanTabs = [
@@ -26,16 +24,14 @@ const fanTabs = [
 ];
 
 function tabActive(pathname: string, href: string, fan: boolean) {
-  if (href === "/phone") {
-    if (fan) return pathname === "/phone" || pathname.startsWith("/phone/shows");
-    return pathname === "/phone" || pathname.startsWith("/phone/gig");
-  }
+  if (fan && href === "/phone") return pathname === "/phone" || pathname.startsWith("/phone/shows");
   if (href === "/phone/book") {
-    return pathname === href || pathname.startsWith(`${href}/`) || pathname.startsWith("/phone/bands");
+    return pathname.startsWith("/phone/book") || pathname.startsWith("/phone/bands") || pathname.startsWith("/phone/gig");
   }
-  if (href === "/phone/route") {
-    return pathname === href || pathname.startsWith(`${href}/`) || pathname.startsWith("/phone/plan");
+  if (href === "/phone/plan") {
+    return pathname.startsWith("/phone/plan") || pathname.startsWith("/phone/route");
   }
+  if (href === "/phone/you") return pathname.startsWith("/phone/you") || pathname.startsWith("/phone/start");
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -91,7 +87,7 @@ export function PhoneShell({ children }: { children: React.ReactNode }) {
           aria-label="Phone"
           className="border-t bg-paper/95 backdrop-blur"
         >
-          <div className={cn("grid px-0.5 pt-1 pb-[max(0.35rem,env(safe-area-inset-bottom))]", fan ? "grid-cols-4" : "grid-cols-6")}>
+          <div className="grid grid-cols-4 px-0.5 pt-1 pb-[max(0.35rem,env(safe-area-inset-bottom))]">
             {bar.map((tab) => {
               const Icon = tab.icon;
               const selected = tabActive(pathname, tab.href, fan);
@@ -107,7 +103,7 @@ export function PhoneShell({ children }: { children: React.ReactNode }) {
                 >
                   <Icon className="size-4" />
                   {tab.label}
-                  {tab.href === "/phone" && !fan && moves > 0 ? (
+                  {tab.href === "/phone/book" && !fan && moves > 0 ? (
                     <span className="absolute top-1 right-2 min-w-4 rounded-full bg-amber px-1 text-center text-[10px] font-semibold text-ink">
                       {moves}
                     </span>
@@ -120,9 +116,53 @@ export function PhoneShell({ children }: { children: React.ReactNode }) {
                 </Link>
               );
             })}
+            {fan ? null : <PhoneMore pathname={pathname} />}
           </div>
         </nav>
       </div>
     </div>
+  );
+}
+
+function PhoneMore({ pathname }: { pathname: string }) {
+  const links = [
+    { href: "/phone/board", label: "Board" },
+    { href: "/phone/book/calls", label: "Permits and fairs" },
+    { href: "/phone/stay", label: "Stay" },
+    { href: "/phone/route", label: "Route" },
+    { href: "/phone", label: "Next date" },
+  ];
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <button
+          type="button"
+          className="flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-lg text-[10px] font-medium text-muted-foreground"
+        >
+          <Menu className="size-4" />
+          More
+        </button>
+      </SheetTrigger>
+      <SheetContent side="bottom" className="rounded-t-2xl">
+        <SheetHeader>
+          <SheetTitle className="font-display text-2xl">More</SheetTitle>
+        </SheetHeader>
+        <div className="grid gap-2 px-4 pb-6">
+          {links.map((link) => (
+            <SheetClose key={link.href} asChild>
+              <Link
+                href={link.href}
+                className={cn(
+                  "flex h-11 items-center rounded-lg border px-3 text-sm font-medium",
+                  pathname === link.href ? "border-ink bg-ink text-cream" : "bg-card",
+                )}
+              >
+                {link.label}
+              </Link>
+            </SheetClose>
+          ))}
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }

@@ -141,6 +141,7 @@ export function PhoneGig({ id }: { id: string }) {
           headline={dealHeadline(booking.terms)}
           details={dealDetails(booking.terms)}
           booker={`${venue.bookerName} · ${venue.bookerPhone}`}
+          agreementHref={`/phone/gig/${booking.id}/agreement`}
         />
         <PromoStudio kind="booking" id={booking.id} />
         </>
@@ -274,6 +275,7 @@ function TicketCard({
   headline,
   details,
   booker,
+  agreementHref,
 }: {
   band: string;
   venue: string;
@@ -284,6 +286,7 @@ function TicketCard({
   headline: string;
   details: string[];
   booker: string;
+  agreementHref: string;
 }) {
   return (
     <section className="overflow-hidden rounded-3xl bg-ink text-cream">
@@ -306,8 +309,14 @@ function TicketCard({
         </ul>
         <p className="mt-3 text-sm text-cream/70">Booker: {booker}</p>
         <Link
-          href={`/phone/stay?city=${citySlug}`}
+          href={agreementHref}
           className="mt-4 grid h-11 place-items-center rounded-lg bg-amber text-sm font-semibold text-ink"
+        >
+          Gig agreement
+        </Link>
+        <Link
+          href={`/phone/stay?city=${citySlug}`}
+          className="mt-2 grid h-11 place-items-center rounded-lg border border-cream/30 text-sm font-semibold text-cream"
         >
           Where to sleep in {city}
         </Link>

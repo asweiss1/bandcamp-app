@@ -1,5 +1,6 @@
 import { daypartFor } from "@/lib/daypart";
 import { seedAlerts, seedFollows, seedRsvps } from "@/lib/seed-fans";
+import { seedReviews, seedVerifications } from "@/lib/seed-trust";
 import { seedMedia } from "@/lib/seed-media";
 import { seedApplications, seedOpportunities } from "@/lib/opportunities";
 import type {
@@ -315,6 +316,16 @@ const listedDates: Omit<OpenDate, "daypart">[] = [
     slot: "Headline",
     age: "21+",
     notes: "Sample Kingman date if the route runs toward Las Vegas instead of New Mexico.",
+  },
+  {
+    id: "od-yucca-0918",
+    venueId: "yucca-room",
+    date: "2026-09-18",
+    showTime: "8:00pm",
+    genres: ["Desert rock", "Americana"],
+    slot: "Headline",
+    age: "21+",
+    notes: "Played. Sample date so both sides can leave a review after the gig.",
   },
 ];
 
@@ -710,6 +721,41 @@ export const seedBookings: Booking[] = [
       },
     ],
   },
+  {
+    id: "bk-yucca-0918",
+    openDateId: "od-yucca-0918",
+    bandId: "mesa-dust",
+    venueId: "yucca-room",
+    status: "accepted",
+    awaiting: null,
+    terms: terms({
+      dealType: "guarantee",
+      guarantee: 900,
+      ticketPrice: 15,
+      backline: true,
+      loadIn: "16:00",
+      note: "September headline. Settled the night of the show.",
+    }),
+    createdAt: "2026-09-01T18:00:00.000Z",
+    events: [
+      {
+        id: "ev-yucca-0918",
+        at: "2026-09-02T15:00:00.000Z",
+        actor: "venue",
+        actorName: "Amina Cole · The Yucca Room",
+        kind: "accept",
+        terms: terms({
+          dealType: "guarantee",
+          guarantee: 900,
+          ticketPrice: 15,
+          backline: true,
+          loadIn: "16:00",
+          note: "September headline. Settled the night of the show.",
+        }),
+        note: "Confirmed. See you on the 18th.",
+      },
+    ],
+  },
 ];
 
 export const seedBandLinks: BandLink[] = [
@@ -1052,6 +1098,8 @@ export const initialSnapshot: Snapshot = {
   follows: seedFollows,
   rsvps: seedRsvps,
   alerts: seedAlerts,
+  reviews: seedReviews,
+  verifications: seedVerifications,
   account: {
     phase: "welcome",
     demo: false,

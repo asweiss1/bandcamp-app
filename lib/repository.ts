@@ -64,6 +64,8 @@ export const localRepository: Repository = {
         follows: Array.isArray(parsed.follows) ? parsed.follows : fallback.follows,
         rsvps: Array.isArray(parsed.rsvps) ? parsed.rsvps : fallback.rsvps,
         alerts: Array.isArray(parsed.alerts) ? parsed.alerts : fallback.alerts,
+        reviews: Array.isArray(parsed.reviews) ? parsed.reviews : fallback.reviews,
+        verifications: Array.isArray(parsed.verifications) ? parsed.verifications : fallback.verifications,
         fanId: typeof parsed.fanId === "string" && parsed.fanId ? parsed.fanId : fallback.fanId,
         openDates: parsed.openDates.map((date) => (date.daypart ? date : { ...date, daypart: daypartFor(date.showTime) })),
         account: {

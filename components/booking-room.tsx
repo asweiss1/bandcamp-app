@@ -152,6 +152,7 @@ export function BookingRoom({ id }: { id: string }) {
           headline={dealHeadline(booking.terms)}
           details={dealDetails(booking.terms)}
           booker={`${venue.bookerName} · ${venue.bookerEmail} · ${venue.bookerPhone}`}
+          agreementHref={`/bookings/${booking.id}/agreement`}
         />
         <div className="mt-6">
           <PromoStudio kind="booking" id={booking.id} />
@@ -309,6 +310,7 @@ function Confirmation({
   headline,
   details,
   booker,
+  agreementHref,
 }: {
   band: string;
   venue: string;
@@ -319,6 +321,7 @@ function Confirmation({
   headline: string;
   details: string[];
   booker: string;
+  agreementHref: string;
 }) {
   return (
     <section className="mt-6 overflow-hidden rounded-3xl bg-ink text-cream shadow-xl">
@@ -350,12 +353,17 @@ function Confirmation({
           ))}
         </ul>
         <p className="mt-4 text-sm text-cream/75">Booker: {booker}</p>
-        <Button asChild className="mt-5 h-10 bg-amber text-ink hover:bg-amber/90">
-          <Link href={`/lodging/${citySlug}?date=${date}`}>
-            <BedDouble />
-            Where to sleep in {city}
-          </Link>
-        </Button>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Button asChild className="h-10 bg-amber text-ink hover:bg-amber/90">
+            <Link href={agreementHref}>Gig agreement</Link>
+          </Button>
+          <Button asChild variant="outline" className="h-10 border-cream/30 bg-transparent text-cream hover:bg-cream/10">
+            <Link href={`/lodging/${citySlug}?date=${date}`}>
+              <BedDouble />
+              Where to sleep in {city}
+            </Link>
+          </Button>
+        </div>
       </div>
     </section>
   );

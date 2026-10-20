@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
-import { CalendarDays, LayoutDashboard, Menu, MoonStar, Smartphone, Tent, Users } from "lucide-react";
+import { CalendarDays, Map, Menu, MoonStar, Smartphone, UserRound } from "lucide-react";
 import { Onboarding } from "@/components/onboarding";
 import { isYourMove } from "@/lib/queries";
 import { useApp } from "@/lib/store";
@@ -19,20 +19,17 @@ import {
 } from "@/components/ui/sheet";
 
 const links = [
-  { href: "/shows", label: "Shows" },
-  { href: "/dates", label: "Dates" },
-  { href: "/bands", label: "Bands" },
-  { href: "/venues", label: "Venues" },
-  { href: "/lodging", label: "Lodging" },
-  { href: "/board", label: "Board" },
-  { href: "/near", label: "Near" },
-  { href: "/plan", label: "Plan" },
-  { href: "/tour", label: "Tour" },
-  { href: "/dashboard", label: "Desk" },
+  { href: "/book", label: "Book", match: ["/book", "/dates", "/bookings", "/bands"] },
+  { href: "/plan", label: "Tour", match: ["/plan", "/tour", "/lodging"] },
+  { href: "/dashboard", label: "Profile", match: ["/dashboard", "/start"] },
 ];
 
 function active(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function areaActive(pathname: string, match: string[]) {
+  return match.some((href) => active(pathname, href));
 }
 
 export function Shell({ children }: { children: React.ReactNode }) {
@@ -59,7 +56,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       >
         Skip to content
       </a>
-      <header className="sticky top-0 z-40 border-b bg-paper/90 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b bg-paper/90 backdrop-blur print:hidden">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4 sm:px-6">
           <Link href="/" className="flex items-center gap-2">
             <span className="grid size-8 place-items-center rounded-full bg-ink font-display text-lg text-amber">
@@ -72,24 +69,25 @@ export function Shell({ children }: { children: React.ReactNode }) {
               </span>
             </span>
           </Link>
-          <nav aria-label="Primary" className="ml-4 hidden items-center gap-1 lg:flex">
+          <nav aria-label="Primary" className="ml-4 hidden items-center gap-1 md:flex">
             {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 className={cn(
                   "rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-sand hover:text-foreground",
-                  active(pathname, link.href) && "bg-ink text-cream hover:bg-ink hover:text-cream",
+                  areaActive(pathname, link.match) && "bg-ink text-cream hover:bg-ink hover:text-cream",
                 )}
               >
                 {link.label}
-                {link.href === "/dashboard" && moves > 0 ? (
+                {link.href === "/book" && moves > 0 ? (
                   <span className="ml-1 inline-flex min-w-5 justify-center rounded-full bg-amber px-1 text-[11px] text-ink">
                     {moves}
                   </span>
                 ) : null}
               </Link>
             ))}
+            <MoreMenu pathname={pathname} trigger="text" />
           </nav>
           <div className="ml-auto flex items-center gap-2">
             <Link
@@ -104,7 +102,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       {snapshot.account.demo ? (
-        <div className="border-b bg-sand">
+        <div className="border-b bg-sand print:hidden">
           <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-2 text-sm sm:px-6">
             <p>You are exploring sample profiles. Your own profiles stay on this device.</p>
             <Link href="/start" className="font-semibold text-rust">
@@ -116,7 +114,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <main id="content" className="flex-1 pb-24 md:pb-10">
         {children}
       </main>
-      <footer className="hidden border-t md:block">
+      <footer className="hidden border-t md:block print:hidden">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-6 py-4 text-xs text-muted-foreground">
           <p>BandCamp is a working prototype. Lodging laws and room rates are example data.</p>
           <p>Profiles stay in this browser until accounts exist. No payment, no contract — yet.</p>
@@ -124,19 +122,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
       </footer>
       <nav
         aria-label="Mobile"
-        className="fixed inset-x-0 bottom-0 z-40 border-t bg-paper/95 backdrop-blur md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t bg-paper/95 backdrop-blur print:hidden md:hidden"
       >
-        <div className="grid grid-cols-5 px-1 pt-1 pb-[max(0.4rem,env(safe-area-inset-bottom))]">
-          <MobileLink href="/dates" label="Dates" pathname={pathname} icon={<CalendarDays />} />
-          <MobileLink href="/lodging" label="Stay" pathname={pathname} icon={<Tent />} />
-          <MobileLink href="/board" label="Board" pathname={pathname} icon={<Users />} />
-          <MobileLink
-            href="/dashboard"
-            label="Desk"
-            pathname={pathname}
-            icon={<LayoutDashboard />}
-            badge={moves}
-          />
+        <div className="grid grid-cols-4 px-1 pt-1 pb-[max(0.4rem,env(safe-area-inset-bottom))]">
+          <MobileLink href="/book" label="Book" pathname={pathname} icon={<CalendarDays />} badge={moves} match={["/book", "/dates", "/bookings", "/bands"]} />
+          <MobileLink href="/plan" label="Tour" pathname={pathname} icon={<Map />} match={["/plan", "/tour", "/lodging"]} />
+          <MobileLink href="/dashboard" label="Profile" pathname={pathname} icon={<UserRound />} match={["/dashboard", "/start"]} />
           <MoreMenu pathname={pathname} />
         </div>
       </nav>
@@ -150,19 +141,21 @@ function MobileLink({
   pathname,
   icon,
   badge = 0,
+  match = [href],
 }: {
   href: string;
   label: string;
   pathname: string;
   icon: React.ReactNode;
   badge?: number;
+  match?: string[];
 }) {
   return (
     <Link
       href={href}
       className={cn(
         "relative flex flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 text-[11px] font-medium text-muted-foreground",
-        active(pathname, href) && "text-ink",
+        areaActive(pathname, match) && "text-ink",
       )}
     >
       <span className="[&_svg]:size-5">{icon}</span>
@@ -176,16 +169,16 @@ function MobileLink({
   );
 }
 
-function MoreMenu({ pathname }: { pathname: string }) {
+function MoreMenu({ pathname, trigger = "tab" }: { pathname: string; trigger?: "tab" | "text" }) {
   const extra = [
+    { href: "/board", label: "Board" },
+    { href: "/dates?kind=calls", label: "Permits and fairs" },
     { href: "/shows", label: "Shows" },
     { href: "/alerts", label: "Alerts" },
-    { href: "/bands", label: "Bands" },
     { href: "/bills", label: "Bills" },
     { href: "/venues", label: "Venues" },
     { href: "/musicians", label: "Musicians" },
     { href: "/near", label: "Near you" },
-    { href: "/plan", label: "Plan a tour" },
     { href: "/tour", label: "Tour route" },
     { href: "/", label: "Home" },
     { href: "/phone", label: "Phone companion" },
@@ -195,9 +188,13 @@ function MoreMenu({ pathname }: { pathname: string }) {
       <SheetTrigger asChild>
         <button
           type="button"
-          className="flex flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 text-[11px] font-medium text-muted-foreground"
+          className={
+            trigger === "text"
+              ? "rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-sand hover:text-foreground"
+              : "flex flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 text-[11px] font-medium text-muted-foreground"
+          }
         >
-          <Menu className="size-5" />
+          {trigger === "tab" ? <Menu className="size-5" /> : null}
           More
         </button>
       </SheetTrigger>

@@ -22,9 +22,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export function DatesBrowser() {
+export function DatesBrowser({ initialKind = "all" }: { initialKind?: "all" | "room" | "calls" | OpportunityKind }) {
   const { snapshot } = useApp();
-  const [kind, setKind] = useState<"all" | "room" | OpportunityKind>("all");
+  const [kind, setKind] = useState<"all" | "room" | "calls" | OpportunityKind>(initialKind);
   const [city, setCity] = useState("all");
   const [genre, setGenre] = useState("all");
   const [from, setFrom] = useState("");
@@ -36,7 +36,7 @@ export function DatesBrowser() {
 
   const rows = useMemo(() => {
     const rooms =
-      kind === "permit" || kind === "festival"
+      kind === "permit" || kind === "festival" || kind === "calls"
         ? []
         : sortByDate(snapshot.openDates).flatMap((openDate) => {
             const venue = getVenue(openDate.venueId);
@@ -53,7 +53,8 @@ export function DatesBrowser() {
       kind === "room"
         ? []
         : snapshot.opportunities.flatMap((opportunity) => {
-            if (kind !== "all" && opportunity.kind !== kind) return [];
+            if (kind === "calls" && opportunity.kind !== "permit" && opportunity.kind !== "festival") return [];
+            if (kind !== "all" && kind !== "calls" && opportunity.kind !== kind) return [];
             if (city !== "all" && opportunity.citySlug !== city) return [];
             if (genre !== "all" && !opportunity.genres.includes(genre)) return [];
             if (from && opportunity.endDate < from) return [];
@@ -104,6 +105,7 @@ export function DatesBrowser() {
             ["room", "Rooms"],
             ["permit", "Permits"],
             ["festival", "Fairs"],
+            ["calls", "Permits & fairs"],
           ] as const
         ).map(([id, label]) => (
           <Chip key={id} pressed={kind === id} onClick={() => setKind(id)}>

@@ -16,6 +16,7 @@ import type { Daypart, MusicKind, OpenDate, OpportunityKind, Terms } from "@/lib
 import { cn } from "@/lib/utils";
 import { DaypartField } from "@/components/daypart-field";
 import { CapacityFilter } from "@/components/capacity-filter";
+import { FitFacts } from "@/components/fit-facts";
 import { BandMarks, MusicFilter, SizeFilter } from "@/components/originals";
 import { TurnaroundNote } from "@/components/turnaround-note";
 import { BandSamples } from "@/components/samples";
@@ -32,9 +33,15 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
-export function PhoneBook() {
+export function PhoneBook({
+  initialKind = "all",
+  heading = "Opportunities",
+}: {
+  initialKind?: "all" | "room" | "calls" | OpportunityKind;
+  heading?: string;
+}) {
   const { snapshot } = useApp();
-  const [kind, setKind] = useState<"all" | "room" | OpportunityKind>("all");
+  const [kind, setKind] = useState<"all" | "room" | "calls" | OpportunityKind>(initialKind);
   const [city, setCity] = useState("all");
   const [genre, setGenre] = useState("all");
   const [from, setFrom] = useState("");
@@ -45,7 +52,7 @@ export function PhoneBook() {
 
   const rows = useMemo(() => {
     const rooms =
-      kind === "permit" || kind === "festival"
+      kind === "permit" || kind === "festival" || kind === "calls"
         ? []
         : sortByDate(snapshot.openDates).flatMap((openDate) => {
             const venue = getVenue(openDate.venueId);
@@ -65,7 +72,8 @@ export function PhoneBook() {
       kind === "room"
         ? []
         : snapshot.opportunities.flatMap((opportunity) => {
-            if (kind !== "all" && opportunity.kind !== kind) return [];
+            if (kind === "calls" && opportunity.kind !== "permit" && opportunity.kind !== "festival") return [];
+            if (kind !== "all" && kind !== "calls" && opportunity.kind !== kind) return [];
             if (city !== "all" && opportunity.citySlug !== city) return [];
             if (genre !== "all" && !opportunity.genres.includes(genre)) return [];
             if (from && opportunity.endDate < from) return [];
@@ -94,7 +102,7 @@ export function PhoneBook() {
     <div className="grid gap-4 pb-2">
       <div>
         <p className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">Book</p>
-        <h1 className="mt-1 font-display text-4xl leading-none tracking-tight">Opportunities</h1>
+        <h1 className="mt-1 font-display text-4xl leading-none tracking-tight">{heading}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {snapshot.role === "band"
             ? "Club dates, street-performance permits, and fairs. Request a room or apply for a permit or a stage."
@@ -116,6 +124,7 @@ export function PhoneBook() {
             ["room", "Rooms"],
             ["permit", "Permits"],
             ["festival", "Fairs"],
+            ["calls", "Permits & fairs"],
           ] as const
         ).map(([id, label]) => (
           <Chip key={id} pressed={kind === id} onClick={() => setKind(id)}>
@@ -375,6 +384,7 @@ export function PhoneDate({ id }: { id: string }) {
         <p className="mt-1 text-sm text-muted-foreground">
           {venue.neighborhood}, {venue.city} · {capacityLabel(shownCapacity(venue, snapshot.capacities))}
         </p>
+        {band ? <FitFacts bandId={chosenBand || band.id} venueId={venue.id} /> : null}
         <div className="mt-3 flex flex-wrap gap-1.5">
           {openDate.genres.map((genre) => (
             <span key={genre} className="rounded-full bg-sand px-2.5 py-1 text-xs font-medium">
@@ -443,7 +453,7 @@ export function PhoneDate({ id }: { id: string }) {
       ) : snapshot.role === "band" ? (
         asking ? (
           <form onSubmit={submitRequest} className="grid gap-3 rounded-2xl border bg-cream p-4">
-            <h2 className="font-display text-2xl">Request this date</h2>
+            <h2 className="font-display text-2xl">Send an offer</h2>
             <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
               Sending as {band?.name}.
               {band ? <BandMarks bandId={band.id} withInfo /> : null}
@@ -455,7 +465,7 @@ export function PhoneDate({ id }: { id: string }) {
               </p>
             ) : null}
             <Button type="submit" className="h-11">
-              Send gig request
+              Send offer
             </Button>
             <Button type="button" variant="ghost" className="h-10" onClick={() => setAsking(false)}>
               Cancel
@@ -463,7 +473,7 @@ export function PhoneDate({ id }: { id: string }) {
           </form>
         ) : (
           <Button className="h-11" onClick={() => setAsking(true)}>
-            Request this date
+            Send offer
           </Button>
         )
       ) : ownsVenue ? (

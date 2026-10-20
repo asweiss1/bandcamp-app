@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BookActions } from "@/components/book-actions";
 import { EnterBar } from "@/components/enter-bar";
 import { Button } from "@/components/ui/button";
 
@@ -50,16 +51,15 @@ export default function HomePage() {
               bookings. Plan the tour from there: the route, lodging, and fuel. The musician board
               fills an empty chair.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild className="h-11 bg-amber px-5 text-ink hover:bg-amber/90">
-                <Link href="/dates">Find gigs</Link>
-              </Button>
-              <Button asChild className="h-11 bg-amber px-5 text-ink hover:bg-amber/90">
-                <Link href="/bands">Find bands</Link>
-              </Button>
+            <div className="mt-8">
+              <BookActions tone="cream" />
             </div>
             <p className="mt-3 max-w-xl text-sm text-cream/60">
-              Find gigs is the band side. Find bands is the venue side. The same book is on the{" "}
+              Book a gig starts with open dates near you. Book a whole tour opens the planner. Venues can{" "}
+              <Link href="/bands" className="font-semibold text-amber underline-offset-2 hover:underline">
+                find a band
+              </Link>
+              . The same two buttons are on the{" "}
               <Link href="/phone" className="font-semibold text-amber underline-offset-2 hover:underline">
                 phone
               </Link>
@@ -124,7 +124,7 @@ export default function HomePage() {
               <li><span className="font-semibold">1. A venue posts a date.</span> City, daypart, start time, and what they usually pay.</li>
               <li><span className="font-semibold">2. A band requests it, or the room sends an offer.</span> Guarantee, door split, or both.</li>
               <li><span className="font-semibold">3. Either side counters.</span> Ticket price, backline, and load-in stay attached.</li>
-              <li><span className="font-semibold">4. Accept prints a confirmation.</span> The other talks on that date close, and lodging for the city is one link away.</li>
+              <li><span className="font-semibold">4. Accept writes a one-page agreement.</span> Pay, door, set time, load-in, gear, and cancellation. Both sides can print it. The other talks on that date close.</li>
             </ol>
           </div>
           <div className="rounded-3xl bg-card p-5 ring-1 ring-border">

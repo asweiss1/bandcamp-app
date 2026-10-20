@@ -12,6 +12,7 @@ import { ProfileWizard } from "@/components/onboarding";
 import { RepertoirePanel } from "@/components/originals";
 import { VehiclePanel } from "@/components/vehicles";
 import { BandSamples } from "@/components/samples";
+import { TrustPanel } from "@/components/trust-panel";
 import { roleLabel } from "@/components/role-switcher";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,7 +48,7 @@ export function PhoneYou() {
   return (
     <div className="grid gap-5 pb-2">
       <div>
-        <p className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">You</p>
+        <p className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">Profile</p>
         <h1 className="mt-1 font-display text-4xl leading-none tracking-tight">{name}</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           {demo
@@ -149,6 +150,7 @@ export function PhoneYou() {
         </div>
       ) : null}
 
+      <TrustPanel />
       <section className="rounded-2xl border bg-card px-4 py-4">
         <h2 className="font-display text-2xl">Add it to the home screen</h2>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">

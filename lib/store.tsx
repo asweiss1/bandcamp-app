@@ -17,6 +17,7 @@ import { pairLinks } from "@/lib/links";
 import { getBand, getFan, getMusician, getVenue } from "@/lib/catalog";
 import { clearAudioTracks } from "@/lib/audio-db";
 import { alertsForConfirmation, isFollowing, nextRsvp, publicShow } from "@/lib/fans";
+import { reviewDraft } from "@/lib/trust";
 import { canEditMedia, cleanLogo, cleanPhotos, cleanVideos } from "@/lib/media";
 import { daypartFor } from "@/lib/daypart";
 import { termsError, uid } from "@/lib/deal";
@@ -87,7 +88,9 @@ function readMemory() {
     !Array.isArray(memory.media) ||
     !Array.isArray(memory.follows) ||
     !Array.isArray(memory.rsvps) ||
-    !Array.isArray(memory.alerts)
+    !Array.isArray(memory.alerts) ||
+    !Array.isArray(memory.reviews) ||
+    !Array.isArray(memory.verifications)
   ) {
     memory = {
       ...memory,
@@ -99,6 +102,8 @@ function readMemory() {
       follows: Array.isArray(memory.follows) ? memory.follows : initialSnapshot.follows,
       rsvps: Array.isArray(memory.rsvps) ? memory.rsvps : initialSnapshot.rsvps,
       alerts: Array.isArray(memory.alerts) ? memory.alerts : initialSnapshot.alerts,
+      reviews: Array.isArray(memory.reviews) ? memory.reviews : initialSnapshot.reviews,
+      verifications: Array.isArray(memory.verifications) ? memory.verifications : initialSnapshot.verifications,
     };
   }
   if (!memory.fanId) {
@@ -199,6 +204,8 @@ type AppContextValue = {
   unfollow: (targetId: string) => Result<string>;
   setRsvp: (bookingId: string, status: RsvpStatus) => Result<string>;
   markAlertsRead: () => Result<string>;
+  addReview: (bookingId: string, rating: number, note: string) => Result<string>;
+  setVerification: (profileId: string, field: "email" | "phone" | "address", checked: boolean) => Result<string>;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -1264,6 +1271,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           alerts: current.alerts.map((alert) => (alert.fanId === current.fanId ? { ...alert, read: true } : alert)),
         });
         return { ok: true, data: current.fanId };
+      },
+      addReview: (bookingId, rating, note) => {
+        const current = readMemory();
+        const draft = reviewDraft(current, bookingId, rating, note);
+        if (!draft.ok) return draft;
+        const review = { ...draft.data, id: uid("rv"), createdAt: new Date().toISOString() };
+        update({ ...current, reviews: [...current.reviews, review] });
+        return { ok: true, data: review.id };
+      },
+      setVerification: (profileId, field, checked) => {
+        const current = readMemory();
+        const prior = current.verifications.find((item) => item.profileId === profileId) ?? {
+          profileId,
+          email: false,
+          phone: false,
+          address: false,
+        };
+        const next = { ...prior, [field]: checked };
+        update({
+          ...current,
+          verifications: [...current.verifications.filter((item) => item.profileId !== profileId), next],
+        });
+        return { ok: true, data: profileId };
       },
       exploreDemo: (role = "band") => {
         const current = readMemory();

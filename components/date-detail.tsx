@@ -12,6 +12,7 @@ import { useApp } from "@/lib/store";
 import type { Terms } from "@/lib/types";
 import { DealFields } from "@/components/deal-fields";
 import { slotLine } from "@/lib/daypart";
+import { FitFacts } from "@/components/fit-facts";
 import { BandMarks } from "@/components/originals";
 import { TurnaroundNote } from "@/components/turnaround-note";
 import { BandSamples } from "@/components/samples";
@@ -83,6 +84,7 @@ export function DateDetail({ id }: { id: string }) {
           <p className="mt-1 text-muted-foreground">
             {venue.neighborhood}, {venue.city} · {capacityLabel(shownCapacity(venue, snapshot.capacities), true)}
           </p>
+          {band ? <FitFacts bandId={band.id} venueId={venue.id} /> : null}
           <div className="mt-4 flex flex-wrap gap-1.5">
             {openDate.genres.map((genre) => (
               <span key={genre} className="rounded-full bg-sand px-2.5 py-1 text-xs font-medium">
@@ -173,9 +175,9 @@ export function DateDetail({ id }: { id: string }) {
           ) : snapshot.role === "band" ? (
             <form onSubmit={submit} className="grid gap-4">
               <div>
-                <h2 className="font-display text-2xl">Request this date</h2>
+                <h2 className="font-display text-2xl">Send an offer</h2>
                 <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                  Sending as {band?.name}. The venue can accept, decline, or counter.
+                  Sending as {band?.name}. The room can accept, decline, or counter. Confirming writes the gig agreement.
                   {band ? <BandMarks bandId={band.id} withInfo /> : null}
                 </p>
               </div>
@@ -186,7 +188,7 @@ export function DateDetail({ id }: { id: string }) {
                 </p>
               ) : null}
               <Button type="submit" className="h-11">
-                Send gig request
+                Send offer
               </Button>
             </form>
           ) : ownsVenue ? (

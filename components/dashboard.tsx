@@ -7,6 +7,8 @@ import { slotLine } from "@/lib/daypart";
 import { isYourMove, profileId } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import { roleLabel } from "@/components/role-switcher";
+import { BookActions } from "@/components/book-actions";
+import { TrustPanel } from "@/components/trust-panel";
 import { BookingRow } from "@/components/booking-row";
 import { PageFrame, PageIntro } from "@/components/shell";
 import { StatusPill } from "@/components/status-pill";
@@ -18,8 +20,9 @@ export function Dashboard() {
   if (snapshot.role === "fan") {
     return (
       <PageFrame>
+        <BookActions tone="desk" />
         <PageIntro
-          eyebrow="Fan"
+          eyebrow="Profile"
           title={`${name}'s shows`}
           lede="Confirmed shows from bands and rooms you follow, plus what's near home. Offers stay on the band and venue desks."
           actions={
@@ -28,6 +31,7 @@ export function Dashboard() {
             </Button>
           }
         />
+        <TrustPanel />
       </PageFrame>
     );
   }
@@ -66,9 +70,10 @@ export function Dashboard() {
 
   return (
     <PageFrame>
+      <BookActions tone="desk" />
       <PageIntro
-        eyebrow="Desk"
-        title={`${name}'s desk`}
+        eyebrow="Profile"
+        title={`${name}'s profile`}
         lede={
           snapshot.role === "musician"
             ? "Listings you posted and notes exchanged on the board. Gigs are booked from a band or venue role."
@@ -254,6 +259,7 @@ export function Dashboard() {
           ))}
         </Section>
       </div>
+      <TrustPanel />
     </PageFrame>
   );
 }

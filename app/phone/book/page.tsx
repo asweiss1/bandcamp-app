@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { PhoneBook } from "@/components/phone/book";
+import { BookNear } from "@/components/book-near";
 
-export const metadata: Metadata = { title: "Book" };
+export const metadata: Metadata = { title: "Book a gig" };
 
 export default function PhoneBookPage() {
-  return <PhoneBook />;
+  return <BookNear surface="phone" />;
 }

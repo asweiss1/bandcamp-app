@@ -35,12 +35,6 @@ export function Tonight() {
             ? ` ${moves.length} ${moves.length === 1 ? "conversation is" : "conversations are"} waiting on you.`
             : " Nothing is waiting on you."}
         </p>
-        <Link
-          href="/phone/book"
-          className="mt-4 grid h-11 place-items-center rounded-lg bg-ink text-sm font-semibold text-cream"
-        >
-          {snapshot.role === "venue" ? "Post a date or send an offer" : "Book another date"}
-        </Link>
       </div>
 
       {moves.length > 0 ? (
@@ -152,7 +146,7 @@ function MusicianNight() {
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           {musician
             ? `${musician.instruments.join(" · ")} · ${musician.city}. ${musician.availability}`
-            : "Pick a player on the You tab."}
+            : "Pick a player on the Profile tab."}
         </p>
       </div>
       <section className="grid gap-2">
