@@ -4,7 +4,7 @@ const phx = { lat: 33.4484, lng: -112.074 };
 const flag = { lat: 35.1983, lng: -111.6513 };
 const cottonwood = { lat: 34.7392, lng: -112.0099 };
 
-export const seedFans: Fan[] = [
+const fanRoster: Fan[] = [
   {
     id: "avery-quinn",
     name: "Avery Quinn",
@@ -78,6 +78,8 @@ export const seedFans: Fan[] = [
     radiusMiles: 50,
   },
 ];
+
+export const seedFans: Fan[] = fanRoster.map((fan) => ({ ...fan, joinedAt: "2026-06-01" }));
 
 export const seedFollows: Follow[] = [
   follow("fl-avery-mesa", "avery-quinn", "mesa-dust", "band"),

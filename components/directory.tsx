@@ -16,6 +16,7 @@ import { OfferDialog } from "@/components/offer-dialog";
 import { slotLine } from "@/lib/daypart";
 import { BandMarks, RepertoirePanel } from "@/components/originals";
 import { CapacityFilter } from "@/components/capacity-filter";
+import { FanMailCompose } from "@/components/fan-mail";
 import { FollowButton } from "@/components/follow-button";
 import { ProfileMediaView } from "@/components/profile-media";
 import { repertoireFor } from "@/lib/repertoire";
@@ -130,6 +131,7 @@ export function BandProfile({ id }: { id: string }) {
       {band.photo ? <img src={band.photo} alt="" className="mt-4 size-24 rounded-2xl object-cover" /> : null}
       <h1 className="mt-3 font-display text-5xl tracking-tight">{band.name}</h1>
       <FollowButton targetId={band.id} targetRole="band" />
+      <FanMailCompose bandId={band.id} />
       <div className="mt-3">
         <BandMarks bandId={band.id} withInfo />
       </div>

@@ -16,7 +16,17 @@ import {
 import { pairLinks } from "@/lib/links";
 import { getBand, getFan, getMusician, getVenue } from "@/lib/catalog";
 import { clearAudioTracks } from "@/lib/audio-db";
-import { alertsForConfirmation, isFollowing, nextRsvp, publicShow } from "@/lib/fans";
+import { alertsForConfirmation, isFollowing, nextRsvp, publicShow, todayIso } from "@/lib/fans";
+import {
+  blockFanAccount,
+  contactProblem,
+  ensureBookingThread,
+  markRead,
+  replyToThread,
+  sendDirectMessage,
+  sendFanMessage,
+  setFanMailEnabled,
+} from "@/lib/inbox";
 import { reviewDraft } from "@/lib/trust";
 import { applyMemberChange, peerReviewDraft, pitchGuarantee, buildPitchMembers, sendBlock } from "@/lib/pitch";
 import type { SplitKind } from "@/lib/full-night";
@@ -94,7 +104,12 @@ function readMemory() {
     !Array.isArray(memory.reviews) ||
     !Array.isArray(memory.verifications) ||
     !Array.isArray(memory.pitches) ||
-    !Array.isArray(memory.peerReviews)
+    !Array.isArray(memory.peerReviews) ||
+    !Array.isArray(memory.threads) ||
+    !Array.isArray(memory.messages) ||
+    !Array.isArray(memory.reads) ||
+    !Array.isArray(memory.fanMail) ||
+    !Array.isArray(memory.fanBlocks)
   ) {
     memory = {
       ...memory,
@@ -110,6 +125,11 @@ function readMemory() {
       verifications: Array.isArray(memory.verifications) ? memory.verifications : initialSnapshot.verifications,
       pitches: Array.isArray(memory.pitches) ? memory.pitches : initialSnapshot.pitches,
       peerReviews: Array.isArray(memory.peerReviews) ? memory.peerReviews : initialSnapshot.peerReviews,
+      threads: Array.isArray(memory.threads) ? memory.threads : initialSnapshot.threads,
+      messages: Array.isArray(memory.messages) ? memory.messages : initialSnapshot.messages,
+      reads: Array.isArray(memory.reads) ? memory.reads : initialSnapshot.reads,
+      fanMail: Array.isArray(memory.fanMail) ? memory.fanMail : initialSnapshot.fanMail,
+      fanBlocks: Array.isArray(memory.fanBlocks) ? memory.fanBlocks : initialSnapshot.fanBlocks,
     };
   }
   if (!memory.fanId) {
@@ -223,6 +243,13 @@ type AppContextValue = {
     checks: { onTime: boolean; sharedGear: boolean; broughtCrowd: boolean; easyToWorkWith: boolean },
     note: string,
   ) => Result<string>;
+  sendDirect: (toId: string, toRole: "band" | "venue" | "musician", body: string) => Result<string>;
+  sendFanMail: (bandId: string, venueId: string | null, body: string) => Result<string>;
+  replyThread: (threadId: string, body: string) => Result<string>;
+  markThreadRead: (threadId: string) => Result<string>;
+  setFanMail: (enabled: boolean) => Result<string>;
+  blockFan: (fanId: string, report: boolean) => Result<string>;
+  openBookingThread: (bookingId: string) => Result<string>;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -985,6 +1012,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           createdAt: existing?.createdAt ?? now,
           updatedAt: now,
         };
+        if (nextProfile.fan && !nextProfile.fan.joinedAt) {
+          nextProfile.fan = { ...nextProfile.fan, joinedAt: existing?.fan?.joinedAt ?? now.slice(0, 10) };
+        }
         const profiles = existing
           ? current.account.profiles.map((item) => (item.id === nextProfile.id ? nextProfile : item))
           : [...current.account.profiles, nextProfile];
@@ -1391,6 +1421,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (!changed.ok) return changed;
         const note = input.note.trim();
         if (note.length < 4) return { ok: false, error: "Say what you want to change." };
+        const leak = contactProblem(note);
+        if (leak) return { ok: false, error: leak };
         const mine = changed.members.find((member) => member.bandId === current.bandId);
         const name = getBand(current.bandId)?.name ?? "Band";
         const body = `${name} suggested ${mine?.setTime} and ${mine?.splitPercent}%. ${note}`;
@@ -1423,6 +1455,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const clean = body.trim();
         if (clean.length < 2) return { ok: false, error: "Write a message." };
         if (clean.length > 280) return { ok: false, error: "Keep it to a few sentences." };
+        const leak = contactProblem(clean);
+        if (leak) return { ok: false, error: leak };
         update({
           ...current,
           pitches: current.pitches.map((item) =>
@@ -1510,6 +1544,55 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const review = { ...draft.data, id: uid("pr"), createdAt: new Date().toISOString() };
         update({ ...current, peerReviews: [...current.peerReviews, review] });
         return { ok: true, data: review.id };
+      },
+      sendDirect: (toId, toRole, body) => {
+        const current = readMemory();
+        const result = sendDirectMessage(current, toId, toRole, body, todayIso());
+        if (!result.ok) return result;
+        update(result.snapshot);
+        return { ok: true, data: result.data };
+      },
+      sendFanMail: (bandId, venueId, body) => {
+        const current = readMemory();
+        const result = sendFanMessage(current, bandId, venueId, body, todayIso());
+        if (!result.ok) return result;
+        update(result.snapshot);
+        return { ok: true, data: result.data };
+      },
+      replyThread: (threadId, body) => {
+        const current = readMemory();
+        const result = replyToThread(current, threadId, body, todayIso());
+        if (!result.ok) return result;
+        update(result.snapshot);
+        return { ok: true, data: result.data };
+      },
+      markThreadRead: (threadId) => {
+        const current = readMemory();
+        const result = markRead(current, threadId);
+        if (!result.ok) return result;
+        if (result.snapshot !== current) update(result.snapshot);
+        return { ok: true, data: threadId };
+      },
+      setFanMail: (enabled) => {
+        const current = readMemory();
+        const result = setFanMailEnabled(current, enabled);
+        if (!result.ok) return result;
+        update(result.snapshot);
+        return { ok: true, data: result.data };
+      },
+      blockFan: (fanId, report) => {
+        const current = readMemory();
+        const result = blockFanAccount(current, fanId, report);
+        if (!result.ok) return result;
+        update(result.snapshot);
+        return { ok: true, data: result.data };
+      },
+      openBookingThread: (bookingId) => {
+        const current = readMemory();
+        const result = ensureBookingThread(current, bookingId);
+        if (!result.ok) return result;
+        if (result.snapshot !== current) update(result.snapshot);
+        return { ok: true, data: result.data };
       },
       exploreDemo: (role = "band") => {
         const current = readMemory();

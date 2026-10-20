@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { calendarIcs, publicShow, rsvpCounts, rsvpFor } from "@/lib/fans";
 import { useApp } from "@/lib/store";
 import type { RsvpStatus } from "@/lib/types";
+import { FanMailCompose } from "@/components/fan-mail";
 import { PromoStudio } from "@/components/promo-studio";
 import { PageFrame } from "@/components/shell";
 import { Button } from "@/components/ui/button";
@@ -115,6 +116,12 @@ export function ShowPage({ id, surface }: { id: string; surface: "desk" | "phone
           Share with fans
         </Button>
       </div>
+      <FanMailCompose
+        bandId={show.lineup[0]?.bandId ?? ""}
+        bands={show.lineup.map((act) => ({ id: act.bandId, name: act.name }))}
+        venueId={show.venueId}
+        venueName={show.venueName}
+      />
       <PromoStudio kind="booking" id={show.bookingId} startOpen />
     </div>
   );

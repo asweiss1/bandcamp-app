@@ -70,6 +70,11 @@ function snapshot(partial: Partial<Snapshot>): Snapshot {
     verifications: [],
     pitches: [],
     peerReviews: [],
+    threads: [],
+    messages: [],
+    reads: [],
+    fanMail: [],
+    fanBlocks: [],
     account: { phase: "ready", demo: true, activeId: null, profiles: [] },
     ...partial,
   };

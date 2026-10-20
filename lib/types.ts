@@ -202,6 +202,7 @@ export type Fan = {
   lng: number;
   styles: string[];
   radiusMiles: number;
+  joinedAt?: string;
 };
 
 export type Follow = {
@@ -440,6 +441,45 @@ export type Verification = {
   address: boolean;
 };
 
+export type MailParty = { id: string; role: Role };
+
+export type MailThread = {
+  id: string;
+  kind: "direct" | "booking" | "pitch" | "fan";
+  parties: MailParty[];
+  bookingId: string | null;
+  pitchId: string | null;
+  createdAt: string;
+};
+
+export type MailMessage = {
+  id: string;
+  threadId: string;
+  fromId: string;
+  fromRole: Role;
+  body: string;
+  createdAt: string;
+};
+
+export type MailRead = {
+  threadId: string;
+  profileId: string;
+  readAt: string;
+};
+
+export type FanMailSetting = {
+  bandId: string;
+  enabled: boolean;
+};
+
+export type FanBlock = {
+  id: string;
+  bandId: string;
+  fanId: string;
+  report: boolean;
+  createdAt: string;
+};
+
 export type Snapshot = {
   role: Role;
   bandId: string;
@@ -469,6 +509,11 @@ export type Snapshot = {
   verifications: Verification[];
   pitches: Pitch[];
   peerReviews: PeerReview[];
+  threads: MailThread[];
+  messages: MailMessage[];
+  reads: MailRead[];
+  fanMail: FanMailSetting[];
+  fanBlocks: FanBlock[];
   account: Account;
 };
 

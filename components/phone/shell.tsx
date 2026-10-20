@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, CalendarDays, Map, MapPin, Menu, Sparkles, UserRound } from "lucide-react";
+import { Bell, CalendarDays, Mail, Map, MapPin, Menu, Sparkles, UserRound } from "lucide-react";
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { unreadAlerts } from "@/components/fan-alerts";
+import { unreadTotal } from "@/lib/inbox";
 import { usePlace } from "@/lib/place";
 import { isYourMove } from "@/lib/queries";
 import { useApp } from "@/lib/store";
@@ -43,6 +44,7 @@ export function PhoneShell({ children }: { children: React.ReactNode }) {
   const bar = fan ? fanTabs : tabs;
   const moves = snapshot.bookings.filter((booking) => isYourMove(booking, snapshot)).length;
   const unread = fan ? unreadAlerts(snapshot.fanId, snapshot.alerts) : 0;
+  const mail = unreadTotal(snapshot);
 
   return (
     <div className="min-h-dvh bg-ink md:grid md:place-items-center md:py-6">
@@ -66,6 +68,18 @@ export function PhoneShell({ children }: { children: React.ReactNode }) {
             </span>
           </Link>
           <div className="flex items-center gap-2">
+            <Link
+              href="/phone/inbox"
+              aria-label={mail > 0 ? `Inbox, ${mail} unread` : "Inbox"}
+              className="relative grid size-9 place-items-center rounded-full border bg-card text-ink"
+            >
+              <Mail className="size-4" />
+              {mail > 0 ? (
+                <span className="absolute -top-1 -right-1 min-w-4 rounded-full bg-amber px-1 text-center text-[10px] font-semibold text-ink">
+                  {mail}
+                </span>
+              ) : null}
+            </Link>
             <Link
               href="/phone/near"
               className="max-w-28 truncate rounded-full bg-sand px-3 py-1 text-xs font-semibold"
@@ -125,7 +139,10 @@ export function PhoneShell({ children }: { children: React.ReactNode }) {
 }
 
 function PhoneMore({ pathname }: { pathname: string }) {
+  const { snapshot } = useApp();
+  const mail = unreadTotal(snapshot);
   const links = [
+    { href: "/phone/inbox", label: mail > 0 ? `Inbox (${mail})` : "Inbox" },
     { href: "/phone/board", label: "Board" },
     { href: "/phone/book/calls", label: "Permits and fairs" },
     { href: "/phone/stay", label: "Stay" },

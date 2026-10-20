@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
-import { CalendarDays, Map, Menu, MoonStar, Smartphone, UserRound } from "lucide-react";
+import { CalendarDays, Mail, Map, Menu, MoonStar, Smartphone, UserRound } from "lucide-react";
 import { Onboarding } from "@/components/onboarding";
+import { unreadTotal } from "@/lib/inbox";
 import { isYourMove } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ import {
 
 const links = [
   { href: "/book", label: "Book", match: ["/book", "/dates", "/bookings", "/bands"] },
+  { href: "/inbox", label: "Inbox", match: ["/inbox"] },
   { href: "/plan", label: "Tour", match: ["/plan", "/tour", "/lodging"] },
   { href: "/dashboard", label: "Profile", match: ["/dashboard", "/start"] },
 ];
@@ -41,6 +43,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     () => false,
   );
   const moves = snapshot.bookings.filter((booking) => isYourMove(booking, snapshot)).length;
+  const mail = unreadTotal(snapshot);
   const phone = pathname === "/phone" || pathname.startsWith("/phone/");
 
   if (ready && snapshot.account.phase === "welcome") {
@@ -85,11 +88,28 @@ export function Shell({ children }: { children: React.ReactNode }) {
                     {moves}
                   </span>
                 ) : null}
+                {link.href === "/inbox" && mail > 0 ? (
+                  <span className="ml-1 inline-flex min-w-5 justify-center rounded-full bg-amber px-1 text-[11px] text-ink">
+                    {mail}
+                  </span>
+                ) : null}
               </Link>
             ))}
             <MoreMenu pathname={pathname} trigger="text" />
           </nav>
           <div className="ml-auto flex items-center gap-2">
+            <Link
+              href="/inbox"
+              aria-label={mail > 0 ? `Inbox, ${mail} unread` : "Inbox"}
+              className="relative grid size-9 place-items-center rounded-full border bg-card text-ink hover:bg-sand"
+            >
+              <Mail className="size-4" />
+              {mail > 0 ? (
+                <span className="absolute -top-1 -right-1 min-w-4 rounded-full bg-amber px-1 text-center text-[10px] font-semibold text-ink">
+                  {mail}
+                </span>
+              ) : null}
+            </Link>
             <Link
               href="/phone"
               aria-label="Open the phone companion"
@@ -170,7 +190,10 @@ function MobileLink({
 }
 
 function MoreMenu({ pathname, trigger = "tab" }: { pathname: string; trigger?: "tab" | "text" }) {
+  const { snapshot } = useApp();
+  const mail = unreadTotal(snapshot);
   const extra = [
+    { href: "/inbox", label: mail > 0 ? `Inbox (${mail})` : "Inbox" },
     { href: "/board", label: "Board" },
     { href: "/dates?kind=calls", label: "Permits and fairs" },
     { href: "/shows", label: "Shows" },

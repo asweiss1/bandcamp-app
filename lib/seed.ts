@@ -1,4 +1,5 @@
 import { daypartFor } from "@/lib/daypart";
+import { seedMessages, seedThreads } from "@/lib/seed-mail";
 import { seedAlerts, seedFollows, seedRsvps } from "@/lib/seed-fans";
 import { seedPeerReviews, seedReviews, seedVerifications } from "@/lib/seed-trust";
 import { seedMedia } from "@/lib/seed-media";
@@ -1132,6 +1133,11 @@ export const initialSnapshot: Snapshot = {
   verifications: seedVerifications,
   pitches: [],
   peerReviews: seedPeerReviews,
+  threads: seedThreads,
+  messages: seedMessages,
+  reads: [],
+  fanMail: [],
+  fanBlocks: [],
   account: {
     phase: "welcome",
     demo: false,

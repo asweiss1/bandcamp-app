@@ -9,6 +9,7 @@ import { dealDetails, dealHeadline, formatDayLong, formatTime } from "@/lib/deal
 import { canWithdraw, isYourMove } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import type { Terms } from "@/lib/types";
+import { BookingMessage } from "@/components/inbox";
 import { BillLineup } from "@/components/bills";
 import { PeerReviews } from "@/components/peer-review";
 import { DealFields } from "@/components/deal-fields";
@@ -127,6 +128,7 @@ export function PhoneGig({ id }: { id: string }) {
           bookingId={booking.id}
           confirmed={booking.status === "accepted"}
         />
+        <BookingMessage bookingId={booking.id} surface="phone" />
         <BillLineup billId={booking.billId} surface="phone" />
         <PeerReviews bookingId={booking.id} />
       </div>

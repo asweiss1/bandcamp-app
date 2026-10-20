@@ -6,6 +6,7 @@ import { repertoireFor } from "@/lib/repertoire";
 import { useApp } from "@/lib/store";
 import { BandLinks } from "@/components/band-links";
 import { BandMarks } from "@/components/originals";
+import { FanMailCompose } from "@/components/fan-mail";
 import { FollowButton } from "@/components/follow-button";
 import { ProfileMediaView } from "@/components/profile-media";
 import { TurnaroundNote } from "@/components/turnaround-note";
@@ -42,6 +43,7 @@ export function PhoneBand({ id }: { id: string }) {
         <p className="text-xs font-semibold tracking-[0.16em] text-rust uppercase">{band.city}</p>
         <h1 className="mt-1 font-display text-4xl leading-none tracking-tight">{band.name}</h1>
         <FollowButton targetId={band.id} targetRole="band" />
+        <FanMailCompose bandId={band.id} />
         <div className="mt-2">
           <BandMarks bandId={band.id} withInfo />
         </div>

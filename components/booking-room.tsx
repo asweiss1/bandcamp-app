@@ -16,6 +16,7 @@ import {
 import { canWithdraw, isYourMove } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import type { Terms } from "@/lib/types";
+import { BookingMessage } from "@/components/inbox";
 import { BillLineup } from "@/components/bills";
 import { PeerReviews } from "@/components/peer-review";
 import { DealFields } from "@/components/deal-fields";
@@ -134,11 +135,14 @@ export function BookingRoom({ id }: { id: string }) {
         bookingId={booking.id}
         confirmed={booking.status === "accepted"}
       />
-      {booking.status === "accepted" ? (
-        <Button type="button" variant="outline" className="mt-3 h-10" onClick={() => void shareShow(booking.id, `${band.name} at ${venue.name}`)}>
-          Share with fans
-        </Button>
-      ) : null}
+      <div className="flex flex-wrap gap-2">
+        <BookingMessage bookingId={booking.id} surface="desk" />
+        {booking.status === "accepted" ? (
+          <Button type="button" variant="outline" className="mt-3 h-10" onClick={() => void shareShow(booking.id, `${band.name} at ${venue.name}`)}>
+            Share with fans
+          </Button>
+        ) : null}
+      </div>
       <BillLineup billId={booking.billId} surface="desk" />
       <PeerReviews bookingId={booking.id} />
 

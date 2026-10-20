@@ -288,6 +288,7 @@ function toProfile(draft: Draft): OwnedProfile | null {
         lng: place.lng,
         styles: draft.styles,
         radiusMiles: draft.radiusMiles > 0 ? draft.radiusMiles : 50,
+        joinedAt: now.slice(0, 10),
       },
     };
   }
