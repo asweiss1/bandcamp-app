@@ -20,6 +20,7 @@ import { BillLineup } from "@/components/bills";
 import { DealFields } from "@/components/deal-fields";
 import { slotLine } from "@/lib/daypart";
 import { BandMarks } from "@/components/originals";
+import { PromoStudio } from "@/components/promo-studio";
 import { TurnaroundNote } from "@/components/turnaround-note";
 import { BandSamples } from "@/components/samples";
 import { PageFrame } from "@/components/shell";
@@ -124,6 +125,7 @@ export function BookingRoom({ id }: { id: string }) {
       <BillLineup billId={booking.billId} surface="desk" />
 
       {booking.status === "accepted" ? (
+        <>
         <Confirmation
           band={band.name}
           venue={venue.name}
@@ -135,6 +137,10 @@ export function BookingRoom({ id }: { id: string }) {
           details={dealDetails(booking.terms)}
           booker={`${venue.bookerName} · ${venue.bookerEmail} · ${venue.bookerPhone}`}
         />
+        <div className="mt-6">
+          <PromoStudio kind="booking" id={booking.id} />
+        </div>
+        </>
       ) : (
         <div className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
           <section className="rounded-2xl border bg-card p-4 sm:p-5">

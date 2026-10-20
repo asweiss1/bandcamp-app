@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { getBand, getVenue } from "@/lib/catalog";
+import { repertoireFor } from "@/lib/repertoire";
 import { useApp } from "@/lib/store";
 import { BandLinks } from "@/components/band-links";
 import { BandMarks } from "@/components/originals";
+import { ProfileMediaView } from "@/components/profile-media";
 import { TurnaroundNote } from "@/components/turnaround-note";
 import { slotLine } from "@/lib/daypart";
 import { StatusPill } from "@/components/status-pill";
@@ -41,6 +43,17 @@ export function PhoneBand({ id }: { id: string }) {
         <div className="mt-2">
           <BandMarks bandId={band.id} withInfo />
         </div>
+        <ProfileMediaView
+          profileId={band.id}
+          role="band"
+          name={band.name}
+          bio={band.bio}
+          hasMembers={band.members.length > 0}
+          hasSample={snapshot.streamLinks.some((link) => link.bandId === band.id)}
+          hasMusic={Boolean(repertoireFor(band.id, snapshot.repertoires).music)}
+          hasAddress={false}
+          hasBackline={false}
+        />
         <p className="mt-2 text-sm leading-relaxed">{band.bio}</p>
       </div>
       <ul className="grid gap-2">

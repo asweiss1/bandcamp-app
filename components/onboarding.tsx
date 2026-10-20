@@ -7,15 +7,17 @@ import { GENRES, INSTRUMENTS, STYLE_TAGS } from "@/lib/catalog";
 import { dealHeadline, defaultTerms, uid } from "@/lib/deal";
 import type { SavedPlace } from "@/lib/geo";
 import { HometownField } from "@/components/hometown-field";
+import { mediaFor } from "@/lib/media";
 import { readPhoto } from "@/lib/photo";
 import { repertoireFor } from "@/lib/repertoire";
 import { bandSize } from "@/lib/size";
 import { useApp } from "@/lib/store";
-import type { Daypart, MusicKind, OpenDate, OwnedProfile, Role, Terms } from "@/lib/types";
+import type { Daypart, MusicKind, OpenDate, OwnedProfile, ProfilePhoto, ProfileVideo, Role, Terms } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { DaypartField } from "@/components/daypart-field";
 import { DealFields } from "@/components/deal-fields";
 import { MusicChoice } from "@/components/originals";
+import { MediaFields } from "@/components/profile-media";
 import { BandSamples } from "@/components/samples";
 import { VehiclePanel } from "@/components/vehicles";
 import { Button } from "@/components/ui/button";
@@ -55,6 +57,10 @@ type Draft = {
   availability: string;
   pieces: string;
   music: MusicKind | null;
+  logo: string | null;
+  photos: ProfilePhoto[];
+  videos: ProfileVideo[];
+  promoUse: boolean;
   capacity: string;
   backline: string;
   terms: Terms;
@@ -86,6 +92,10 @@ function blankDraft(): Draft {
     availability: "",
     pieces: "",
     music: null,
+    logo: null,
+    photos: [],
+    videos: [],
+    promoUse: false,
     capacity: "",
     backline: "",
     terms: defaultTerms(),
@@ -100,7 +110,12 @@ function blankDraft(): Draft {
   };
 }
 
-function draftFrom(profile: OwnedProfile, snapshotDates: OpenDate[], music: MusicKind): Draft {
+function draftFrom(
+  profile: OwnedProfile,
+  snapshotDates: OpenDate[],
+  music: MusicKind,
+  media: { logo: string | null; photos: ProfilePhoto[]; videos: ProfileVideo[]; promoUse: boolean },
+): Draft {
   const base = blankDraft();
   base.id = profile.id;
   base.role = profile.role;
@@ -121,6 +136,10 @@ function draftFrom(profile: OwnedProfile, snapshotDates: OpenDate[], music: Musi
     base.availability = band.availability;
     base.pieces = String(bandSize(band));
     base.music = music;
+    base.logo = media.logo;
+    base.photos = media.photos.map((photo) => ({ ...photo }));
+    base.videos = media.videos.map((video) => ({ ...video }));
+    base.promoUse = media.promoUse;
   }
   if (profile.venue) {
     const venue = profile.venue;
@@ -132,6 +151,10 @@ function draftFrom(profile: OwnedProfile, snapshotDates: OpenDate[], music: Musi
       : null;
     base.genres = [...venue.genres];
     base.capacity = String(venue.capacity);
+    base.logo = media.logo;
+    base.photos = media.photos.map((photo) => ({ ...photo }));
+    base.videos = media.videos.map((video) => ({ ...video }));
+    base.promoUse = media.promoUse;
     base.backline = venue.backline;
     base.bio = venue.bio;
     base.bookerName = venue.bookerName;
@@ -169,9 +192,9 @@ function draftFrom(profile: OwnedProfile, snapshotDates: OpenDate[], music: Musi
 
 function stepsFor(role: Role | null, editing: boolean) {
   const roleStep = editing ? [] : ["role"];
-  if (role === "venue") return [...roleStep, "identity", "room", "deal", "dates", "review"];
+  if (role === "venue") return [...roleStep, "identity", "room", "deal", "dates", "look", "review"];
   if (role === "musician") return [...roleStep, "identity", "place", "work", "review"];
-  if (role === "band") return [...roleStep, "identity", "sound", "people", "work", "originals", "vehicles", "samples", "review"];
+  if (role === "band") return [...roleStep, "identity", "sound", "people", "work", "originals", "look", "vehicles", "samples", "review"];
   return ["role"];
 }
 
@@ -309,7 +332,7 @@ export function ProfileWizard({
   onDone?: () => void;
 }) {
   const router = useRouter();
-  const { snapshot, saveProfile, exploreDemo } = useApp();
+  const { snapshot, saveProfile, setProfileMedia, exploreDemo } = useApp();
   const existing = useMemo(() => {
     if (profileId) return snapshot.account.profiles.find((profile) => profile.id === profileId) ?? null;
     if (welcome && snapshot.account.activeId) {
@@ -320,7 +343,7 @@ export function ProfileWizard({
   const [draft, setDraft] = useState<Draft>(() => {
     if (!existing) return blankDraft();
     const music = repertoireFor(existing.id, snapshot.repertoires).music;
-    return draftFrom(existing, snapshot.openDates, music);
+    return draftFrom(existing, snapshot.openDates, music, mediaFor(existing.id, snapshot.media));
   });
   const [stepIndex, setStepIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -424,6 +447,18 @@ export function ProfileWizard({
       setError(result.error);
       return false;
     }
+    if (draft.role === "band" || draft.role === "venue") {
+      const mediaResult = setProfileMedia(profile.id, {
+        logo: draft.logo,
+        photos: draft.photos,
+        videos: draft.videos,
+        promoUse: draft.promoUse,
+      });
+      if (!mediaResult.ok) {
+        setError(mediaResult.error);
+        return false;
+      }
+    }
     if (finish) {
       setDraft((current) => ({
         ...current,
@@ -473,9 +508,11 @@ export function ProfileWizard({
             ? "Who is on stage"
             : step === "work" && draft.role === "band"
               ? "Fees and the road"
-              : step === "originals"
-                ? "Covers, originals, or a mix"
-                : step === "vehicles"
+                : step === "originals"
+                  ? "Covers, originals, or a mix"
+                  : step === "look"
+                    ? "Logo, photos, and video"
+                    : step === "vehicles"
                   ? "The rig"
                   : step === "samples"
                     ? "Let them hear it"
@@ -620,6 +657,20 @@ export function ProfileWizard({
         <div className="grid gap-3 rounded-2xl border bg-card p-4">
           <MusicChoice value={draft.music} onChange={(music) => patch({ music })} />
         </div>
+      ) : null}
+      {step === "look" && (draft.role === "band" || draft.role === "venue") ? (
+        <MediaFields
+          name={draft.name}
+          role={draft.role}
+          bio={draft.bio}
+          hasMembers={draft.members.some((member) => member.name.trim().length > 1)}
+          hasSample={snapshot.streamLinks.some((link) => link.bandId === draft.id)}
+          hasMusic={Boolean(draft.music)}
+          hasAddress={draft.address.trim().length >= 4}
+          hasBackline={draft.backline.trim().length > 8}
+          value={{ logo: draft.logo, photos: draft.photos, videos: draft.videos, promoUse: draft.promoUse }}
+          onChange={(next) => patch(next)}
+        />
       ) : null}
       {step === "vehicles" ? <VehiclePanel bandId={draft.id} /> : null}
       {step === "samples" || (step === "work" && draft.role === "musician") ? (

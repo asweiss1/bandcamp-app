@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { capacityLabel, capacityMatches, shownCapacity } from "@/lib/capacity";
 import { cities, GENRES, getBand, getCity, getMusician, getVenue, listMusicians, listVenues } from "@/lib/catalog";
 import { dateFill, sortByDate } from "@/lib/queries";
 import { useApp } from "@/lib/store";
@@ -14,12 +15,16 @@ import { BandLinks } from "@/components/band-links";
 import { OfferDialog } from "@/components/offer-dialog";
 import { slotLine } from "@/lib/daypart";
 import { BandMarks, RepertoirePanel } from "@/components/originals";
+import { CapacityFilter } from "@/components/capacity-filter";
+import { ProfileMediaView } from "@/components/profile-media";
+import { repertoireFor } from "@/lib/repertoire";
 import { TurnaroundNote } from "@/components/turnaround-note";
 import { VehiclePanel } from "@/components/vehicles";
 import { BandSamples } from "@/components/samples";
 import { PageFrame, PageIntro } from "@/components/shell";
 import { StatusPill } from "@/components/status-pill";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -42,13 +47,24 @@ export function BandIndex() {
 }
 
 export function VenueIndex() {
+  const { snapshot } = useApp();
   const [city, setCity] = useState("all");
   const [genre, setGenre] = useState("all");
-  const rows = listVenues().filter((venue) => {
-    if (city !== "all" && venue.citySlug !== city) return false;
-    if (genre !== "all" && !venue.genres.includes(genre)) return false;
-    return true;
-  });
+  const [capacityMin, setCapacityMin] = useState<number | null>(null);
+  const [capacityMax, setCapacityMax] = useState<number | null>(null);
+  const [sort, setSort] = useState("name");
+  const rows = listVenues()
+    .filter((venue) => {
+      if (city !== "all" && venue.citySlug !== city) return false;
+      if (genre !== "all" && !venue.genres.includes(genre)) return false;
+      return capacityMatches(shownCapacity(venue, snapshot.capacities), { min: capacityMin, max: capacityMax });
+    })
+    .sort((a, b) => {
+      if (sort === "capacity") {
+        return shownCapacity(b, snapshot.capacities) - shownCapacity(a, snapshot.capacities) || a.name.localeCompare(b.name);
+      }
+      return a.name.localeCompare(b.name);
+    });
   return (
     <PageFrame>
       <PageIntro
@@ -57,6 +73,22 @@ export function VenueIndex() {
         lede="Capacity, the genres they actually book, and the deal they usually open with."
       />
       <Filters city={city} setCity={setCity} genre={genre} setGenre={setGenre} />
+      <div className="mb-5">
+        <CapacityFilter
+          min={capacityMin}
+          max={capacityMax}
+          sort={sort}
+          sorts={[
+            { id: "name", label: "Name" },
+            { id: "capacity", label: "Capacity" },
+          ]}
+          onRange={(min, max) => {
+            setCapacityMin(min);
+            setCapacityMax(max);
+          }}
+          onSort={setSort}
+        />
+      </div>
       <div className="grid gap-3 sm:grid-cols-2">
         {rows.map((venue) => (
           <VenueCard key={venue.id} venue={venue} />
@@ -99,6 +131,17 @@ export function BandProfile({ id }: { id: string }) {
       <div className="mt-3">
         <BandMarks bandId={band.id} withInfo />
       </div>
+      <ProfileMediaView
+        profileId={band.id}
+        role="band"
+        name={band.name}
+        bio={band.bio}
+        hasMembers={band.members.length > 0}
+        hasSample={snapshot.streamLinks.some((link) => link.bandId === band.id)}
+        hasMusic={Boolean(repertoireFor(band.id, snapshot.repertoires).music)}
+        hasAddress={false}
+        hasBackline={false}
+      />
       <div className="mt-3 flex flex-wrap gap-1.5">
         {band.styles.map((style) => (
           <span key={style} className="rounded-full border px-2.5 py-1 text-xs font-medium">
@@ -210,10 +253,12 @@ export function BandProfile({ id }: { id: string }) {
 }
 
 export function VenueProfile({ id }: { id: string }) {
-  const { snapshot } = useApp();
+  const { snapshot, setVenueCapacity } = useApp();
   const venue = getVenue(id);
   if (!venue) return <Missing href="/venues" label="Back to venues" title="No venue by that name." />;
   const dates = sortByDate(snapshot.openDates.filter((item) => item.venueId === venue.id));
+  const capacity = shownCapacity(venue, snapshot.capacities);
+  const canEdit = snapshot.role === "venue" && snapshot.venueId === venue.id;
   return (
     <PageFrame>
       <Link href="/venues" className="text-sm font-medium text-rust">
@@ -222,9 +267,43 @@ export function VenueProfile({ id }: { id: string }) {
       {venue.photo ? <img src={venue.photo} alt="" className="mt-4 size-24 rounded-2xl object-cover" /> : null}
       <h1 className="mt-3 font-display text-5xl tracking-tight">{venue.name}</h1>
       {venue.address ? <p className="mt-2 text-sm text-muted-foreground">{venue.address}</p> : null}
-      <p className="mt-2 text-lg text-muted-foreground">
-        {venue.neighborhood}, {venue.city} · {venue.capacity} capacity
-      </p>
+      {canEdit ? (
+        <label className="mt-3 grid max-w-xs gap-1 text-sm font-medium">
+          Capacity
+          <Input
+            className="h-11 font-normal"
+            inputMode="numeric"
+            value={String(capacity)}
+            onChange={(event) => {
+              const next = Number(event.target.value);
+              if (next >= 1) {
+                const result = setVenueCapacity(venue.id, Math.round(next));
+                if (!result.ok) toast.error(result.error);
+              }
+            }}
+          />
+        </label>
+      ) : (
+        <p className="mt-2 text-lg text-muted-foreground">
+          {venue.neighborhood}, {venue.city} · {capacityLabel(capacity, true)}
+        </p>
+      )}
+      {canEdit ? (
+        <p className="mt-2 text-lg text-muted-foreground">
+          {venue.neighborhood}, {venue.city}
+        </p>
+      ) : null}
+      <ProfileMediaView
+        profileId={venue.id}
+        role="venue"
+        name={venue.name}
+        bio={venue.bio}
+        hasMembers={false}
+        hasSample={false}
+        hasMusic={false}
+        hasAddress={Boolean(venue.address && venue.address.trim().length >= 4)}
+        hasBackline={venue.backline.trim().length > 8}
+      />
       <p className="mt-4 max-w-2xl leading-relaxed">{venue.bio}</p>
       <dl className="mt-6 grid gap-3 sm:grid-cols-2">
         <Stat label="Genres booked" value={venue.genres.join(", ")} />
@@ -255,7 +334,9 @@ export function VenueProfile({ id }: { id: string }) {
                 <span className="block font-medium">
                   {openDate.date} · {slotLine(openDate.showTime, openDate.daypart)} · {openDate.slot}
                 </span>
-                <span className="text-sm text-muted-foreground">{openDate.genres.join(", ")}</span>
+                <span className="text-sm text-muted-foreground">
+                  {capacityLabel(capacity)} · {openDate.genres.join(", ")}
+                </span>
               </span>
               <StatusPill status={dateFill(openDate.id, snapshot.bookings)} />
             </Link>
@@ -426,12 +507,13 @@ function Filters({
 }
 
 function VenueCard({ venue }: { venue: Venue }) {
+  const { snapshot } = useApp();
   const city = getCity(venue.citySlug);
   return (
     <Link href={`/venues/${venue.id}`} className={cn("rounded-2xl border bg-card p-4 transition hover:border-rust/40")}>
       <h2 className="font-display text-2xl">{venue.name}</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        {city?.label} · {venue.capacity} cap
+        {city?.label} · {capacityLabel(shownCapacity(venue, snapshot.capacities))}
       </p>
       <p className="mt-3 text-sm">{venue.genres.slice(0, 3).join(" · ")}</p>
       <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{venue.typicalDeal}</p>

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { capacityLabel, capacityMatches, shownCapacity } from "@/lib/capacity";
 import { GENRES, cities, getVenue } from "@/lib/catalog";
 import { slotLine } from "@/lib/daypart";
 import { monthParts } from "@/lib/deal";
@@ -9,6 +10,7 @@ import { activeApplication, dateFill, sortByDate } from "@/lib/queries";
 import { useApp } from "@/lib/store";
 import type { OpportunityKind } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { CapacityFilter } from "@/components/capacity-filter";
 import { PageFrame, PageIntro } from "@/components/shell";
 import { StatusPill } from "@/components/status-pill";
 import { Button } from "@/components/ui/button";
@@ -28,6 +30,9 @@ export function DatesBrowser() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [hideFilled, setHideFilled] = useState(true);
+  const [capacityMin, setCapacityMin] = useState<number | null>(null);
+  const [capacityMax, setCapacityMax] = useState<number | null>(null);
+  const [sort, setSort] = useState("date");
 
   const rows = useMemo(() => {
     const rooms =
@@ -59,8 +64,20 @@ export function DatesBrowser() {
                 : undefined;
             return [{ sort: `${opportunity.startDate}-call-${opportunity.id}`, kind: "call" as const, opportunity, application }];
           });
-    return [...rooms, ...calls].sort((a, b) => a.sort.localeCompare(b.sort));
-  }, [snapshot, kind, city, genre, from, to, hideFilled]);
+    const capacityOn = capacityMin != null || capacityMax != null;
+    const visible = [...rooms, ...calls].filter((row) => {
+      if (row.kind !== "room") return !capacityOn;
+      return capacityMatches(shownCapacity(row.venue, snapshot.capacities), { min: capacityMin, max: capacityMax });
+    });
+    if (sort === "capacity") {
+      return visible.sort((a, b) => {
+        const left = a.kind === "room" ? shownCapacity(a.venue, snapshot.capacities) : -1;
+        const right = b.kind === "room" ? shownCapacity(b.venue, snapshot.capacities) : -1;
+        return right - left || a.sort.localeCompare(b.sort);
+      });
+    }
+    return visible.sort((a, b) => a.sort.localeCompare(b.sort));
+  }, [snapshot, kind, city, genre, from, to, hideFilled, capacityMin, capacityMax, sort]);
 
   return (
     <PageFrame>
@@ -139,6 +156,22 @@ export function DatesBrowser() {
             className="h-10 rounded-lg border border-input bg-transparent px-2.5 text-sm"
           />
         </label>
+        <div className="sm:col-span-4">
+          <CapacityFilter
+            min={capacityMin}
+            max={capacityMax}
+            sort={sort}
+            sorts={[
+              { id: "date", label: "Date" },
+              { id: "capacity", label: "Capacity" },
+            ]}
+            onRange={(min, max) => {
+              setCapacityMin(min);
+              setCapacityMax(max);
+            }}
+            onSort={setSort}
+          />
+        </div>
         <label className="flex h-10 items-center gap-2 text-sm">
           <input
             type="checkbox"
@@ -203,7 +236,7 @@ export function DatesBrowser() {
                 <div className="min-w-0">
                   <p className="truncate font-semibold">{row.venue.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {row.venue.city} · {row.venue.capacity} cap · {slotLine(row.openDate.showTime, row.openDate.daypart)} · {row.openDate.slot}
+                    {row.venue.city} · {capacityLabel(shownCapacity(row.venue, snapshot.capacities))} · {slotLine(row.openDate.showTime, row.openDate.daypart)} · {row.openDate.slot}
                   </p>
                   <p className="mt-1 line-clamp-1 text-sm">{row.venue.typicalDeal}</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">

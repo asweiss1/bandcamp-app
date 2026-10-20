@@ -1,4 +1,5 @@
 import { daypartFor } from "@/lib/daypart";
+import { seedMedia } from "@/lib/seed-media";
 import { seedApplications, seedOpportunities } from "@/lib/opportunities";
 import type {
   BandLink,
@@ -1044,6 +1045,8 @@ export const initialSnapshot: Snapshot = {
   bandLinks: seedBandLinks,
   bills: seedBills,
   sizes: [],
+  capacities: [],
+  media: seedMedia,
   account: {
     phase: "welcome",
     demo: false,

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { capacityLabel, shownCapacity } from "@/lib/capacity";
 import { getBand, getVenue } from "@/lib/catalog";
 import { dealHeadline, defaultTerms, formatDayLong } from "@/lib/deal";
 import { activeBooking, dateFill } from "@/lib/queries";
@@ -80,7 +81,7 @@ export function DateDetail({ id }: { id: string }) {
             {formatDayLong(openDate.date)} · {slotLine(openDate.showTime, openDate.daypart)}
           </p>
           <p className="mt-1 text-muted-foreground">
-            {venue.neighborhood}, {venue.city} · {venue.capacity} capacity
+            {venue.neighborhood}, {venue.city} · {capacityLabel(shownCapacity(venue, snapshot.capacities), true)}
           </p>
           <div className="mt-4 flex flex-wrap gap-1.5">
             {openDate.genres.map((genre) => (

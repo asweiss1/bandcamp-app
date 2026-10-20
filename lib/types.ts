@@ -252,6 +252,23 @@ export type BandSize = {
   size: number;
 };
 
+export type VenueCapacity = {
+  venueId: string;
+  capacity: number;
+};
+
+export type ProfilePhoto = { id: string; src: string; caption: string };
+
+export type ProfileVideo = { id: string; url: string; title: string };
+
+export type ProfileMedia = {
+  profileId: string;
+  promoUse: boolean;
+  logo: string | null;
+  photos: ProfilePhoto[];
+  videos: ProfileVideo[];
+};
+
 export type StreamService = "bandcamp" | "soundcloud" | "youtube" | "spotify";
 
 export type StreamLink = {
@@ -343,6 +360,8 @@ export type Snapshot = {
   bandLinks: BandLink[];
   bills: Bill[];
   sizes: BandSize[];
+  capacities: VenueCapacity[];
+  media: ProfileMedia[];
   account: Account;
 };
 

@@ -14,6 +14,7 @@ import { DealFields } from "@/components/deal-fields";
 import { slotLine } from "@/lib/daypart";
 import { BandMarks } from "@/components/originals";
 import { TurnaroundNote } from "@/components/turnaround-note";
+import { PromoStudio } from "@/components/promo-studio";
 import { BandSamples } from "@/components/samples";
 import { StatusPill, statusLabel } from "@/components/status-pill";
 import { Button } from "@/components/ui/button";
@@ -118,6 +119,7 @@ export function PhoneGig({ id }: { id: string }) {
       </div>
 
       {booking.status === "accepted" ? (
+        <>
         <TicketCard
           band={band.name}
           venue={venue.name}
@@ -129,6 +131,8 @@ export function PhoneGig({ id }: { id: string }) {
           details={dealDetails(booking.terms)}
           booker={`${venue.bookerName} · ${venue.bookerPhone}`}
         />
+        <PromoStudio kind="booking" id={booking.id} />
+        </>
       ) : (
         <>
           <BandSamples bandId={band.id} variant="listen" />

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { capacityLabel, capacityMatches, shownCapacity } from "@/lib/capacity";
 import { GENRES, cities, getBand, getVenue, listBands } from "@/lib/catalog";
 import { slotLine } from "@/lib/daypart";
 import { dealHeadline, defaultTerms, formatDayLong, money, monthParts } from "@/lib/deal";
@@ -14,6 +15,7 @@ import { useApp } from "@/lib/store";
 import type { Daypart, MusicKind, OpenDate, OpportunityKind, Terms } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { DaypartField } from "@/components/daypart-field";
+import { CapacityFilter } from "@/components/capacity-filter";
 import { BandMarks, MusicFilter, SizeFilter } from "@/components/originals";
 import { TurnaroundNote } from "@/components/turnaround-note";
 import { BandSamples } from "@/components/samples";
@@ -37,6 +39,9 @@ export function PhoneBook() {
   const [genre, setGenre] = useState("all");
   const [from, setFrom] = useState("");
   const [hideFilled, setHideFilled] = useState(true);
+  const [capacityMin, setCapacityMin] = useState<number | null>(null);
+  const [capacityMax, setCapacityMax] = useState<number | null>(null);
+  const [sort, setSort] = useState("date");
 
   const rows = useMemo(() => {
     const rooms =
@@ -70,8 +75,20 @@ export function PhoneBook() {
                 : undefined;
             return [{ sort: `${opportunity.startDate}-call-${opportunity.id}`, kind: "call" as const, opportunity, application }];
           });
-    return [...rooms, ...calls].sort((a, b) => a.sort.localeCompare(b.sort));
-  }, [snapshot, kind, city, genre, from, hideFilled]);
+    const capacityOn = capacityMin != null || capacityMax != null;
+    const visible = [...rooms, ...calls].filter((row) => {
+      if (row.kind !== "room") return !capacityOn;
+      return capacityMatches(shownCapacity(row.venue, snapshot.capacities), { min: capacityMin, max: capacityMax });
+    });
+    if (sort === "capacity") {
+      return visible.sort((a, b) => {
+        const left = a.kind === "room" ? shownCapacity(a.venue, snapshot.capacities) : -1;
+        const right = b.kind === "room" ? shownCapacity(b.venue, snapshot.capacities) : -1;
+        return right - left || a.sort.localeCompare(b.sort);
+      });
+    }
+    return visible.sort((a, b) => a.sort.localeCompare(b.sort));
+  }, [snapshot, kind, city, genre, from, hideFilled, capacityMin, capacityMax, sort]);
 
   return (
     <div className="grid gap-4 pb-2">
@@ -162,6 +179,20 @@ export function PhoneBook() {
           />
         </label>
       </div>
+      <CapacityFilter
+        min={capacityMin}
+        max={capacityMax}
+        sort={sort}
+        sorts={[
+          { id: "date", label: "Date" },
+          { id: "capacity", label: "Capacity" },
+        ]}
+        onRange={(min, max) => {
+          setCapacityMin(min);
+          setCapacityMax(max);
+        }}
+        onSort={setSort}
+      />
       <label className="flex items-center gap-2 text-sm">
         <input
           type="checkbox"
@@ -230,7 +261,7 @@ export function PhoneBook() {
                       <StatusPill status={row.mine?.status ?? row.fill} />
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {row.venue.city} · {slotLine(row.openDate.showTime, row.openDate.daypart)} · {row.openDate.slot}
+                      {row.venue.city} · {capacityLabel(shownCapacity(row.venue, snapshot.capacities))} · {slotLine(row.openDate.showTime, row.openDate.daypart)} · {row.openDate.slot}
                     </p>
                     <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{row.venue.typicalDeal}</p>
                   </div>
@@ -342,7 +373,7 @@ export function PhoneDate({ id }: { id: string }) {
           {formatDayLong(openDate.date)} · {slotLine(openDate.showTime, openDate.daypart)}
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
-          {venue.neighborhood}, {venue.city} · {venue.capacity} cap
+          {venue.neighborhood}, {venue.city} · {capacityLabel(shownCapacity(venue, snapshot.capacities))}
         </p>
         <div className="mt-3 flex flex-wrap gap-1.5">
           {openDate.genres.map((genre) => (

@@ -60,6 +60,8 @@ function snapshot(partial: Partial<Snapshot>): Snapshot {
     bandLinks: [],
     bills: [],
     sizes: [],
+    capacities: [],
+    media: [],
     account: { phase: "ready", demo: true, activeId: null, profiles: [] },
     ...partial,
   };

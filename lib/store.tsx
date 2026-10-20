@@ -16,6 +16,7 @@ import {
 import { pairLinks } from "@/lib/links";
 import { getBand, getMusician, getVenue } from "@/lib/catalog";
 import { clearAudioTracks } from "@/lib/audio-db";
+import { canEditMedia, cleanLogo, cleanPhotos, cleanVideos } from "@/lib/media";
 import { daypartFor } from "@/lib/daypart";
 import { termsError, uid } from "@/lib/deal";
 import { normalizeRepertoires } from "@/lib/repertoire";
@@ -43,6 +44,7 @@ import type {
   OwnedProfile,
   BillMember,
   MusicKind,
+  ProfileMedia,
 } from "@/lib/types";
 
 const SYNC_EVENT = "bandcamp-sync";
@@ -75,12 +77,20 @@ function readMemory() {
       fuelOverrides: Array.isArray(memory.fuelOverrides) ? memory.fuelOverrides : initialSnapshot.fuelOverrides,
     };
   }
-  if (!Array.isArray(memory.bandLinks) || !Array.isArray(memory.bills) || !Array.isArray(memory.sizes)) {
+  if (
+    !Array.isArray(memory.bandLinks) ||
+    !Array.isArray(memory.bills) ||
+    !Array.isArray(memory.sizes) ||
+    !Array.isArray(memory.capacities) ||
+    !Array.isArray(memory.media)
+  ) {
     memory = {
       ...memory,
       bandLinks: Array.isArray(memory.bandLinks) ? memory.bandLinks : initialSnapshot.bandLinks,
       bills: Array.isArray(memory.bills) ? memory.bills : initialSnapshot.bills,
       sizes: Array.isArray(memory.sizes) ? memory.sizes : [],
+      capacities: Array.isArray(memory.capacities) ? memory.capacities : [],
+      media: Array.isArray(memory.media) ? memory.media : initialSnapshot.media,
     };
   }
   if (memory.openDates.some((date) => !date.daypart) || memory.repertoires.some((item) => !item.music)) {
@@ -150,6 +160,8 @@ type AppContextValue = {
   confirmInterest: (interestId: string) => Result<string>;
   setRepertoire: (bandId: string, patch: Partial<Omit<Repertoire, "bandId">>) => Result<string>;
   setBandSize: (bandId: string, size: number) => Result<string>;
+  setVenueCapacity: (venueId: string, capacity: number) => Result<string>;
+  setProfileMedia: (profileId: string, patch: Partial<Omit<ProfileMedia, "profileId">>) => Result<string>;
   addStreamLink: (bandId: string, service: StreamService, url: string) => Result<string>;
   removeStreamLink: (id: string) => Result<string>;
   setNightStay: (stay: Omit<NightStay, "id"> & { id?: string }) => Result<string>;
@@ -713,6 +725,71 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         update({ ...current, sizes, account: { ...current.account, profiles } });
         return { ok: true, data: bandId };
       },
+      setVenueCapacity: (venueId, capacity) => {
+        const current = readMemory();
+        const demoVenue = current.account.demo && current.role === "venue" && current.venueId === venueId;
+        if (!ownsProfile(current, venueId) && !demoVenue) {
+          return { ok: false, error: "Switch to this venue to update the capacity." };
+        }
+        if (!(capacity >= 1) || capacity > 100_000) return { ok: false, error: "Enter the room capacity." };
+        const count = Math.round(capacity);
+        const capacities = current.capacities.some((item) => item.venueId === venueId)
+          ? current.capacities.map((item) => (item.venueId === venueId ? { ...item, capacity: count } : item))
+          : [...current.capacities, { venueId, capacity: count }];
+        const profiles = current.account.profiles.map((profile) =>
+          profile.venue?.id === venueId ? { ...profile, venue: { ...profile.venue, capacity: count } } : profile,
+        );
+        update({ ...current, capacities, account: { ...current.account, profiles } });
+        return { ok: true, data: venueId };
+      },
+      setProfileMedia: (profileId, patch) => {
+        const current = readMemory();
+        if (!canEditMedia(current, profileId)) {
+          return { ok: false, error: "Switch to this profile to update photos and video." };
+        }
+        const existing = current.media.find((item) => item.profileId === profileId) ?? {
+          profileId,
+          promoUse: false,
+          logo: null,
+          photos: [],
+          videos: [],
+        };
+        let logo = existing.logo;
+        if (patch.logo !== undefined) {
+          if (patch.logo && !cleanLogo(patch.logo)) {
+            return { ok: false, error: "Use a photo or an https link for the logo." };
+          }
+          logo = cleanLogo(patch.logo);
+        }
+        let photos = existing.photos;
+        if (patch.photos) {
+          const filled = patch.photos.filter((photo) => photo.src.trim());
+          photos = cleanPhotos(filled);
+          if (photos.length !== filled.length) {
+            return { ok: false, error: "Photos need to be an upload or an https link." };
+          }
+        }
+        let videos = existing.videos;
+        if (patch.videos) {
+          const filled = patch.videos.filter((video) => video.url.trim());
+          videos = cleanVideos(filled);
+          if (videos.length !== filled.length) {
+            return { ok: false, error: "Paste a YouTube or Vimeo https link for each video." };
+          }
+        }
+        const next = {
+          profileId,
+          promoUse: patch.promoUse ?? existing.promoUse,
+          logo,
+          photos,
+          videos,
+        };
+        const media = current.media.some((item) => item.profileId === profileId)
+          ? current.media.map((item) => (item.profileId === profileId ? next : item))
+          : [...current.media, next];
+        update({ ...current, media });
+        return { ok: true, data: profileId };
+      },
       addStreamLink: (bandId, service, url) => {
         const current = readMemory();
         if (!ownsProfile(current, bandId)) {
@@ -889,8 +966,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           openDates = [...openDates, ...additions];
         }
         const finish = Boolean(extras?.finish);
+        let capacities = current.capacities;
+        if (profile.venue && profile.venue.capacity >= 1) {
+          const count = Math.round(profile.venue.capacity);
+          capacities = capacities.some((item) => item.venueId === profile.id)
+            ? capacities.map((item) => (item.venueId === profile.id ? { ...item, capacity: count } : item))
+            : [...capacities, { venueId: profile.id, capacity: count }];
+        }
         update({
           ...current,
+          capacities,
           account: {
             phase: finish || current.account.phase === "ready" ? "ready" : "welcome",
             demo: false,

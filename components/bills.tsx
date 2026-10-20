@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { DealFields } from "@/components/deal-fields";
 import { PageFrame, PageIntro } from "@/components/shell";
 import { StatusPill } from "@/components/status-pill";
+import { PromoStudio } from "@/components/promo-studio";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -195,6 +196,9 @@ export function BillDetail({ id, surface }: { id: string; surface: "desk" | "pho
         </span>
       </div>
       <h1 className="mt-3 font-display text-5xl tracking-tight">{bill.name}</h1>
+      <div className="mt-4">
+        <PromoStudio kind="bill" id={bill.id} />
+      </div>
       <p className="mt-2 text-lg text-muted-foreground">
         {venue && openDate
           ? `${venue.name} · ${formatDayLong(openDate.date)} · ${slotLine(openDate.showTime, openDate.daypart)}`

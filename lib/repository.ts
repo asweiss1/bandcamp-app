@@ -59,6 +59,8 @@ export const localRepository: Repository = {
         bandLinks: Array.isArray(parsed.bandLinks) ? parsed.bandLinks : fallback.bandLinks,
         bills: Array.isArray(parsed.bills) ? parsed.bills : fallback.bills,
         sizes: Array.isArray(parsed.sizes) ? parsed.sizes : [],
+        capacities: Array.isArray(parsed.capacities) ? parsed.capacities : [],
+        media: Array.isArray(parsed.media) ? parsed.media : fallback.media,
         openDates: parsed.openDates.map((date) => (date.daypart ? date : { ...date, daypart: daypartFor(date.showTime) })),
         account: {
           ...account,
