@@ -1,23 +1,17 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Outfit } from "next/font/google";
-import { cookies } from "next/headers";
-import { Toaster } from "sonner";
-import { PlaceProvider } from "@/lib/place";
-import { AppProvider } from "@/lib/store";
-import { Pwa } from "@/components/pwa";
-import { Shell } from "@/components/shell";
 import "./globals.css";
 
 const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-outfit",
-  display: "swap",
+  display: "optional",
 });
 
 const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-fraunces",
-  display: "swap",
+  display: "optional",
 });
 
 export const metadata: Metadata = {
@@ -51,20 +45,10 @@ export const viewport: Viewport = {
   interactiveWidget: "resizes-content",
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const jar = await cookies();
-  const known = jar.get("bandcamp-phase")?.value === "ready";
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${outfit.variable} ${fraunces.variable} h-full antialiased`}>
-      <body className="min-h-full bg-background text-foreground">
-        <AppProvider>
-          <PlaceProvider>
-            <Shell known={known}>{children}</Shell>
-            <Pwa />
-            <Toaster theme="light" position="top-center" />
-          </PlaceProvider>
-        </AppProvider>
-      </body>
+      <body className="min-h-full bg-background text-foreground">{children}</body>
     </html>
   );
 }

@@ -49,8 +49,9 @@ export function Shell({ children, known }: { children: React.ReactNode; known: b
   const mail = unreadTotal(snapshot);
   const phone = pathname === "/phone" || pathname.startsWith("/phone/");
   const welcome = snapshot.account.phase === "welcome";
+  const wizard = pathname === "/start" || pathname.startsWith("/start/") || pathname === "/phone/start" || pathname.startsWith("/phone/start/");
 
-  if ((ready && welcome) || (!ready && phone && !known)) {
+  if (!wizard && ((ready && welcome) || (!ready && phone && !known))) {
     return <Onboarding surface={phone ? "phone" : "desk"} />;
   }
   if (phone) return <>{children}</>;

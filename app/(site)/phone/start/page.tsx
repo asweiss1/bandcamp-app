@@ -6,7 +6,10 @@ import { ProfileWizard } from "@/components/onboarding";
 
 function PhoneStart() {
   const params = useSearchParams();
-  return <ProfileWizard surface="phone" profileId={params.get("edit")} />;
+  const welcome = params.get("welcome");
+  const initialRole =
+    welcome === "band" || welcome === "venue" || welcome === "musician" || welcome === "fan" ? welcome : null;
+  return <ProfileWizard surface="phone" profileId={params.get("edit")} initialRole={initialRole} welcome={Boolean(initialRole)} />;
 }
 
 export default function PhoneStartPage() {

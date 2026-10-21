@@ -1,6 +1,7 @@
 import { isAccount } from "@/lib/account";
 import { daypartFor } from "@/lib/daypart";
 import { normalizeRepertoires } from "@/lib/repertoire";
+import { SNAPSHOT_KEY } from "@/lib/storage-key";
 import type { Snapshot } from "@/lib/types";
 
 /**
@@ -18,8 +19,6 @@ export interface Repository {
   save(snapshot: Snapshot): void;
   clear(): void;
 }
-
-const STORAGE_KEY = "bandcamp.prototype.v1";
 
 function isSnapshot(value: unknown): value is Snapshot {
   if (!value || typeof value !== "object") return false;
@@ -84,7 +83,7 @@ export const localRepository: Repository = {
   load(fallback) {
     if (typeof window === "undefined") return fallback;
     try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
+      const raw = window.localStorage.getItem(SNAPSHOT_KEY);
       if (!raw) return fallback;
       return coerceSnapshot(JSON.parse(raw) as unknown, fallback) ?? fallback;
     } catch {
@@ -93,10 +92,10 @@ export const localRepository: Repository = {
   },
   save(snapshot) {
     if (typeof window === "undefined") return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+    window.localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshot));
   },
   clear() {
     if (typeof window === "undefined") return;
-    window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(SNAPSHOT_KEY);
   },
 };

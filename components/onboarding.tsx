@@ -349,11 +349,13 @@ export function ProfileWizard({
   welcome = false,
   profileId = null,
   onDone,
+  initialRole = null,
 }: {
   surface: "desk" | "phone";
   welcome?: boolean;
   profileId?: string | null;
   onDone?: () => void;
+  initialRole?: Role | null;
 }) {
   const router = useRouter();
   const { snapshot, saveProfile, setProfileMedia, exploreDemo } = useApp();
@@ -365,11 +367,14 @@ export function ProfileWizard({
     return null;
   }, [profileId, welcome, snapshot.account.profiles, snapshot.account.activeId]);
   const [draft, setDraft] = useState<Draft>(() => {
-    if (!existing) return blankDraft();
+    if (!existing) {
+      const blank = blankDraft();
+      return initialRole ? { ...blank, role: initialRole } : blank;
+    }
     const music = repertoireFor(existing.id, snapshot.repertoires).music;
     return draftFrom(existing, snapshot.openDates, music, mediaFor(existing.id, snapshot.media));
   });
-  const [stepIndex, setStepIndex] = useState(0);
+  const [stepIndex, setStepIndex] = useState(initialRole && !profileId ? 1 : 0);
   const [error, setError] = useState<string | null>(null);
   const steps = stepsFor(draft.role, Boolean(profileId));
   const step = steps[Math.min(stepIndex, steps.length - 1)] ?? "role";
